@@ -1,0 +1,67 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "fixture-session",
+  "agent": {
+    "name": "terminus-2",
+    "version": "2.0.0",
+    "model_name": "anthropic/claude-haiku-4-5-20251001",
+    "extra": {
+      "parser": "json",
+      "temperature": 0.7
+    }
+  },
+  "steps": [
+    {
+      "step_id": 1,
+      "timestamp": "2026-07-06T16:51:22.790394+00:00",
+      "source": "user",
+      "message": "Task instructions"
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2026-07-06T16:51:28.597450+00:00",
+      "source": "agent",
+      "message": "Inspect repo",
+      "tool_calls": [
+        {
+          "tool_call_id": "call_0_1",
+          "function_name": "bash_command",
+          "arguments": {
+            "keystrokes": "git status\n",
+            "duration": 0.5
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "content": "On branch master"
+          }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2026-07-06T16:51:34.139425+00:00",
+      "source": "agent",
+      "message": "Check branch history",
+      "tool_calls": [
+        {
+          "tool_call_id": "call_1_1",
+          "function_name": "bash_command",
+          "arguments": {
+            "keystrokes": "git reflog\n",
+            "duration": 0.5
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "content": "HEAD@{1}: commit: Move to Stanford"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,20 +1,20 @@
+import asyncio
 from pathlib import Path
 
 import pytest
 
 from go_explore.snapshots import (
+    AsyncNoopSnapshotBackend,
+    DaytonaSnapshotBackend,
     EveryAgentStepPolicy,
     HeuristicSnapshotSelector,
     InMemorySnapshotStore,
     InterestingAgentStepPolicy,
-    NoopSnapshotBackend,
-    SnapshotBackend,
     SnapshotCandidate,
     SnapshotEvent,
-    SnapshotHandle,
-    SnapshotManager,
     SnapshotRecord,
     context_from_atif_step,
+    daytona_snapshot_name,
 )
 
 
@@ -280,134 +280,30 @@ def test_in_memory_snapshot_store_put_get_list_and_replace():
 
 
 def test_noop_snapshot_backend_preserves_existing_references():
-    backend = NoopSnapshotBackend()
-    candidate = SnapshotCandidate(
-        id="snapshot-1",
-        event=SnapshotEvent.AGENT_STEP,
-        environment_id="candidate-env",
-        restore_ref="candidate-restore",
-    )
-    context = context_from_atif_step(
-        {"step_id": 1, "source": "agent"},
-        trial_name="trial",
-        environment_id="context-env",
-    )
+    async def run_test():
+        backend = AsyncNoopSnapshotBackend()
+        candidate = SnapshotCandidate(
+            id="snapshot-1",
+            event=SnapshotEvent.AGENT_STEP,
+            environment_id="candidate-env",
+            restore_ref="candidate-restore",
+        )
+        context = context_from_atif_step(
+            {"step_id": 1, "source": "agent"},
+            trial_name="trial",
+            environment_id="context-env",
+        )
 
-    handle = backend.create_snapshot(candidate, context)
+        handle = await backend.create_snapshot(candidate, context)
 
-    assert handle.backend == "noop"
-    assert handle.environment_id == "candidate-env"
-    assert handle.restore_ref == "candidate-restore"
+        assert handle.backend == "noop"
+        assert handle.environment_id == "candidate-env"
+        assert handle.restore_ref == "candidate-restore"
 
-
-def test_snapshot_manager_processes_policy_candidates_into_records():
-    manager = SnapshotManager(policy=EveryAgentStepPolicy())
-    context = context_from_atif_step(
-        {
-            "step_id": 2,
-            "source": "agent",
-            "tool_calls": [
-                {
-                    "function_name": "bash_command",
-                    "arguments": {"keystrokes": "git status\n"},
-                }
-            ],
-        },
-        trial_name="fix-git__abc123",
-    )
-
-    records = manager.process_step(context)
-
-    assert len(records) == 1
-    assert records[0].id == "fix-git__abc123:step-2"
-    assert records[0].backend == "noop"
-    assert records[0].candidate.command == "git status"
-    assert records[0].candidate.metadata["snapshot_backend"] == "noop"
-    assert records[0].description == "agent_step | trial=fix-git__abc123 | step=2 | agent step"
-    assert manager.get("fix-git__abc123:step-2") == records[0]
-    assert manager.list() == records
+    asyncio.run(run_test())
 
 
-def test_snapshot_manager_does_not_store_when_policy_returns_no_candidates():
-    manager = SnapshotManager(policy=InterestingAgentStepPolicy())
-    context = context_from_atif_step(
-        {
-            "step_id": 2,
-            "source": "agent",
-            "tool_calls": [
-                {
-                    "function_name": "bash_command",
-                    "arguments": {"keystrokes": "ls\n"},
-                }
-            ],
-            "observation": {"results": [{"content": "README.md"}]},
-        },
-        trial_name="trial",
-    )
+def test_daytona_snapshot_name_normalizes_candidate_ids():
+    name = daytona_snapshot_name("fix-git__trial:step-4/file edit", prefix="go-explore")
 
-    assert manager.process_step(context) == []
-    assert manager.list() == []
-
-
-def test_snapshot_manager_accepts_replaceable_store():
-    class RecordingStore:
-        def __init__(self):
-            self.records: dict[str, SnapshotRecord] = {}
-            self.put_calls: list[str] = []
-
-        def put(self, record: SnapshotRecord) -> None:
-            self.put_calls.append(record.id)
-            self.records[record.id] = record
-
-        def get(self, snapshot_id: str) -> SnapshotRecord | None:
-            return self.records.get(snapshot_id)
-
-        def list(self) -> list[SnapshotRecord]:
-            return list(self.records.values())
-
-    store = RecordingStore()
-    manager = SnapshotManager(policy=EveryAgentStepPolicy(), store=store)
-    context = context_from_atif_step(
-        {"step_id": 3, "source": "agent"},
-        trial_name="trial",
-    )
-
-    records = manager.process_step(context)
-
-    assert store.put_calls == ["trial:step-3"]
-    assert store.get("trial:step-3") == records[0]
-
-
-def test_snapshot_manager_accepts_replaceable_backend():
-    class RecordingBackend:
-        def __init__(self):
-            self.calls: list[str] = []
-
-        def create_snapshot(
-            self,
-            candidate: SnapshotCandidate,
-            context,
-        ) -> SnapshotHandle:
-            self.calls.append(candidate.id)
-            return SnapshotHandle(
-                backend="recording",
-                environment_id=f"env-{context.step_id}",
-                restore_ref=f"restore-{candidate.id}",
-                metadata={"backend_note": "captured"},
-            )
-
-    backend = RecordingBackend()
-    manager = SnapshotManager(policy=EveryAgentStepPolicy(), backend=backend)
-    context = context_from_atif_step(
-        {"step_id": 4, "source": "agent"},
-        trial_name="trial",
-    )
-
-    records = manager.process_step(context)
-
-    assert backend.calls == ["trial:step-4"]
-    assert records[0].backend == "recording"
-    assert records[0].candidate.environment_id == "env-4"
-    assert records[0].candidate.restore_ref == "restore-trial:step-4"
-    assert records[0].candidate.metadata["snapshot_backend"] == "recording"
-    assert records[0].candidate.metadata["backend_note"] == "captured"
+    assert name == "go-explore-fix-git__trial-step-4-file-edit"

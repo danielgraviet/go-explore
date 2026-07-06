@@ -112,3 +112,16 @@ uv run pytest --run-e2e -s
 - Snapshot Manager: snapshot env at determinstic points, store snapshot, restore snapshot. Store metadata. 
 - Snapshot Selector: start with heuristic ranking, choose top K. Build to interface, so can be replaced with a learned model, or FM.
 - Explorer loop: run initial attempt. If fail, fork from selected snpashot and continue. Repeat until success or budget exhausted.
+
+# Clean Code Practices
+- google style commit messages.
+"""Add projected token accounting to scheduler.
+
+The scheduler previously admitted multiple long requests based only on
+current token usage, which could overfill the batch after generation began.
+
+Track projected token usage before admission so waiting requests remain
+queued until capacity is available.
+
+Tested:
+- pytest tests/test_scheduler.py"""

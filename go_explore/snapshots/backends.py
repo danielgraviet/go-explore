@@ -1,24 +1,26 @@
 from __future__ import annotations
 
+import re
 from typing import Protocol
 
 from go_explore.snapshots.models import SnapshotCandidate, SnapshotContext, SnapshotHandle
 
 
-class SnapshotBackend(Protocol):
-    """Environment-specific side effect for creating a restorable snapshot."""
+class AsyncSnapshotBackend(Protocol):
+    """Async environment-specific side effect for creating a restorable snapshot."""
 
-    def create_snapshot(
+    async def create_snapshot(
         self,
         candidate: SnapshotCandidate,
         context: SnapshotContext,
     ) -> SnapshotHandle:
         ...
 
-class NoopSnapshotBackend:
-    """Backend for policy/store testing before a real environment integration exists."""
 
-    def create_snapshot(
+class AsyncNoopSnapshotBackend:
+    """Async no-op backend for tests and dry runs."""
+
+    async def create_snapshot(
         self,
         candidate: SnapshotCandidate,
         context: SnapshotContext,
@@ -28,3 +30,39 @@ class NoopSnapshotBackend:
             restore_ref=candidate.restore_ref,
             environment_id=candidate.environment_id or context.environment_id,
         )
+
+
+class DaytonaSnapshotBackend:
+    """Create real Daytona snapshots from a live AsyncSandbox."""
+
+    def __init__(
+        self,
+        sandbox,
+        *,
+        timeout: float | None = 60,
+        name_prefix: str = "go-explore",
+    ):
+        self._sandbox = sandbox
+        self._timeout = timeout
+        self._name_prefix = name_prefix
+
+    async def create_snapshot(
+        self,
+        candidate: SnapshotCandidate,
+        context: SnapshotContext,
+    ) -> SnapshotHandle:
+        snapshot_name = daytona_snapshot_name(candidate.id, prefix=self._name_prefix)
+        await self._sandbox._experimental_create_snapshot(name=snapshot_name, timeout=self._timeout)
+
+        return SnapshotHandle(
+            backend="daytona",
+            restore_ref=snapshot_name,
+            environment_id=self._sandbox.id or candidate.environment_id or context.environment_id,
+            metadata={"daytona_snapshot_name": snapshot_name},
+        )
+
+
+def daytona_snapshot_name(snapshot_id: str, *, prefix: str = "go-explore") -> str:
+    raw_name = f"{prefix}-{snapshot_id}"
+    normalized = re.sub(r"[^A-Za-z0-9_.-]+", "-", raw_name).strip("-")
+    return normalized[:120] or prefix

@@ -1,5 +1,10 @@
-from go_explore.snapshots.backends import NoopSnapshotBackend, SnapshotBackend
-from go_explore.snapshots.manager import SnapshotManager
+from go_explore.snapshots.backends import (
+    AsyncNoopSnapshotBackend,
+    AsyncSnapshotBackend,
+    DaytonaSnapshotBackend,
+    daytona_snapshot_name,
+)
+from go_explore.snapshots.manager import AsyncSnapshotManager
 from go_explore.snapshots.models import (
     ScoredSnapshot,
     SnapshotCandidate,
@@ -9,6 +14,7 @@ from go_explore.snapshots.models import (
     SnapshotRecord,
     context_from_atif_step,
 )
+from go_explore.snapshots.replay import process_atif_steps, process_atif_trajectory
 from go_explore.snapshots.policies import (
     EveryAgentStepPolicy,
     HeuristicSnapshotSelector,
@@ -19,19 +25,23 @@ from go_explore.snapshots.stores import InMemorySnapshotStore, SnapshotStore
 
 __all__ = [
     "EveryAgentStepPolicy",
+    "AsyncNoopSnapshotBackend",
+    "AsyncSnapshotBackend",
+    "AsyncSnapshotManager",
+    "DaytonaSnapshotBackend",
     "HeuristicSnapshotSelector",
     "InMemorySnapshotStore",
     "InterestingAgentStepPolicy",
-    "NoopSnapshotBackend",
     "ScoredSnapshot",
-    "SnapshotBackend",
     "SnapshotCandidate",
     "SnapshotContext",
     "SnapshotEvent",
     "SnapshotHandle",
-    "SnapshotManager",
     "SnapshotPolicy",
     "SnapshotRecord",
     "SnapshotStore",
+    "process_atif_steps",
+    "process_atif_trajectory",
     "context_from_atif_step",
+    "daytona_snapshot_name",
 ]
