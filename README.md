@@ -90,6 +90,21 @@ python -m go_explore.cli list-cached-tasks
 
 See `docs/task-selection.md` for the initial Terminal-Bench task shortlist and current runtime findings.
 
+# Tests
+
+Unit tests run by default:
+
+```bash
+uv run pytest -v
+```
+
+E2E tests invoke Harbor, Docker, Daytona, or model APIs and are skipped by default. Run them explicitly with either:
+
+```bash
+uv run pytest -k e2e -s
+uv run pytest --run-e2e -s
+```
+
 # Possible Components
 - Task Adapter: load task from T-bench. Prep env. run validation
 - Agent Runner: give agent task prompt, let it act for a bounded budget.

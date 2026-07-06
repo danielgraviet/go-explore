@@ -45,6 +45,13 @@ Run the same command:
 python -m go_explore.cli oracle-run --dataset terminal-bench-sample@2.0 --n-tasks 1 --n-concurrent 1 --job-name oracle-smoke --execute
 ```
 
+Run the same smoke path in Daytona, loading `DAYTONA_API_KEY` from `.env`:
+
+```bash
+set -a; source .env; set +a
+harbor run --agent oracle --env daytona --jobs-dir jobs --n-attempts 1 --n-concurrent 1 --dataset terminal-bench-sample@2.0 --n-tasks 1 --job-name daytona-oracle-smoke --export-traces
+```
+
 Summarize a Harbor job result:
 
 ```bash
@@ -69,6 +76,20 @@ Harbor still wrote structured results under `jobs/oracle-smoke/`, which confirms
 
 One additional finding: Harbor reports that the `oracle` agent does not export ATIF traces. For oracle runs, use `result.json` and trial result files as the first analysis source.
 
+## Daytona Smoke Result
+
+`daytona-oracle-smoke` completed successfully against `terminal-bench-sample@2.0`:
+
+```text
+trials: 1/1
+errors: 0
+mean: 1.0
+task: chess-best-move
+reward: 1.0
+```
+
+The saved trial result confirms Harbor used `environment.type = "daytona"`.
+
 ## Next Hook To Inspect
 
 Once Docker is running and one oracle task completes, inspect:
@@ -79,3 +100,15 @@ Once Docker is running and one oracle task completes, inspect:
 - any non-oracle trajectory files produced by a real agent
 
 The snapshot integration should be inserted at the lowest Harbor layer that can observe agent commands and environment mutations. If Harbor does not expose that cleanly, the next move is a custom Harbor agent or environment wrapper.
+
+## Next Implementation Sequence
+
+1. Run one non-oracle agent on Daytona with traces enabled.
+2. Inspect whether Harbor emits per-command or per-turn artifacts for that agent.
+3. Identify the hook point for snapshot events:
+   - agent wrapper if we only need turn boundaries,
+   - environment wrapper if we need command/file mutation boundaries,
+   - Daytona-specific integration if we need cloud fork/restore primitives.
+4. Add a snapshot recorder that writes durable metadata beside each Harbor trial.
+5. Add a continuation runner that can start from a selected snapshot instead of the original task environment.
+6. Compare baseline attempts from scratch against continuation attempts from selected snapshots.

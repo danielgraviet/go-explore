@@ -3,9 +3,12 @@ from pathlib import Path
 import pytest
 
 from go_explore.snapshots import (
+    EveryAgentStepPolicy,
     HeuristicSnapshotSelector,
+    InterestingAgentStepPolicy,
     SnapshotCandidate,
     SnapshotEvent,
+    context_from_atif_step,
 )
 
 
@@ -127,3 +130,119 @@ def test_select_returns_highest_scoring_snapshots_in_order():
 
 def test_select_handles_empty_candidates():
     assert HeuristicSnapshotSelector().select([], limit=3) == []
+
+
+def test_context_from_atif_step_extracts_tool_calls_and_observations():
+    step = {
+        "step_id": 4,
+        "source": "agent",
+        "timestamp": "2026-07-06T16:02:10Z",
+        "model_name": "anthropic/test-model",
+        "message": "Plan and commands",
+        "tool_calls": [
+            {
+                "function_name": "bash_command",
+                "arguments": {"keystrokes": "git status\n", "duration": 0.5},
+            }
+        ],
+        "observation": {"results": [{"content": "working tree clean"}]},
+    }
+
+    context = context_from_atif_step(
+        step,
+        trial_name="fix-git__abc123",
+        trace_path=Path("trajectory.json"),
+        environment_id="env-1",
+        restore_ref="restore-1",
+    )
+
+    assert context.trial_name == "fix-git__abc123"
+    assert context.step_id == 4
+    assert context.tool_calls[0]["function_name"] == "bash_command"
+    assert context.observation_text == "working tree clean"
+    assert context.trace_path == Path("trajectory.json")
+    assert context.environment_id == "env-1"
+    assert context.restore_ref == "restore-1"
+    assert context.metadata["model_name"] == "anthropic/test-model"
+
+
+def test_every_agent_step_policy_snapshots_each_agent_step_only():
+    policy = EveryAgentStepPolicy()
+    user_context = context_from_atif_step(
+        {"step_id": 1, "source": "user", "message": "task"},
+        trial_name="trial",
+    )
+    agent_context = context_from_atif_step(
+        {
+            "step_id": 2,
+            "source": "agent",
+            "tool_calls": [
+                {
+                    "function_name": "bash_command",
+                    "arguments": {"keystrokes": "git status\n"},
+                }
+            ],
+        },
+        trial_name="trial",
+    )
+
+    assert policy.candidates_for_step(user_context) == []
+
+    candidates = policy.candidates_for_step(agent_context)
+
+    assert len(candidates) == 1
+    assert candidates[0].id == "trial:step-2"
+    assert candidates[0].event == SnapshotEvent.AGENT_STEP
+    assert candidates[0].command == "git status"
+    assert candidates[0].metadata["policy"] == "every_agent_step"
+
+
+def test_interesting_policy_snapshots_git_transitions_and_file_edits():
+    policy = InterestingAgentStepPolicy()
+    context = context_from_atif_step(
+        {
+            "step_id": 6,
+            "source": "agent",
+            "tool_calls": [
+                {
+                    "function_name": "bash_command",
+                    "arguments": {
+                        "keystrokes": "cat > _includes/about.md << 'EOF'\nnew text\nEOF\n"
+                    },
+                },
+                {
+                    "function_name": "bash_command",
+                    "arguments": {"keystrokes": "git add _includes/about.md\n"},
+                },
+            ],
+            "observation": {"results": [{"content": "file updated"}]},
+        },
+        trial_name="fix-git__abc123",
+    )
+
+    candidates = policy.candidates_for_step(context)
+
+    assert len(candidates) == 1
+    assert candidates[0].event == SnapshotEvent.FILE_EDIT
+    assert candidates[0].changed_files == ("_includes/about.md",)
+    assert candidates[0].metadata["policy"] == "interesting_agent_step"
+
+
+def test_interesting_policy_ignores_low_signal_agent_step():
+    policy = InterestingAgentStepPolicy()
+    context = context_from_atif_step(
+        {
+            "step_id": 2,
+            "source": "agent",
+            "tool_calls": [
+                {
+                    "function_name": "bash_command",
+                    "arguments": {"keystrokes": "ls -la\n"},
+                }
+            ],
+            "observation": {"results": [{"content": "README.md"}]},
+        },
+        trial_name="trial",
+    )
+
+    assert policy.candidates_for_step(context) == []
