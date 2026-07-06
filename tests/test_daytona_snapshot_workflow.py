@@ -12,106 +12,96 @@ from go_explore.snapshots.backends import DaytonaSnapshotBackend
 from go_explore.snapshots.models import SnapshotCandidate, SnapshotContext, SnapshotEvent
 
 
-@pytest.mark.asyncio
-async def test_daytona_snapshot_workflow_with_mocked_sandbox():
-    """Test complete snapshot workflow: create, verify, and retrieve.
+@pytest.mark.e2e
+async def test_daytona_snapshot_workflow_creates_real_snapshots():
+    """Test complete snapshot workflow with real Daytona sandbox.
 
-    This test simulates the full workflow with a mocked Daytona sandbox:
-    1. Backend is initialized with sandbox
-    2. Multiple snapshots are created at interesting states
-    3. Snapshot handles are returned with proper metadata
-    4. Snapshots can be listed and retrieved
+    This test creates a real Daytona sandbox, runs commands, creates snapshots,
+    and verifies they can be listed. Requires DAYTONA_API_KEY and DAYTONA_API_URL
+    environment variables.
+
+    Workflow:
+    1. Create real Daytona sandbox
+    2. Run commands to create interesting state
+    3. Create snapshot via DaytonaSnapshotBackend
+    4. Verify snapshot appears in Daytona's snapshot list
+    5. Clean up
     """
-    # Create a mock sandbox that behaves like Daytona AsyncSandbox
-    mock_sandbox = AsyncMock()
-    mock_sandbox.id = "workflow-test-sandbox-123"
+    try:
+        from daytona import AsyncDaytona
+    except ImportError:
+        pytest.skip("daytona not installed")
 
-    # Track created snapshots
-    created_snapshots: dict[str, dict] = {}
+    # Try to initialize Daytona - will fail if credentials not available
+    try:
+        async with AsyncDaytona() as daytona:
+            pass
+    except Exception as e:
+        pytest.skip(f"Daytona credentials not available: {e}")
 
-    async def mock_create_snapshot(name: str, timeout: float):
-        """Mock the _experimental_create_snapshot method."""
-        created_snapshots[name] = {
-            "name": name,
-            "created_at": "2024-01-01T00:00:00Z",
-            "timeout": timeout,
-        }
-        return {"snapshot_id": name}
+    # Create a real sandbox
+    async with AsyncDaytona() as daytona:
+        sandbox = await daytona.create()
+        sandbox_id = sandbox.id
+        sandbox_obj = sandbox
 
-    mock_sandbox._experimental_create_snapshot = mock_create_snapshot
+        try:
+            # Create snapshot backend (with longer timeout for Daytona API)
+            backend = DaytonaSnapshotBackend(
+                sandbox,
+                timeout=300.0,  # 5 minutes - Daytona snapshot creation can be slow
+                name_prefix="test-go-explore",
+            )
 
-    # Initialize backend
-    backend = DaytonaSnapshotBackend(
-        mock_sandbox,
-        timeout=60.0,
-        name_prefix="workflow-test",
-    )
+            # Create a snapshot candidate for a file edit
+            candidate = SnapshotCandidate(
+                id="real_snapshot_test_1",
+                event=SnapshotEvent.FILE_EDIT,
+                environment_id=sandbox_id,
+                restore_ref=None,
+                notes="Created test file",
+            )
 
-    # Simulate multiple agent steps that create snapshots
-    snapshots_created = []
+            context = SnapshotContext(
+                trial_name="real_snapshot_test",
+                step_id=0,
+                source="agent",
+                message="Created test.txt",
+                tool_calls=(
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "cat > test.txt << 'EOF'\ntest content\nEOF"},
+                    },
+                ),
+                observation_text="file created",
+                environment_id=sandbox_id,
+            )
 
-    # Step 1: Git commit (interesting - state transition)
-    candidate1 = SnapshotCandidate(
-        id="step_1_git_commit",
-        event=SnapshotEvent.AGENT_STEP,
-        environment_id=mock_sandbox.id,
-        restore_ref=None,
-        notes="Git commit",
-    )
+            # Create the snapshot
+            snapshot_handle = await backend.create_snapshot(candidate, context)
 
-    context1 = SnapshotContext(
-        trial_name="workflow_test",
-        step_id=0,
-        source="agent",
-        message="Committed changes",
-        tool_calls=({"function_name": "bash_command", "arguments": {"keystrokes": "git commit -m test"}},),
-        observation_text="1 file changed",
-        environment_id=mock_sandbox.id,
-    )
+            # Verify handle is returned
+            assert snapshot_handle is not None
+            assert snapshot_handle.backend == "daytona"
+            assert snapshot_handle.restore_ref is not None
+            assert snapshot_handle.environment_id == sandbox_id
 
-    handle1 = await backend.create_snapshot(candidate1, context1)
-    snapshots_created.append(handle1)
+            # Verify snapshot exists in Daytona
+            snapshots = await daytona.snapshot.list(sandbox_id=sandbox_id)
+            snapshot_names = [s.name for s in snapshots]
 
-    # Step 2: File edit (interesting)
-    candidate2 = SnapshotCandidate(
-        id="step_2_file_edit",
-        event=SnapshotEvent.FILE_EDIT,
-        environment_id=mock_sandbox.id,
-        restore_ref=None,
-        notes="File edit",
-    )
+            assert snapshot_handle.restore_ref in snapshot_names, (
+                f"Snapshot {snapshot_handle.restore_ref} not found in "
+                f"Daytona snapshots: {snapshot_names}"
+            )
 
-    context2 = SnapshotContext(
-        trial_name="workflow_test",
-        step_id=1,
-        source="agent",
-        message="Created file",
-        tool_calls=({"function_name": "bash_command", "arguments": {"keystrokes": "cat > test.py << EOF\nprint('hello')\nEOF"}},),
-        observation_text="file created",
-        environment_id=mock_sandbox.id,
-    )
-
-    handle2 = await backend.create_snapshot(candidate2, context2)
-    snapshots_created.append(handle2)
-
-    # Verify snapshots were created
-    assert len(snapshots_created) == 2
-    assert all(h.backend == "daytona" for h in snapshots_created)
-    assert all(h.restore_ref is not None for h in snapshots_created)
-
-    # Verify snapshot names follow pattern
-    snapshot_names = [h.restore_ref for h in snapshots_created]
-    assert all(name.startswith("workflow-test-") for name in snapshot_names)
-
-    # Verify they were actually recorded in the mock
-    assert len(created_snapshots) == 2
-
-    # Verify handles contain correct metadata
-    assert snapshots_created[0].metadata.get("daytona_snapshot_name") == snapshot_names[0]
-    assert snapshots_created[1].metadata.get("daytona_snapshot_name") == snapshot_names[1]
-
-    # Verify environment IDs are preserved
-    assert all(h.environment_id == mock_sandbox.id for h in snapshots_created)
+        finally:
+            # Clean up: delete the sandbox (may take time due to state transitions)
+            try:
+                await daytona.delete(sandbox_obj)
+            except Exception as cleanup_error:
+                # Log but don't fail the test if cleanup fails
+                print(f"Warning: Sandbox cleanup failed (sandbox will auto-delete): {cleanup_error}")
 
 
 @pytest.mark.asyncio
