@@ -1,0 +1,10 @@
+[project]
+name = "go-explore"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[project.scripts]
+go-explore = "go_explore.cli:main"
