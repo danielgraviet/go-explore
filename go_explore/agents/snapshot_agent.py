@@ -97,7 +97,9 @@ class SnapshotAwareAgent(BaseAgent):
         context = SnapshotContext(
             trial_name=self._trial_name or "unknown",
             step_id=self._step_counter,
-            tool_calls=[
+            source="agent",
+            message="Agent step",
+            tool_calls=tuple(
                 {
                     "function_name": "bash_command",
                     "arguments": {
@@ -105,7 +107,7 @@ class SnapshotAwareAgent(BaseAgent):
                     },
                 }
                 for cmd in commands
-            ],
+            ),
             observation_text=terminal_output,
         )
 
