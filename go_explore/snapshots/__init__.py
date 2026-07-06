@@ -5,6 +5,8 @@ from go_explore.snapshots.backends import (
     daytona_snapshot_name,
 )
 from go_explore.snapshots.manager import AsyncSnapshotManager
+from go_explore.snapshots.live import AsyncLiveSnapshotSession
+from go_explore.snapshots.metrics import SnapshotProcessingResult, SnapshotTiming
 from go_explore.snapshots.models import (
     ScoredSnapshot,
     SnapshotCandidate,
@@ -28,15 +30,18 @@ __all__ = [
     "AsyncNoopSnapshotBackend",
     "AsyncSnapshotBackend",
     "AsyncSnapshotManager",
+    "AsyncLiveSnapshotSession",
     "DaytonaSnapshotBackend",
     "HeuristicSnapshotSelector",
     "InMemorySnapshotStore",
     "InterestingAgentStepPolicy",
+    "SnapshotProcessingResult",
     "ScoredSnapshot",
     "SnapshotCandidate",
     "SnapshotContext",
     "SnapshotEvent",
     "SnapshotHandle",
+    "SnapshotTiming",
     "SnapshotPolicy",
     "SnapshotRecord",
     "SnapshotStore",

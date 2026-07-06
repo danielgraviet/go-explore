@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from time import monotonic
+
 from go_explore.snapshots.backends import (
     AsyncNoopSnapshotBackend,
     AsyncSnapshotBackend,
 )
+from go_explore.snapshots.metrics import SnapshotProcessingResult, SnapshotTiming
 from go_explore.snapshots.models import (
     SnapshotCandidate,
     SnapshotContext,
@@ -36,18 +40,52 @@ class AsyncSnapshotManager:
         return self._backend
 
     async def process_step(self, context: SnapshotContext) -> list[SnapshotRecord]:
+        return list((await self.process_step_with_metrics(context)).records)
+
+    async def process_step_with_metrics(
+        self,
+        context: SnapshotContext,
+        *,
+        clock: Callable[[], float] = monotonic,
+    ) -> SnapshotProcessingResult:
+        started_at = clock()
+        policy_started_at = clock()
+        candidates = self._policy.candidates_for_step(context)
+        policy_finished_at = clock()
+
         records: list[SnapshotRecord] = []
-        for candidate in self._policy.candidates_for_step(context):
+        backend_seconds = 0.0
+        store_seconds = 0.0
+
+        for candidate in candidates:
+            backend_started_at = clock()
             handle = await self._backend.create_snapshot(candidate, context)
+            backend_finished_at = clock()
             saved_candidate = _candidate_with_handle(candidate, handle)
             record = SnapshotRecord(
                 candidate=saved_candidate,
                 description=_describe_candidate(context, saved_candidate),
                 backend=handle.backend,
             )
+            store_started_at = clock()
             self._store.put(record)
+            store_finished_at = clock()
+            backend_seconds += backend_finished_at - backend_started_at
+            store_seconds += store_finished_at - store_started_at
             records.append(record)
-        return records
+
+        finished_at = clock()
+        timing = SnapshotTiming(
+            started_at=started_at,
+            finished_at=finished_at,
+            policy_seconds=policy_finished_at - policy_started_at,
+            backend_seconds=backend_seconds,
+            store_seconds=store_seconds,
+            total_seconds=finished_at - started_at,
+            n_candidates=len(candidates),
+            n_snapshots=len(records),
+        )
+        return SnapshotProcessingResult(records=tuple(records), timing=timing)
 
     def get(self, snapshot_id: str) -> SnapshotRecord | None:
         return self._store.get(snapshot_id)
