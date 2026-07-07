@@ -10,7 +10,7 @@ class HarborRunConfig:
     """Configuration for one Harbor job invocation."""
 
     jobs_dir: Path = Path("jobs")
-    agent: str = "oracle"
+    agent: str | None = "oracle"
     env: str = "docker"
     dataset: str | None = None
     path: Path | None = None
@@ -35,20 +35,23 @@ class HarborRunConfig:
 def build_harbor_command(config: HarborRunConfig) -> list[str]:
     config.validate()
 
-    cmd = [
-        "harbor",
-        "run",
-        "--agent",
-        config.agent,
-        "--env",
-        config.env,
-        "--jobs-dir",
-        str(config.jobs_dir),
-        "--n-attempts",
-        str(config.n_attempts),
-        "--n-concurrent",
-        str(config.n_concurrent),
-    ]
+    cmd = ["harbor", "run"]
+
+    if config.agent is not None:
+        cmd.extend(["--agent", config.agent])
+
+    cmd.extend(
+        [
+            "--env",
+            config.env,
+            "--jobs-dir",
+            str(config.jobs_dir),
+            "--n-attempts",
+            str(config.n_attempts),
+            "--n-concurrent",
+            str(config.n_concurrent),
+        ]
+    )
 
     if config.dataset:
         cmd.extend(["--dataset", config.dataset])
@@ -75,4 +78,3 @@ def run_harbor(config: HarborRunConfig, *, dry_run: bool = False) -> subprocess.
         return cmd
 
     return subprocess.run(cmd, check=False, text=True)
-

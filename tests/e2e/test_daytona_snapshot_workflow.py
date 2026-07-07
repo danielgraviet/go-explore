@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock
 
 import pytest
+import time
 
 from daytona import AsyncDaytona
 
@@ -90,7 +91,11 @@ async def test_daytona_snapshot_workflow_creates_real_snapshots():
                     environment_id=sandbox_id,
                 )
 
+                start = time.monotonic()
                 snapshot_handle = await backend.create_snapshot(candidate, context)
+                end = time.monotonic()
+                elapsed = end - start
+                print(f"Snapshot creation for step {step_id} took {elapsed:.2f} seconds.")
                 snapshot_handles.append(snapshot_handle)
 
                 assert snapshot_handle is not None

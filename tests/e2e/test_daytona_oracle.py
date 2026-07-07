@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import os
+import asyncio
 import shlex
 import subprocess
 from pathlib import Path
 from uuid import uuid4
+
+from daytona import AsyncDaytona
 
 from go_explore.harbor import HarborRunConfig, build_harbor_command
 from go_explore.results import summarize_job
@@ -126,3 +129,107 @@ def test_daytona_oracle_harbor_command_runs_successfully(capsys):
     assert summary.mean == 1.0
     assert len(summary.trials) == 1
     assert summary.trials[0].succeeded
+
+def test_daytona_terminus2_with_snapshotting_command_runs_successfully(capsys):
+    job_name = f"e2e-daytona-terminus2-snapshotting-agent-{uuid4().hex[:8]}"
+    config = HarborRunConfig(
+        agent=None,
+        model="anthropic/claude-haiku-4-5-20251001",
+        env="daytona",
+        jobs_dir=Path("jobs"),
+        n_attempts=1,
+        n_concurrent=1,
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name=job_name,
+        export_traces=False,
+        extra_args=(
+            "--agent-import-path",
+            "go_explore.agents.factory:snapshot_aware_terminus2_factory",
+        ),
+    )
+
+    cmd = build_harbor_command(config)
+
+    with capsys.disabled():
+        print(_format_command(cmd))
+
+    assert cmd == [
+        "harbor",
+        "run",
+        "--env",
+        "daytona",
+        "--jobs-dir",
+        "jobs",
+        "--n-attempts",
+        "1",
+        "--n-concurrent",
+        "1",
+        "--dataset",
+        "terminal-bench@2.0",
+        "--model",
+        "anthropic/claude-haiku-4-5-20251001",
+        "--task-name",
+        "fix-git",
+        "--job-name",
+        job_name,
+        "--agent-import-path",
+        "go_explore.agents.factory:snapshot_aware_terminus2_factory",
+    ]
+
+    result = subprocess.run(
+        cmd,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=_load_env_file(Path(".env")),
+    )
+
+    with capsys.disabled():
+        print("")
+        print("Harbor stdout")
+        print("=" * 13)
+        print(result.stdout or "<empty>")
+        print("")
+        print("Harbor stderr")
+        print("=" * 13)
+        print(result.stderr or "<empty>")
+
+    assert result.returncode == 0
+
+    summary = summarize_job(Path("jobs") / job_name)
+
+    with capsys.disabled():
+        print("")
+        print("Parsed job summary")
+        print("=" * 18)
+        print(f"job_dir: {summary.job_dir}")
+        print(f"trials: {len(summary.trials)}/{summary.n_total_trials}")
+        print(f"errors: {summary.n_errors}")
+        print(f"mean: {summary.mean}")
+        for trial in summary.trials:
+            print(
+                f"- {trial.trial_name}: "
+                f"reward={trial.reward} "
+                f"exception={trial.exception_type}"
+            )
+
+    assert summary.n_total_trials == 1
+    assert summary.n_errors == 0
+    assert summary.mean == 1.0
+    assert len(summary.trials) == 1
+    assert summary.trials[0].succeeded
+
+    expected_prefix = f"go-explore-{summary.trials[0].trial_name}-step-"
+
+    async def _list_snapshot_names() -> list[str]:
+        async with AsyncDaytona() as daytona:
+            snapshots_page = await daytona.snapshot.list(limit=100)
+            return [
+                snapshot.name
+                for snapshot in snapshots_page.items
+                if snapshot.name.startswith(expected_prefix)
+            ]
+
+    snapshot_names = asyncio.run(_list_snapshot_names())
+    assert snapshot_names, f"No Daytona snapshots found with prefix {expected_prefix!r}"

@@ -7,6 +7,14 @@ from typing import Any
 from go_explore.agents.snapshot_agent import SnapshotAwareAgent
 
 
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
 def create_snapshot_aware_terminus2(
     model_name: str,
     sandbox: Any = None,
@@ -22,13 +30,25 @@ def create_snapshot_aware_terminus2(
     Returns:
         SnapshotAwareAgent wrapping Terminus-2
     """
-    try:
-        from terminal_bench.agents.terminus_2 import Terminus2
+    from harbor.agents.terminus_2 import Terminus2
 
-        wrapped = Terminus2(model_name=model_name, **kwargs)
-        return SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=sandbox)
-    except ImportError:
-        raise ImportError("terminal-bench must be installed to use Terminus-2")
+    hooks_debug = _as_bool(kwargs.pop("hooks_debug", False))
+    logs_dir = kwargs.pop("logs_dir")
+    logger = kwargs.pop("logger", None)
+    wrapped = Terminus2(
+        logs_dir=logs_dir,
+        model_name=model_name,
+        logger=logger,
+        **kwargs,
+    )
+    return SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        sandbox=sandbox,
+        hooks_debug=hooks_debug,
+        logs_dir=logs_dir,
+        model_name=model_name,
+        logger=logger,
+    )
 
 
 def create_snapshot_aware_oracle(
@@ -46,13 +66,25 @@ def create_snapshot_aware_oracle(
     Returns:
         SnapshotAwareAgent wrapping Oracle
     """
-    try:
-        from terminal_bench.agents.oracle_agent import OracleAgent
+    from harbor.agents.oracle import OracleAgent
 
-        wrapped = OracleAgent(**kwargs)
-        return SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=sandbox)
-    except ImportError:
-        raise ImportError("terminal-bench must be installed to use OracleAgent")
+    hooks_debug = _as_bool(kwargs.pop("hooks_debug", False))
+    logs_dir = kwargs.pop("logs_dir")
+    logger = kwargs.pop("logger", None)
+    wrapped = OracleAgent(
+        logs_dir=logs_dir,
+        model_name=model_name,
+        logger=logger,
+        **kwargs,
+    )
+    return SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        sandbox=sandbox,
+        hooks_debug=hooks_debug,
+        logs_dir=logs_dir,
+        model_name=model_name,
+        logger=logger,
+    )
 
 
 def create_snapshot_aware_agent(

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -109,3 +109,22 @@ async def test_process_step_snapshot_creates_snapshot_for_every_command_batch():
     sandbox._experimental_create_snapshot.assert_awaited_once()
     assert agent._snapshot_session is not None
     assert len(agent._snapshot_session.manager.list()) == 1
+
+
+def test_tmux_session_send_keys_triggers_snapshot_processing():
+    """Test that the tmux send_keys path captures snapshots."""
+    wrapped = MagicMock()
+    sandbox = MagicMock()
+    sandbox.id = "snapshot-test-sandbox"
+    sandbox._experimental_create_snapshot = AsyncMock()
+
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=sandbox)
+
+    session = MagicMock()
+    session.send_keys = MagicMock(return_value=None)
+
+    agent._hook_tmux_session(session)
+    session.send_keys(["git status\n"])
+
+    sandbox._experimental_create_snapshot.assert_awaited_once()
+    assert agent._step_counter == 1
