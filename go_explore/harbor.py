@@ -21,6 +21,7 @@ class HarborRunConfig:
     n_concurrent: int = 1
     job_name: str | None = None
     export_traces: bool = True
+    environment_kwargs: tuple[str, ...] = field(default_factory=tuple)
     extra_args: tuple[str, ...] = field(default_factory=tuple)
 
     def validate(self) -> None:
@@ -67,6 +68,8 @@ def build_harbor_command(config: HarborRunConfig) -> list[str]:
         cmd.extend(["--job-name", config.job_name])
     if config.export_traces:
         cmd.append("--export-traces")
+    for environment_kwarg in config.environment_kwargs:
+        cmd.extend(["--ek", environment_kwarg])
 
     cmd.extend(config.extra_args)
     return cmd

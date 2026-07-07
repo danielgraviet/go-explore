@@ -4,6 +4,13 @@ import argparse
 import shlex
 from pathlib import Path
 
+from go_explore.continuations import (
+    harbor_config_from_job,
+    list_daytona_snapshots_for_trial_sync,
+    plan_snapshot_continuations,
+    run_continuation_plans,
+    select_trial,
+)
 from go_explore.harbor import HarborRunConfig, run_harbor
 from go_explore.results import format_job_summary, summarize_job
 from go_explore.task_inventory import load_cached_tasks
@@ -62,6 +69,58 @@ def list_cached_tasks(args: argparse.Namespace) -> int:
     return 0
 
 
+def continue_from_snapshots(args: argparse.Namespace) -> int:
+    root_summary = summarize_job(args.root_job_dir)
+    root_trial = select_trial(root_summary, args.trial_name)
+    root_config = harbor_config_from_job(
+        args.root_job_dir,
+        agent=args.agent,
+        model=args.model,
+        extra_args=tuple(args.extra_arg),
+    )
+
+    snapshots = tuple(args.snapshot)
+    if not snapshots:
+        snapshots = tuple(
+            list_daytona_snapshots_for_trial_sync(
+                root_trial.trial_name,
+                name_prefix=args.snapshot_prefix,
+            )
+        )
+
+    plans = plan_snapshot_continuations(
+        root_config=root_config,
+        root_summary=root_summary,
+        snapshots=snapshots,
+        continuation_job_prefix=args.job_prefix,
+        agent=args.agent,
+        model=args.model,
+        max_snapshots=args.max_snapshots,
+        parent_trial_name=root_trial.trial_name,
+    )
+
+    if not plans:
+        print(f"No continuation plans for trial {root_trial.trial_name}.")
+        return 1
+
+    if not args.execute:
+        for plan in plans:
+            print(shlex.join(plan.command))
+        return 0
+
+    report_path = args.report_path or args.root_job_dir / "continuation-report.json"
+    report = run_continuation_plans(
+        plans,
+        root_summary=root_summary,
+        root_trial=root_trial,
+        report_path=report_path,
+    )
+    print(f"continuation_report: {report_path}")
+    print(f"attempts: {len(report.attempts)}")
+    print(f"any_success: {report.any_success}")
+    return 0 if report.any_success else 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="go-explore")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -81,6 +140,27 @@ def main() -> int:
         default=Path.home() / ".cache" / "harbor" / "tasks",
     )
     task_parser.set_defaults(func=list_cached_tasks)
+
+    continue_parser = subparsers.add_parser(
+        "continue-from-snapshots",
+        help="Run continuation jobs from Daytona snapshots for one Harbor trial.",
+    )
+    continue_parser.add_argument("root_job_dir", type=Path)
+    continue_parser.add_argument("--trial-name")
+    continue_parser.add_argument("--snapshot", action="append", default=[])
+    continue_parser.add_argument("--snapshot-prefix", default="go-explore")
+    continue_parser.add_argument("--job-prefix", required=True)
+    continue_parser.add_argument("--max-snapshots", type=int)
+    continue_parser.add_argument("--agent")
+    continue_parser.add_argument("--model")
+    continue_parser.add_argument("--extra-arg", action="append", default=[])
+    continue_parser.add_argument("--report-path", type=Path)
+    continue_parser.add_argument(
+        "--execute",
+        action="store_true",
+        help="Run Harbor continuation jobs instead of printing commands.",
+    )
+    continue_parser.set_defaults(func=continue_from_snapshots)
 
     args = parser.parse_args()
     return args.func(args)
