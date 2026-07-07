@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 from typing import Any
-
+# TODO: fix the import error handling. I do not like the try except import pattern. 
 try:
     from terminal_bench.agents.base_agent import AgentResult, BaseAgent
     from terminal_bench.terminal.tmux_session import TmuxSession
@@ -32,7 +32,7 @@ from go_explore.snapshots.backends import DaytonaSnapshotBackend
 from go_explore.snapshots.live import AsyncLiveSnapshotSession
 from go_explore.snapshots.manager import AsyncSnapshotManager
 from go_explore.snapshots.models import SnapshotContext
-from go_explore.snapshots.policies import InterestingAgentStepPolicy
+from go_explore.snapshots.policies import EveryAgentStepPolicy
 
 
 class SnapshotAwareAgent(BaseAgent):
@@ -57,7 +57,7 @@ class SnapshotAwareAgent(BaseAgent):
         self._snapshot_session: AsyncLiveSnapshotSession | None = None
         if self._sandbox is not None:
             manager = AsyncSnapshotManager(
-                policy=InterestingAgentStepPolicy(),
+                policy=EveryAgentStepPolicy(),
                 backend=DaytonaSnapshotBackend(
                     sandbox=self._sandbox,
                     name_prefix="go-explore",

@@ -14,8 +14,8 @@ SnapshotAwareAgent (wrapper)
        1. Hooks agent's _execute_commands method
        2. Captures bash commands and terminal output
        3. Feeds to AsyncLiveSnapshotSession
-       4. Session evaluates via InterestingAgentStepPolicy
-       5. If interesting: Daytona creates snapshot
+       4. Session evaluates via EveryAgentStepPolicy
+       5. Daytona creates a snapshot for each agent step
        6. Metadata stored for later continuation
 ```
 
@@ -62,25 +62,12 @@ forked_sandbox = await daytona.fork(snapshot_id)
 
 ## How Snapshots Are Triggered
 
-The `InterestingAgentStepPolicy` evaluates each step and triggers snapshots for:
+The live wrapper snapshots every agent command batch:
 
-1. **File edits**
-   - `cat > file.txt << 'EOF'`
-   - Text editor commands (vim, nano, etc.)
-   - Git operations that modify files
-
-2. **Git transitions**
-   - `git add`, `git commit`, `git branch`
-   - State changes in version control
-
-3. **Test/verification commands**
-   - `python -m pytest`, `npm test`
-   - CI/verifier outputs
-
-4. **Error/conflict signals**
-   - Failed command outputs
-   - Merge conflicts, exceptions
-   - Stack traces
+1. Capture the commands and terminal output for a step
+2. Build a `SnapshotContext`
+3. Feed the context into `EveryAgentStepPolicy`
+4. Create a Daytona snapshot for that step
 
 ## Implementation Details
 
@@ -122,7 +109,7 @@ SnapshotAwareAgent(
 
 ### Custom Policy
 
-To use a different policy (not `InterestingAgentStepPolicy`):
+To use a different policy (not `EveryAgentStepPolicy`):
 
 1. Modify `snapshot_agent.py` line ~57 to use a different policy
 2. Or make it configurable via kwargs
@@ -161,7 +148,7 @@ These don't block the agent—they just log and continue.
 ## Limitations
 
 1. **Sync/Async boundary**: Uses `asyncio.run()` which can be problematic in some contexts
-2. **Policy is fixed**: `InterestingAgentStepPolicy` is hardcoded
+2. **Policy is fixed**: `EveryAgentStepPolicy` is hardcoded for the MVP
 3. **Command capture**: Only captures bash commands, not other tool types
 4. **Terminal state**: Only captures text output, not full visual state
 

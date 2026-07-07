@@ -9,7 +9,7 @@ import pytest
 from go_explore.agents.snapshot_agent import SnapshotAwareAgent
 from go_explore.snapshots.backends import DaytonaSnapshotBackend
 from go_explore.snapshots.manager import AsyncSnapshotManager
-from go_explore.snapshots.models import SnapshotContext, SnapshotEvent
+from go_explore.snapshots.models import SnapshotContext
 from go_explore.snapshots.policies import InterestingAgentStepPolicy
 from go_explore.snapshots.stores import InMemorySnapshotStore
 
@@ -62,6 +62,7 @@ async def test_snapshot_aware_agent_captures_step_data():
 
     mock_sandbox = AsyncMock()
     mock_sandbox.id = "capture-test-sandbox"
+    mock_sandbox._experimental_create_snapshot = AsyncMock()
 
     agent = SnapshotAwareAgent(wrapped_agent=mock_agent, sandbox=mock_sandbox)
 
@@ -72,11 +73,9 @@ async def test_snapshot_aware_agent_captures_step_data():
     # Process the step through the snapshot session
     await agent._process_step_snapshot(commands, terminal_output)
 
-    # Verify the data was processed (the policy may filter it)
-    # The step counter should have incremented
-    initial_counter = agent._step_counter
-    agent._step_counter += 1
-    assert agent._step_counter == initial_counter + 1
+    mock_sandbox._experimental_create_snapshot.assert_awaited_once()
+    assert agent._snapshot_session is not None
+    assert len(agent._snapshot_session.manager.list()) == 1
 
 
 @pytest.mark.asyncio

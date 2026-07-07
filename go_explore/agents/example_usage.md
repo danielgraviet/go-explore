@@ -53,17 +53,12 @@ harbor run \
    - Captures the terminal output
    - Creates a `SnapshotContext` from the step data
    - Feeds it to `AsyncLiveSnapshotSession` for policy evaluation
-4. **Snapshot Creation**: If the policy deems a step "interesting" (file edits, git transitions, etc.), Daytona creates a snapshot
+4. **Snapshot Creation**: The MVP policy snapshots every agent step, so Daytona creates a snapshot for each command batch
 5. **Storage**: Snapshot IDs and metadata are stored for later continuation
 
 ## Snapshots Are Created For
 
-The `InterestingAgentStepPolicy` creates snapshots when it detects:
-
-- **File edits**: Changes to source code, configs, etc.
-- **Git transitions**: Commits, branch changes, staging
-- **Test commands**: Running tests or verification
-- **Errors/Conflicts**: Failed commands, merge conflicts, exceptions
+The current MVP policy snapshots every agent command batch. The selective heuristic policy remains available for offline ranking and future experiments.
 
 ## Architecture Notes
 

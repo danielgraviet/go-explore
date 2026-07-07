@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -92,3 +92,20 @@ async def test_process_step_snapshot_without_session():
     # No snapshot session, should handle gracefully
     await agent._process_step_snapshot(["git status"], "output")
     # No exception should be raised
+
+
+@pytest.mark.asyncio
+async def test_process_step_snapshot_creates_snapshot_for_every_command_batch():
+    """Test that the wrapper snapshots a normal agent command batch."""
+    wrapped = MagicMock()
+    sandbox = MagicMock()
+    sandbox.id = "snapshot-test-sandbox"
+    sandbox._experimental_create_snapshot = AsyncMock()
+
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=sandbox)
+
+    await agent._process_step_snapshot(["pwd"], "working directory")
+
+    sandbox._experimental_create_snapshot.assert_awaited_once()
+    assert agent._snapshot_session is not None
+    assert len(agent._snapshot_session.manager.list()) == 1
