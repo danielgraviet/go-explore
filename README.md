@@ -125,3 +125,9 @@ queued until capacity is available.
 
 Tested:
 - pytest tests/test_scheduler.py"""
+
+# Running Experiment Commands
+```bash
+  set -a; source .env; set +a; harbor run --env daytona --jobs-dir jobs --n-attempts 1 --n-concurrent 1 --dataset terminal-bench@2.0 --model anthropic/claude-haiku-4-5-20251001
+    │ --task-name build-cython-ext --job-name snapshot-haiku-build-cython-ext --export-traces --agent-import-path go_explore.agents.factory:snapshot_aware_terminus2_factory
+```

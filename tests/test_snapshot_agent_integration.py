@@ -66,9 +66,10 @@ async def test_snapshot_aware_agent_captures_step_data():
 
     agent = SnapshotAwareAgent(wrapped_agent=mock_agent, sandbox=mock_sandbox)
 
-    # Create test step data
-    commands = ["git status", "ls -la"]
-    terminal_output = "On branch main\nnothing to commit"
+    # Create test step data - a file edit, which the default
+    # InterestingAgentStepPolicy treats as a state-changing (snapshot-worthy) step
+    commands = ["cat > test.txt << 'EOF'\ntest content\nEOF"]
+    terminal_output = "file created"
 
     # Process the step through the snapshot session
     await agent._process_step_snapshot(commands, terminal_output)

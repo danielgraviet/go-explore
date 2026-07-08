@@ -65,6 +65,21 @@ def test_file_edit_snapshot_gets_edit_bonus_and_preserves_metadata():
     assert scored.reasons == ("captures a file edit", "1 changed files")
 
 
+def test_discovery_snapshot_gets_investigation_bonus():
+    selector = HeuristicSnapshotSelector()
+    candidate = SnapshotCandidate(
+        id="found-password-fragment",
+        event=SnapshotEvent.DISCOVERY,
+        command="strings ae3f4c.dat | grep PASSWORD",
+        notes="investigative command",
+    )
+
+    scored = selector.score(candidate)
+
+    assert scored.score == pytest.approx(1.0)
+    assert scored.reasons == ("captures an investigative discovery",)
+
+
 def test_terminal_failure_snapshot_is_penalized():
     selector = HeuristicSnapshotSelector()
     candidate = SnapshotCandidate(
@@ -232,6 +247,32 @@ def test_interesting_policy_snapshots_git_transitions_and_file_edits():
     assert candidates[0].event == SnapshotEvent.FILE_EDIT
     assert candidates[0].changed_files == ("_includes/about.md",)
     assert candidates[0].metadata["policy"] == "interesting_agent_step"
+
+
+def test_interesting_policy_snapshots_investigative_commands():
+    policy = InterestingAgentStepPolicy()
+    context = context_from_atif_step(
+        {
+            "step_id": 15,
+            "source": "agent",
+            "tool_calls": [
+                {
+                    "function_name": "bash_command",
+                    "arguments": {
+                        "keystrokes": "strings ae3f4c.dat | grep PASSWORD\n",
+                    },
+                },
+            ],
+            "observation": {"results": [{"content": "PASSWORD=8XDP5Q2RT9Z"}]},
+        },
+        trial_name="password-recovery__abc123",
+    )
+
+    candidates = policy.candidates_for_step(context)
+
+    assert len(candidates) == 1
+    assert candidates[0].event == SnapshotEvent.DISCOVERY
+    assert "investigative command" in candidates[0].notes
 
 
 def test_interesting_policy_ignores_low_signal_agent_step():

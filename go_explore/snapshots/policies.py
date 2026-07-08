@@ -60,6 +60,10 @@ class InterestingAgentStepPolicy:
             event = SnapshotEvent.FILE_EDIT
             notes.append("file edit")
 
+        if _looks_like_investigation(command_lower):
+            event = event or SnapshotEvent.DISCOVERY
+            notes.append("investigative command")
+
         if any(token in observation for token in ("conflict", "error", "traceback", "exception")):
             event = event or SnapshotEvent.COMMAND
             notes.append("error or conflict signal")
@@ -118,6 +122,10 @@ class HeuristicSnapshotSelector:
             score += 1.0
             reasons.append("captures a file edit")
 
+        if candidate.event == SnapshotEvent.DISCOVERY:
+            score += 1.0
+            reasons.append("captures an investigative discovery")
+
         if candidate.changed_files:
             score += min(len(candidate.changed_files), 5) * 0.25
             reasons.append(f"{len(candidate.changed_files)} changed files")
@@ -163,6 +171,31 @@ def _looks_like_test(command_text: str) -> bool:
 
 def _looks_like_file_edit(command_text: str) -> bool:
     return any(token in command_text for token in ("cat >", "tee ", "apply_patch", "sed -i", "python - <<"))
+
+
+def _looks_like_investigation(command_text: str) -> bool:
+    """Forensic/recovery/data-extraction tools: the discovery moments in tasks
+    like file recovery or reverse engineering, which don't fit the file-edit
+    or test-run heuristics above."""
+    return any(
+        token in command_text
+        for token in (
+            "strings ",
+            "binwalk",
+            "foremost",
+            "photorec",
+            "testdisk",
+            "extundelete",
+            "xxd",
+            "od -",
+            "od <",
+            "hexdump",
+            "dd if=",
+            "unzip",
+            "tar -x",
+            "zipfile",
+        )
+    )
 
 
 def _changed_files_from_commands(command_text: str) -> tuple[str, ...]:

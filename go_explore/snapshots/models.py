@@ -6,6 +6,15 @@ from pathlib import Path
 from typing import Any
 
 
+CONTEXT_FILE_PATH = "/tmp/go_explore_context.md"
+"""Well-known sandbox path for the running trajectory summary.
+
+Written to the sandbox filesystem right before a Daytona snapshot is taken, so
+it rides along as part of the snapshotted disk state. A child agent resumed
+from that snapshot reads it back out to learn what the parent already tried.
+"""
+
+
 class SnapshotEvent(StrEnum):
     AGENT_STEP = "agent_step"
     COMMAND = "command"
@@ -14,6 +23,7 @@ class SnapshotEvent(StrEnum):
     VERIFIER = "verifier"
     TIMEOUT = "timeout"
     FAILURE = "failure"
+    DISCOVERY = "discovery"
 
 
 @dataclass(frozen=True)
@@ -74,6 +84,7 @@ class SnapshotContext:
     trace_path: Path | None = None
     environment_id: str | None = None
     restore_ref: str | None = None
+    trajectory_summary: str = ""
     metadata: dict[str, str] = field(default_factory=dict)
 
 

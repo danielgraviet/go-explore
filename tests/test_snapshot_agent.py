@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from go_explore.agents.snapshot_agent import SnapshotAwareAgent
+from go_explore.snapshots.policies import EveryAgentStepPolicy, InterestingAgentStepPolicy
 
 
 def test_snapshot_aware_agent_instantiation_without_sandbox():
@@ -31,6 +34,25 @@ def test_snapshot_aware_agent_instantiation_with_sandbox():
     assert agent._wrapped_agent is wrapped
     assert agent._sandbox is sandbox
     assert agent._snapshot_session is not None
+
+
+def test_snapshot_aware_agent_defaults_to_interesting_policy():
+    """Test that the wrapper defaults to InterestingAgentStepPolicy, not every-step."""
+    wrapped = MagicMock()
+
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped)
+
+    assert isinstance(agent._snapshot_policy, InterestingAgentStepPolicy)
+
+
+def test_snapshot_aware_agent_accepts_custom_policy():
+    """Test that an explicit snapshot_policy overrides the default."""
+    wrapped = MagicMock()
+    policy = EveryAgentStepPolicy()
+
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, snapshot_policy=policy)
+
+    assert agent._snapshot_policy is policy
 
 
 def test_snapshot_aware_agent_name_matches_wrapped():
@@ -96,13 +118,15 @@ async def test_process_step_snapshot_without_session():
 
 @pytest.mark.asyncio
 async def test_process_step_snapshot_creates_snapshot_for_every_command_batch():
-    """Test that the wrapper snapshots a normal agent command batch."""
+    """Test that the wrapper snapshots a normal agent command batch under EveryAgentStepPolicy."""
     wrapped = MagicMock()
     sandbox = MagicMock()
     sandbox.id = "snapshot-test-sandbox"
     sandbox._experimental_create_snapshot = AsyncMock()
 
-    agent = SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=sandbox)
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped, sandbox=sandbox, snapshot_policy=EveryAgentStepPolicy()
+    )
 
     await agent._process_step_snapshot(["pwd"], "working directory")
 
@@ -112,13 +136,15 @@ async def test_process_step_snapshot_creates_snapshot_for_every_command_batch():
 
 
 def test_tmux_session_send_keys_triggers_snapshot_processing():
-    """Test that the tmux send_keys path captures snapshots."""
+    """Test that the tmux send_keys path captures snapshots under EveryAgentStepPolicy."""
     wrapped = MagicMock()
     sandbox = MagicMock()
     sandbox.id = "snapshot-test-sandbox"
     sandbox._experimental_create_snapshot = AsyncMock()
 
-    agent = SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=sandbox)
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped, sandbox=sandbox, snapshot_policy=EveryAgentStepPolicy()
+    )
 
     session = MagicMock()
     session.send_keys = MagicMock(return_value=None)
@@ -128,3 +154,273 @@ def test_tmux_session_send_keys_triggers_snapshot_processing():
 
     sandbox._experimental_create_snapshot.assert_awaited_once()
     assert agent._step_counter == 1
+
+
+def test_summarize_step_reports_ok_for_clean_output():
+    wrapped = MagicMock()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped)
+
+    line = agent._summarize_step(0, ["pytest tests/"], "5 passed in 0.1s")
+
+    assert line == "step 0: pytest tests/ -> ok"
+
+
+def test_summarize_step_reports_failed_signal():
+    wrapped = MagicMock()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped)
+
+    line = agent._summarize_step(0, ["pytest tests/"], "3 failed, 12 passed")
+
+    assert line.endswith("-> failed")
+
+
+def test_summarize_step_reports_error_signal():
+    wrapped = MagicMock()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped)
+
+    line = agent._summarize_step(0, ["python bad.py"], "Traceback (most recent call last):")
+
+    assert line.endswith("-> error")
+
+
+def test_summarize_step_uses_explicit_label_not_step_counter():
+    """The label must be caller-controlled, since it may need to follow ATIF's
+    own step_id numbering rather than self._step_counter."""
+    wrapped = MagicMock()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped)
+    agent._step_counter = 5
+
+    line = agent._summarize_step(99, ["pytest tests/"], "5 passed")
+
+    assert line == "step 99: pytest tests/ -> ok"
+
+
+@pytest.mark.asyncio
+async def test_process_step_snapshot_accumulates_trajectory_log():
+    """Each processed step should append a summary line, in order, when no
+    ATIF trajectory.json is available (e.g. no logs_dir)."""
+    wrapped = MagicMock()
+    sandbox = MagicMock()
+    sandbox.id = "trajectory-test-sandbox"
+    sandbox._experimental_create_snapshot = AsyncMock()
+    sandbox.fs.upload_file = AsyncMock()
+
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped, sandbox=sandbox, snapshot_policy=EveryAgentStepPolicy()
+    )
+
+    await agent._process_step_snapshot(["pytest tests/"], "5 passed")
+    agent._step_counter += 1
+    await agent._process_step_snapshot(["pytest tests/"], "1 failed")
+
+    assert agent._trajectory_log == [
+        "step 0: pytest tests/ -> ok",
+        "step 1: pytest tests/ -> failed",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_load_parent_context_returns_none_without_sandbox():
+    wrapped = MagicMock()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=None)
+
+    assert await agent._load_parent_context() is None
+
+
+@pytest.mark.asyncio
+async def test_load_parent_context_returns_none_when_file_missing():
+    wrapped = MagicMock()
+    sandbox = MagicMock()
+    sandbox.fs.download_file = AsyncMock(return_value=None)
+
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=sandbox)
+
+    assert await agent._load_parent_context() is None
+
+
+@pytest.mark.asyncio
+async def test_load_parent_context_decodes_sandbox_file():
+    wrapped = MagicMock()
+    sandbox = MagicMock()
+    sandbox.fs.download_file = AsyncMock(return_value=b"step 0: pip install -> ok")
+
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=sandbox)
+
+    assert await agent._load_parent_context() == "step 0: pip install -> ok"
+
+
+def test_augment_instruction_appends_parent_context():
+    result = SnapshotAwareAgent._augment_instruction("Fix the bug.", "step 0: pip install -> ok")
+
+    assert result.startswith("Fix the bug.\n\n")
+    assert "step 0: pip install -> ok" in result
+
+
+def _write_trajectory(path: Path, steps: list[dict]) -> None:
+    path.write_text(json.dumps({"steps": steps}))
+
+
+def test_read_atif_trajectory_steps_returns_empty_without_logs_dir():
+    wrapped = MagicMock()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped)
+
+    assert agent._logs_dir is None
+    assert agent._read_atif_trajectory_steps() == []
+
+
+def test_read_atif_trajectory_steps_returns_empty_when_file_missing(tmp_path):
+    wrapped = MagicMock()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, logs_dir=tmp_path)
+
+    assert agent._read_atif_trajectory_steps() == []
+
+
+def test_read_atif_trajectory_steps_parses_existing_file(tmp_path):
+    wrapped = MagicMock()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, logs_dir=tmp_path)
+    _write_trajectory(
+        tmp_path / "trajectory.json",
+        [
+            {"step_id": 1, "source": "user", "message": "Fix the failing test."},
+            {"step_id": 2, "source": "agent", "message": "Analysis: ...\nPlan: install deps"},
+        ],
+    )
+
+    steps = agent._read_atif_trajectory_steps()
+
+    assert [step["step_id"] for step in steps] == [1, 2]
+
+
+def test_summarize_atif_step_collapses_and_truncates_message():
+    line = SnapshotAwareAgent._summarize_atif_step(
+        {"step_id": 3, "message": "Analysis: found it\nPlan:  install pkg  "}
+    )
+
+    assert line == "step 3: Analysis: found it Plan: install pkg"
+
+
+def test_summarize_atif_step_handles_missing_message():
+    line = SnapshotAwareAgent._summarize_atif_step({"step_id": 4, "message": ""})
+
+    assert line == "step 4: (no message)"
+
+
+def test_atif_history_lines_filters_to_agent_steps_only():
+    atif_steps = [
+        {"step_id": 1, "source": "user", "message": "Fix the failing test."},
+        {"step_id": 2, "source": "agent", "message": "Plan: install deps"},
+    ]
+
+    lines = SnapshotAwareAgent._atif_history_lines(atif_steps)
+
+    assert lines == ["step 2: Plan: install deps"]
+
+
+def test_atif_history_lines_returns_empty_when_no_agent_steps():
+    atif_steps = [{"step_id": 1, "source": "user", "message": "Fix the failing test."}]
+
+    assert SnapshotAwareAgent._atif_history_lines(atif_steps) == []
+
+
+def test_build_trajectory_summary_falls_back_without_atif():
+    wrapped = MagicMock()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped)
+
+    summary = agent._build_trajectory_summary(["pytest tests/"], "5 passed")
+
+    assert summary == "step 0: pytest tests/ -> ok"
+
+
+def test_build_trajectory_summary_combines_atif_history_with_correctly_numbered_current_line(
+    tmp_path,
+):
+    """The current step's label must continue ATIF's own step_id numbering
+    (len(atif_steps) + 1), not self._step_counter - otherwise the two
+    numbering schemes can collide or diverge, as seen in a real run where
+    ATIF had already reached step 29 while self._step_counter was still 27."""
+    wrapped = MagicMock()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, logs_dir=tmp_path)
+    agent._step_counter = 27
+    _write_trajectory(
+        tmp_path / "trajectory.json",
+        [
+            {"step_id": 1, "source": "agent", "message": "Plan: install deps"},
+            {"step_id": 2, "source": "agent", "message": "Plan: run tests"},
+        ],
+    )
+
+    summary = agent._build_trajectory_summary(["pytest tests/"], "1 failed")
+
+    assert summary == (
+        "step 1: Plan: install deps\n"
+        "step 2: Plan: run tests\n"
+        "step 3: pytest tests/ -> failed"
+    )
+
+
+@pytest.mark.asyncio
+async def test_run_passes_augmented_instruction_to_wrapped_agent():
+    """The wrapped agent's run() must actually receive the parent's context,
+    not just have it available somewhere on the wrapper."""
+    wrapped = MagicMock()
+    wrapped.run = AsyncMock()
+
+    sandbox = MagicMock()
+    sandbox.fs.download_file = AsyncMock(return_value=b"step 0: pip install -> ok")
+
+    environment = MagicMock()
+    environment._sandbox = sandbox
+    environment.trial_paths = None
+    environment.session_id = "trial-1"
+
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=sandbox)
+
+    await agent.run("Fix the failing test.", environment, context=None)
+
+    wrapped.run.assert_awaited_once()
+    received_instruction = wrapped.run.await_args.args[0]
+    assert received_instruction.startswith("Fix the failing test.")
+    assert "step 0: pip install -> ok" in received_instruction
+
+
+@pytest.mark.asyncio
+async def test_run_passes_original_instruction_when_no_parent_context():
+    """A fresh sandbox (no prior snapshot) must not get a fabricated context block."""
+    wrapped = MagicMock()
+    wrapped.run = AsyncMock()
+
+    sandbox = MagicMock()
+    sandbox.fs.download_file = AsyncMock(return_value=None)
+
+    environment = MagicMock()
+    environment._sandbox = sandbox
+    environment.trial_paths = None
+    environment.session_id = "trial-1"
+
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=sandbox)
+
+    await agent.run("Fix the failing test.", environment, context=None)
+
+    wrapped.run.assert_awaited_once()
+    received_instruction = wrapped.run.await_args.args[0]
+    assert received_instruction == "Fix the failing test."
+
+
+def test_perform_task_passes_augmented_instruction_to_wrapped_agent():
+    """Same wiring guarantee for the sync/legacy perform_task path."""
+    wrapped = MagicMock()
+
+    sandbox = MagicMock()
+    sandbox.fs.download_file = AsyncMock(return_value=b"step 0: pip install -> ok")
+
+    session = MagicMock()
+    session.session_name = "test-trial"
+
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=sandbox)
+
+    agent.perform_task(instruction="Fix the failing test.", session=session)
+
+    wrapped.perform_task.assert_called_once()
+    received_instruction = wrapped.perform_task.call_args.kwargs["instruction"]
+    assert received_instruction.startswith("Fix the failing test.")
+    assert "step 0: pip install -> ok" in received_instruction

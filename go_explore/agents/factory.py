@@ -5,6 +5,16 @@ from __future__ import annotations
 from typing import Any
 
 from go_explore.agents.snapshot_agent import SnapshotAwareAgent
+from go_explore.snapshots.policies import (
+    EveryAgentStepPolicy,
+    InterestingAgentStepPolicy,
+    SnapshotPolicy,
+)
+
+_SNAPSHOT_POLICIES: dict[str, type[SnapshotPolicy]] = {
+    "every_step": EveryAgentStepPolicy,
+    "interesting": InterestingAgentStepPolicy,
+}
 
 
 def _as_bool(value: Any) -> bool:
@@ -13,6 +23,20 @@ def _as_bool(value: Any) -> bool:
     if value is None:
         return False
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _resolve_snapshot_policy(value: Any) -> SnapshotPolicy | None:
+    if value is None or not isinstance(value, str):
+        return value
+
+    name = value.strip().lower()
+    try:
+        policy_cls = _SNAPSHOT_POLICIES[name]
+    except KeyError:
+        raise ValueError(
+            f"Unknown snapshot_policy: {value!r} (choices: {sorted(_SNAPSHOT_POLICIES)})"
+        ) from None
+    return policy_cls()
 
 
 def create_snapshot_aware_terminus2(
@@ -33,6 +57,7 @@ def create_snapshot_aware_terminus2(
     from harbor.agents.terminus_2 import Terminus2
 
     hooks_debug = _as_bool(kwargs.pop("hooks_debug", False))
+    snapshot_policy = _resolve_snapshot_policy(kwargs.pop("snapshot_policy", None))
     logs_dir = kwargs.pop("logs_dir")
     logger = kwargs.pop("logger", None)
     wrapped = Terminus2(
@@ -45,6 +70,7 @@ def create_snapshot_aware_terminus2(
         wrapped_agent=wrapped,
         sandbox=sandbox,
         hooks_debug=hooks_debug,
+        snapshot_policy=snapshot_policy,
         logs_dir=logs_dir,
         model_name=model_name,
         logger=logger,
@@ -69,6 +95,7 @@ def create_snapshot_aware_oracle(
     from harbor.agents.oracle import OracleAgent
 
     hooks_debug = _as_bool(kwargs.pop("hooks_debug", False))
+    snapshot_policy = _resolve_snapshot_policy(kwargs.pop("snapshot_policy", None))
     logs_dir = kwargs.pop("logs_dir")
     logger = kwargs.pop("logger", None)
     wrapped = OracleAgent(
@@ -81,6 +108,7 @@ def create_snapshot_aware_oracle(
         wrapped_agent=wrapped,
         sandbox=sandbox,
         hooks_debug=hooks_debug,
+        snapshot_policy=snapshot_policy,
         logs_dir=logs_dir,
         model_name=model_name,
         logger=logger,
@@ -110,6 +138,7 @@ def create_snapshot_aware_agent(
         # --ak model_name="anthropic/claude-haiku-4-5-20251001"
         # --ak sandbox="<daytona_sandbox>"
     """
+    # TODO: Consider using a registry of agent factories instead of hardcoding agent names here.
     if agent_name == "terminus-2":
         if model_name is None:
             raise ValueError("model_name is required for terminus-2")

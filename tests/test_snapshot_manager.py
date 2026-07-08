@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 
 from go_explore.snapshots import (
     AsyncSnapshotManager,
@@ -10,6 +11,7 @@ from go_explore.snapshots import (
     SnapshotRecord,
     context_from_atif_step,
 )
+from go_explore.snapshots.models import CONTEXT_FILE_PATH
 
 
 def test_snapshot_manager_processes_policy_candidates_into_records():
@@ -190,5 +192,64 @@ def test_async_snapshot_manager_uses_daytona_backend_before_storing():
             == "test-prefix-fix-git__abc123-step-5"
         )
         assert manager.get("fix-git__abc123:step-5") == records[0]
+
+    asyncio.run(run_test())
+
+
+def test_daytona_backend_writes_trajectory_summary_before_snapshotting():
+    """The running trajectory summary should land on disk before the snapshot is taken,
+    so a child restored from that snapshot can read it back."""
+
+    class FakeFileSystem:
+        def __init__(self):
+            self.uploads: list[tuple[bytes, str]] = []
+
+        async def upload_file(self, src: bytes, dst: str) -> None:
+            self.uploads.append((src, dst))
+
+    class FakeDaytonaSandbox:
+        id = "sandbox-123"
+
+        def __init__(self):
+            self.fs = FakeFileSystem()
+            self.snapshot_taken_after_upload: bool | None = None
+
+        async def _experimental_create_snapshot(
+            self,
+            name: str,
+            timeout: float | None = 60,
+        ) -> None:
+            self.snapshot_taken_after_upload = len(self.fs.uploads) == 1
+
+    async def run_test():
+        sandbox = FakeDaytonaSandbox()
+        backend = DaytonaSnapshotBackend(sandbox, timeout=12, name_prefix="test-prefix")
+        manager = AsyncSnapshotManager(policy=EveryAgentStepPolicy(), backend=backend)
+        context = context_from_atif_step(
+            {
+                "step_id": 5,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "git status\n"},
+                    }
+                ],
+            },
+            trial_name="fix-git__abc123",
+        )
+        context = dataclasses.replace(
+            context, trajectory_summary="step 0: pip install -> ok\nstep 5: git status -> ok"
+        )
+
+        await manager.process_step(context)
+
+        assert sandbox.fs.uploads == [
+            (
+                b"step 0: pip install -> ok\nstep 5: git status -> ok",
+                CONTEXT_FILE_PATH,
+            )
+        ]
+        assert sandbox.snapshot_taken_after_upload is True
 
     asyncio.run(run_test())

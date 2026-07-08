@@ -1,4 +1,5 @@
 """Snapshot-aware agent wrapper that captures interesting states during execution."""
+# TODO: inspect this file for dead functions / code. Not sure about tmux hooks and things like that. 
 
 from __future__ import annotations
 
@@ -8,6 +9,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+# TODO: clean up messy imports. terminal bench is not optional, so users will always have. 
 try:
     from harbor.agents.base import BaseAgent
 except ImportError:
@@ -34,9 +36,9 @@ except ImportError:
 from go_explore.snapshots.backends import DaytonaSnapshotBackend
 from go_explore.snapshots.live import AsyncLiveSnapshotSession
 from go_explore.snapshots.manager import AsyncSnapshotManager
-from go_explore.snapshots.models import SnapshotContext
-from go_explore.snapshots.policies import EveryAgentStepPolicy
-from go_explore.snapshots.replay import process_atif_trajectory
+from go_explore.snapshots.models import CONTEXT_FILE_PATH, SnapshotContext
+from go_explore.snapshots.policies import InterestingAgentStepPolicy, SnapshotPolicy
+from go_explore.snapshots.replay import load_atif_trajectory_steps, process_atif_trajectory
 
 
 class SnapshotAwareAgent(BaseAgent):
@@ -52,12 +54,16 @@ class SnapshotAwareAgent(BaseAgent):
         wrapped_agent: BaseAgent,
         sandbox: Any = None,
         hooks_debug: bool = False,
+        snapshot_policy: SnapshotPolicy | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self._wrapped_agent = wrapped_agent
         self._sandbox = sandbox
         self._hooks_debug = hooks_debug
+        self._snapshot_policy = snapshot_policy or InterestingAgentStepPolicy()
+        # Peek (don't pop) so logs_dir still reaches BaseAgent/**kwargs above.
+        self._logs_dir: Path | None = kwargs.get("logs_dir")
         self._agent_execute_hooked = False
         self._session_snapshot_hooked = False
         self._agent_step_active = False
@@ -70,6 +76,7 @@ class SnapshotAwareAgent(BaseAgent):
         self._step_counter = 0
         self._trial_name: str | None = None
         self._commands_in_step: list[str] = []
+        self._trajectory_log: list[str] = []
 
     def _ensure_snapshot_session(self, sandbox: Any) -> None:
         if sandbox is None or isinstance(sandbox, str) or self._snapshot_session is not None:
@@ -77,7 +84,7 @@ class SnapshotAwareAgent(BaseAgent):
 
         self._sandbox = sandbox
         manager = AsyncSnapshotManager(
-            policy=EveryAgentStepPolicy(),
+            policy=self._snapshot_policy,
             backend=DaytonaSnapshotBackend(
                 sandbox=sandbox,
                 name_prefix="go-explore",
@@ -153,6 +160,11 @@ class SnapshotAwareAgent(BaseAgent):
         )
         self._ensure_snapshot_session(getattr(environment, "_sandbox", None))
         self._hook_agent_loop()
+
+        parent_context = await self._load_parent_context()
+        if parent_context:
+            instruction = self._augment_instruction(instruction, parent_context)
+
         await self._wrapped_agent.run(instruction, environment, context)
 
     async def _process_step_snapshot(
@@ -190,10 +202,119 @@ class SnapshotAwareAgent(BaseAgent):
             ),
             observation_text=terminal_output,
             environment_id=getattr(self._sandbox, "id", None),
+            trajectory_summary=self._build_trajectory_summary(commands, terminal_output),
         )
 
         # Process through snapshot manager
         await self._snapshot_session.process_step(context)
+
+    def _summarize_step(
+        self, step_label: int, commands: list[str], terminal_output: str
+    ) -> str:
+        """One condensed line per step, for the resumable trajectory log.
+
+        `step_label` is the id to show, not necessarily `self._step_counter`:
+        when ATIF history is available we label with the id Terminus-2's own
+        trajectory.json will assign this step, so it doesn't collide with (or
+        diverge from) ATIF's separate step numbering.
+        """
+        # TODO: This is the early implementation and is quite brittle / uniformative.
+        command_text = "; ".join(cmd.strip() for cmd in commands if cmd.strip())
+        command_text = command_text[:160]
+
+        signal = "ok"
+        lowered = terminal_output.lower()
+        if any(token in lowered for token in ("traceback", "exception", "error")):
+            signal = "error"
+        if "failed" in lowered:
+            signal = "failed"
+
+        return f"step {step_label}: {command_text} -> {signal}"
+
+    def _read_atif_trajectory_steps(self) -> list[dict[str, Any]]:
+        """Read Harbor's own trajectory.json for the wrapped agent, if it exists.
+
+        Terminus-2 dumps this file (in ATIF format) after every episode, so by
+        the time we're deciding whether to snapshot step N, it already holds
+        the agent's own Analysis/Plan reasoning for steps 1..N-1.
+        """
+        if self._logs_dir is None:
+            return []
+
+        trajectory_path = self._logs_dir / "trajectory.json"
+        if not trajectory_path.exists():
+            return []
+
+        try:
+            return load_atif_trajectory_steps(trajectory_path)
+        except Exception:
+            return []
+
+    @staticmethod
+    def _summarize_atif_step(step: dict[str, Any]) -> str:
+        """One condensed line built from the agent's own recorded reasoning."""
+        message = " ".join(str(step.get("message") or "").split())[:200]
+        if not message:
+            message = "(no message)"
+        return f"step {step.get('step_id')}: {message}"
+
+    @staticmethod
+    def _atif_history_lines(atif_steps: list[dict[str, Any]]) -> list[str]:
+        return [
+            SnapshotAwareAgent._summarize_atif_step(step)
+            for step in atif_steps
+            if step.get("source") == "agent"
+        ]
+
+    def _build_trajectory_summary(
+        self, commands: list[str], terminal_output: str
+    ) -> str:
+        """Combine Harbor's own trajectory (rich, but one step behind) with our
+        own live log (crude, but current) into one resumable summary.
+
+        Both halves must share one numbering scheme. ATIF's step_id counts
+        every Terminus-2 trajectory step (user/system/retries included), which
+        is not the same counter as our own `self._step_counter` (successfully
+        executed command batches only) - labeling both with the same counter
+        would produce colliding or nonsensical step numbers.
+        """
+        atif_steps = self._read_atif_trajectory_steps()
+        if not atif_steps:
+            self._trajectory_log.append(
+                self._summarize_step(self._step_counter, commands, terminal_output)
+            )
+            return "\n".join(self._trajectory_log)
+
+        atif_lines = self._atif_history_lines(atif_steps)
+        current_line = self._summarize_step(
+            len(atif_steps) + 1, commands, terminal_output
+        )
+        return "\n".join([*atif_lines, current_line])
+
+    async def _load_parent_context(self) -> str | None:
+        """Read the trajectory summary a parent run left on the sandbox, if any."""
+        if self._sandbox is None:
+            return None
+
+        try:
+            content = await self._sandbox.fs.download_file(CONTEXT_FILE_PATH)
+        except Exception:
+            return None
+
+        if not content:
+            return None
+
+        return content.decode()
+
+    @staticmethod
+    def _augment_instruction(instruction: str, parent_context: str) -> str:
+        return (
+            f"{instruction}\n\n"
+            "---\n"
+            "You are resuming work in a sandbox from a prior attempt at this task. "
+            "Here is a summary of what was already tried, so you don't repeat it:\n"
+            f"{parent_context}"
+        )
 
     def _hook_tmux_session(self, session: Any) -> None:
         """Hook the tmux session command path when available."""
@@ -371,6 +492,10 @@ class SnapshotAwareAgent(BaseAgent):
         # Hook the agent's execution loop
         self._hook_agent_loop()
         self._hook_tmux_session(session)
+
+        parent_context = asyncio.run(self._load_parent_context())
+        if parent_context:
+            instruction = self._augment_instruction(instruction, parent_context)
 
         # Call the wrapped agent's perform_task
         result = self._wrapped_agent.perform_task(

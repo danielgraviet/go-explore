@@ -3,7 +3,12 @@ from __future__ import annotations
 import re
 from typing import Protocol
 
-from go_explore.snapshots.models import SnapshotCandidate, SnapshotContext, SnapshotHandle
+from go_explore.snapshots.models import (
+    CONTEXT_FILE_PATH,
+    SnapshotCandidate,
+    SnapshotContext,
+    SnapshotHandle,
+)
 
 
 class AsyncSnapshotBackend(Protocol):
@@ -52,6 +57,15 @@ class DaytonaSnapshotBackend:
         context: SnapshotContext,
     ) -> SnapshotHandle:
         snapshot_name = daytona_snapshot_name(candidate.id, prefix=self._name_prefix)
+
+        if context.trajectory_summary:
+            try:
+                await self._sandbox.fs.upload_file(
+                    context.trajectory_summary.encode(), CONTEXT_FILE_PATH
+                )
+            except Exception as e:
+                print(f"Warning: Failed to write trajectory context to sandbox: {e}")
+
         await self._sandbox._experimental_create_snapshot(name=snapshot_name, timeout=self._timeout)
 
         return SnapshotHandle(
