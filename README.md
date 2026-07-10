@@ -131,3 +131,14 @@ Tested:
   set -a; source .env; set +a; harbor run --env daytona --jobs-dir jobs --n-attempts 1 --n-concurrent 1 --dataset terminal-bench@2.0 --model anthropic/claude-haiku-4-5-20251001
     │ --task-name build-cython-ext --job-name snapshot-haiku-build-cython-ext --export-traces --agent-import-path go_explore.agents.factory:snapshot_aware_terminus2_factory
 ```
+
+# Project Management
+
+Use `tasks/` as the execution layer:
+
+- `tasks/backlog.md` is the source of truth for task status.
+- `tasks/template.md` is the template for new tickets.
+- `tasks/phase-1/` contains the current intern-sized tickets.
+- `tasks/research-questions.md` holds open research questions that are not yet executable tickets.
+
+Use `docs/` for durable design notes, runbooks, experiment writeups, and result memos.
