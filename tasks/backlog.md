@@ -5,7 +5,7 @@ This is the source of truth for task status. Update this table when a task moves
 | ID | Title | Owner | Status | Depends On | Artifact |
 | --- | --- | --- | --- | --- | --- |
 | T001 | Project map | Danny | done | - | `docs/project-map.md` |
-| T002 | Smoke-test runbook | TBD | done | - | `docs/runbook.md` |
+| T002 | Smoke-test runbook | Danny | done | - | `docs/runbook.md` |
 | T003 | Snapshot artifact contract | TBD | ready | - | `docs/snapshot-artifact-contract.md` |
 | T004 | Snapshot metadata audit | TBD | ready | T003 | `docs/snapshot-metadata-audit.md` |
 | T005 | Daytona snapshot cleanup runbook | TBD | backlog | T003 | `docs/daytona-snapshot-cleanup.md` |
