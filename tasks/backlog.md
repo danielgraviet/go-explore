@@ -5,7 +5,7 @@ This is the source of truth for task status. Update this table when a task moves
 | ID | Title | Owner | Status | Depends On | Artifact |
 | --- | --- | --- | --- | --- | --- |
 | T001 | Project map | Danny | done | - | `docs/project-map.md` |
-| T002 | Smoke-test runbook | TBD | ready | - | `docs/runbook.md` |
+| T002 | Smoke-test runbook | TBD | done | - | `docs/runbook.md` |
 | T003 | Snapshot artifact contract | TBD | ready | - | `docs/snapshot-artifact-contract.md` |
 | T004 | Snapshot metadata audit | TBD | ready | T003 | `docs/snapshot-metadata-audit.md` |
 | T005 | Daytona snapshot cleanup runbook | TBD | backlog | T003 | `docs/daytona-snapshot-cleanup.md` |
@@ -17,6 +17,6 @@ This is the source of truth for task status. Update this table when a task moves
 
 ## Near-Term Priorities
 
-T001 is done. Next, do T002 and T003 so contributors have both a runbook and a snapshot artifact contract.
+T001 and T002 are done. Next, do T003 so contributors have a snapshot artifact contract.
 
 After that, move to T006 if the continuation path is the highest priority, or T004 if snapshot observability is still unclear.
