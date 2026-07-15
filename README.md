@@ -25,6 +25,41 @@ projects/
   terminal-bench/
 ```
 
+# Pipeline: How It Works, And Where It's Going
+
+## How a run works today
+
+A snapshot-aware run happens inside a single process. Harbor loads our factory,
+which wraps Terminus-2 in the snapshot-aware agent. As the agent works, the
+wrapper hooks its command execution and hands each step to the snapshot manager,
+which asks the policy whether the step is interesting and, if so, tells the
+Daytona backend to freeze the sandbox as `go-explore-<trial>-step-N`. Job results
+land in `jobs/<job>/` as JSON.
+
+This is **one-way**: we create snapshots, but nothing keeps or ranks them.
+![alt text](photos/existing-sys-flow.png)
+
+## The gap: nowhere to keep snapshots
+
+We create snapshots but have nowhere to keep them as a *searchable* set.
+Go-Explore needs an **archive** — a map from a **cell** (a descriptor of "what
+kind of state is this") to the best snapshot that reached it. Picture it as a
+search tree: exploring adds cells, selection forks the promising ones, until a
+branch solves the task. The open design question is **how to key cells**?
+
+![alt text](photos/archive-state.png)
+
+
+## Where it's going: archive + continuation
+
+The proposal adds **two boxes** to the pipeline above. The snapshot manager also
+calls `add()` into `archive_states` (a persistent `archive.json`), and a
+**continuation runner** reads `select_k()` from the archive to fork the best
+cells back into fresh Daytona sandboxes. That closes the loop: the manager
+*fills* the archive, the continuation runner *drains* it — turning one-way
+snapshotting into search.
+![alt text](photos/new-sys-flow-with-archive.png)
+
 # First Experiment
 
 Start with oracle and baseline Harbor runs before adding branching.
