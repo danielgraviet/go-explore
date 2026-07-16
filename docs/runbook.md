@@ -5,7 +5,7 @@ Use this page to verify the project before and after changes.
 ## Prereqs
 
 - Python env managed by `uv`.
-- Harbor installed and available as `harbor`.
+- Harbor installed and available as `harbor`: need version 0.1.44!
 - Docker running for local Docker Harbor runs.
 - `.env` with Daytona/model credentials for Daytona or model-backed runs.
 
