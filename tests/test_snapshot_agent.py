@@ -8,8 +8,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from go_explore.agents.factory import SnapshotAwareTerminus2
 from go_explore.agents.snapshot_agent import SnapshotAwareAgent
 from go_explore.snapshots.policies import EveryAgentStepPolicy, InterestingAgentStepPolicy
+
+
+def test_snapshot_aware_terminus2_advertises_atif_support():
+    assert SnapshotAwareTerminus2.SUPPORTS_ATIF is True
 
 
 def test_snapshot_aware_agent_instantiation_without_sandbox():

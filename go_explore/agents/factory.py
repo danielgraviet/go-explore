@@ -86,6 +86,8 @@ def create_snapshot_aware_oracle(
 class SnapshotAwareTerminus2(SnapshotAwareAgent):
     """Harbor 0.19-compatible import path for snapshot-aware Terminus-2."""
 
+    SUPPORTS_ATIF: bool = True
+
     def __init__(
         self,
         logs_dir: Any,
@@ -169,7 +171,7 @@ def create_snapshot_aware_agent(
 
     Example:
         # From Harbor CLI with an agent import path
-        # --agent go_explore.agents.factory:SnapshotAwareTerminus2
+        # --agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2
         # --ak model_name="anthropic/claude-haiku-4-5-20251001"
         # --ak sandbox="<daytona_sandbox>"
     """
@@ -190,7 +192,7 @@ def snapshot_aware_terminus2_factory(**kwargs: Any) -> SnapshotAwareAgent:
 
     Usage:
         harbor run \
-          --agent go_explore.agents.factory:SnapshotAwareTerminus2 \
+          --agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2 \
           --model anthropic/claude-haiku-4-5-20251001 \
           ...
     """
@@ -206,7 +208,7 @@ def snapshot_aware_oracle_factory(**kwargs: Any) -> SnapshotAwareAgent:
 
     Usage:
         harbor run \
-          --agent go_explore.agents.factory:SnapshotAwareOracle \
+          --agent-import-path go_explore.agents.factory:SnapshotAwareOracle \
           ...
     """
     sandbox = kwargs.pop("sandbox", None)

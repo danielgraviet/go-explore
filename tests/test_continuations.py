@@ -133,8 +133,42 @@ def test_harbor_config_from_job_preserves_import_path_shape(tmp_path):
 
     config = harbor_config_from_job(job_dir)
 
-    assert config.agent == "go_explore.agents.factory:factory"
+    assert config.agent is None
+    assert config.agent_import_path == "go_explore.agents.factory:factory"
     assert config.extra_args == ()
+
+
+def test_harbor_config_from_job_converts_custom_agent_name_to_import_path(tmp_path):
+    job_dir = tmp_path / "jobs" / "root"
+    job_dir.mkdir(parents=True)
+    (job_dir / "config.json").write_text(
+        json.dumps(
+            {
+                "jobs_dir": str(tmp_path / "jobs"),
+                "environment": {"type": "daytona"},
+                "agents": [
+                    {
+                        "name": "go_explore.agents.factory:SnapshotAwareTerminus2",
+                        "import_path": None,
+                        "model_name": "model-a",
+                    }
+                ],
+                "datasets": [
+                    {
+                        "name": "terminal-bench",
+                        "version": "2.0",
+                        "task_names": ["fix-git"],
+                    }
+                ],
+                "tasks": [],
+            }
+        )
+    )
+
+    config = harbor_config_from_job(job_dir)
+
+    assert config.agent is None
+    assert config.agent_import_path == "go_explore.agents.factory:SnapshotAwareTerminus2"
 
 
 def test_plan_snapshot_continuations_records_parent_lineage():

@@ -32,7 +32,7 @@ This repo tests whether Go-Explore-style continuation can help coding agents sol
 
 ## Snapshot-Aware Run Flow
 
-1. User runs Harbor with `--agent go_explore.agents.factory:SnapshotAwareTerminus2`.
+1. User runs Harbor with `--agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2`.
 2. Harbor calls `factory.py`, which creates Terminus-2 and wraps it in `SnapshotAwareAgent`.
 3. `SnapshotAwareAgent.run()` receives the live Harbor environment and Daytona sandbox.
 4. The wrapper hooks Terminus-2 command execution.
@@ -41,7 +41,7 @@ This repo tests whether Go-Explore-style continuation can help coding agents sol
 7. `DaytonaSnapshotBackend` writes `/tmp/go_explore_context.md`, then creates a Daytona snapshot.
 8. Harbor writes normal job artifacts under `jobs/<job-name>/`.
 
-Important: for custom snapshot-aware runs, pass the import path to `--agent`, not the built-in `terminus-2` agent name.
+Important: for custom snapshot-aware runs, pass the wrapper class to `--agent-import-path`, not the built-in `terminus-2` agent name. This keeps Harbor's ATIF trace exporter keyed to the wrapped Terminus-2 agent metadata.
 
 ## Continuation Run Flow
 

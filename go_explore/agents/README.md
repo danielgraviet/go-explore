@@ -32,7 +32,7 @@ SnapshotAwareAgent (wrapper)
 
 ```bash
 harbor run \
-  --agent go_explore.agents.factory:SnapshotAwareTerminus2 \
+  --agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2 \
   --model anthropic/claude-haiku-4-5-20251001 \
   --env daytona \
   --dataset terminal-bench-sample@2.0 \
@@ -127,7 +127,7 @@ To wrap a new agent type:
 
 1. Create factory function in `factory.py`
 2. Call `create_snapshot_aware_<agent_name>()`
-3. Use the factory import path as the `--agent` value to invoke from Harbor
+3. Use the wrapper class import path with `--agent-import-path` to invoke from Harbor
 
 ## Debugging
 
@@ -135,7 +135,7 @@ Enable debug logging:
 
 ```bash
 export DEBUG=1
-harbor run --agent go_explore.agents.factory:SnapshotAwareTerminus2 --debug
+harbor run --agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2 --debug
 ```
 
 If snapshots fail, check Harbor logs for warnings like:
