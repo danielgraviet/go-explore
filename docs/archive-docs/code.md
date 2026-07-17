@@ -1,6 +1,6 @@
 # The Archive
 
-A cell-keyed store of snapshots that turns "we made snapshots" into "we can rank and re-fork them." Full design: [`../snapshot-archive-proposal.md`](../snapshot-archive-proposal.md).
+A cell-keyed store of snapshots that turns "we made snapshots" into "we can rank and re-fork them."
 
 ## How it plugs in
 
