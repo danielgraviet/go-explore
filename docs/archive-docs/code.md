@@ -33,7 +33,7 @@ continue-from-snapshots --from-archive
 
 The bolded functions/attributes are one's that are more selective to the archive itself, and not themselves helper/trivial.
 
-## The one idea: cells
+## What are cells?
 
 `cell_key_for(candidate)` is the set of files touched (`{a.py, b.py}`), or `<event>` when no file is named. Two snapshots with the same key are the same cell, and the archive keeps only the highest-scoring one: that's the dedup that keeps the archive small (this is the first initial idea for the policy itself). `select(k)` ranks by `score`, minus a penalty per prior fork so the frontier rotates instead of repicking one winner.
 
