@@ -31,6 +31,8 @@ continue-from-snapshots --from-archive
 - **`ArchiveStore`** is an adapter satisfying the store protocol so the manager needs no change; delegates to a `SnapshotArchive` and saves on every `put`.
 <img width="1518" height="1198" alt="image" src="https://github.com/user-attachments/assets/f17c8d48-3ce5-4d27-8ab1-46f90274523a" />
 
+The bolded functions/attributes are one's that are more selective to the archive itself, and not themselves helper/trivial.
+
 ## The one idea: cells
 
 `cell_key_for(candidate)` is the set of files touched (`{a.py, b.py}`), or `<event>` when no file is named. Two snapshots with the same key are the same cell, and the archive keeps only the highest-scoring one: that's the dedup that keeps the archive small (this is the first initial idea for the policy itself). `select(k)` ranks by `score`, minus a penalty per prior fork so the frontier rotates instead of repicking one winner.
