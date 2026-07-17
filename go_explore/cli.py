@@ -13,6 +13,7 @@ from go_explore.continuations import (
 )
 from go_explore.harbor import HarborRunConfig, run_harbor
 from go_explore.results import format_job_summary, summarize_job
+from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
 from go_explore.task_inventory import load_cached_tasks
 
 
@@ -80,6 +81,21 @@ def continue_from_snapshots(args: argparse.Namespace) -> int:
     )
 
     snapshots = tuple(args.snapshot)
+    archive: SnapshotArchive | None = None
+    if not snapshots and args.from_archive:
+        archive_path = args.archive_path or args.root_job_dir / ARCHIVE_FILENAME
+        archive = SnapshotArchive.load(archive_path)
+        if not len(archive):
+            print(f"Archive {archive_path} is empty or missing.")
+            return 1
+        chosen = archive.select(args.max_snapshots or 3)
+        snapshots = tuple(entry.snapshot_name for entry in chosen)
+        print(f"archive: {archive_path} ({len(archive)} cells)")
+        for entry in chosen:
+            print(
+                f"  select {entry.snapshot_name}"
+                f"  cell={entry.cell_key}  score={entry.score:.2f}"
+            )
     if not snapshots:
         snapshots = tuple(
             list_daytona_snapshots_for_trial_sync(
@@ -149,6 +165,16 @@ def main() -> int:
     continue_parser.add_argument("--trial-name")
     continue_parser.add_argument("--snapshot", action="append", default=[])
     continue_parser.add_argument("--snapshot-prefix", default="go-explore")
+    continue_parser.add_argument(
+        "--from-archive",
+        action="store_true",
+        help="Pick snapshots by archive score (select_k) instead of listing Daytona.",
+    )
+    continue_parser.add_argument(
+        "--archive-path",
+        type=Path,
+        help="Archive JSON path (default: <root_job_dir>/archive.json).",
+    )
     continue_parser.add_argument("--job-prefix", required=True)
     continue_parser.add_argument("--max-snapshots", type=int)
     continue_parser.add_argument("--agent")

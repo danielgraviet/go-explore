@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shlex
 from typing import Protocol
 
 from go_explore.snapshots.models import (
@@ -199,6 +200,13 @@ def _looks_like_investigation(command_text: str) -> bool:
 
 
 def _changed_files_from_commands(command_text: str) -> tuple[str, ...]:
+    """Names of files a command batch wrote to.
+
+    Must stay in sync with `_looks_like_file_edit`: any edit form recognized
+    there should have its target extracted here, otherwise the step is tagged a
+    file edit with no files, and callers that bucket by changed files (the
+    archive's cell key) silently collapse unrelated states together.
+    """
     changed_files: list[str] = []
     for line in command_text.splitlines():
         stripped = line.strip()
@@ -206,4 +214,54 @@ def _changed_files_from_commands(command_text: str) -> tuple[str, ...]:
             changed_files.append(stripped.removeprefix("cat > ").split()[0])
         elif stripped.startswith("git add "):
             changed_files.extend(stripped.removeprefix("git add ").split())
-    return tuple(dict.fromkeys(changed_files))
+        else:
+            changed_files.extend(_edit_targets(stripped))
+    return tuple(dict.fromkeys(_normalize_path(f) for f in changed_files if f))
+
+
+def _normalize_path(path: str) -> str:
+    """`./a/b.py` and `a/b.py` are the same file, so they must be the same cell."""
+    return path.removeprefix("./").strip("'\"")
+
+
+def _edit_targets(line: str) -> list[str]:
+    """Trailing file operands of an in-place edit (`sed -i`, `tee`)."""
+    try:
+        tokens = shlex.split(line)
+    except ValueError:
+        return []
+
+    if not tokens:
+        return []
+
+    if tokens[0] == "sed":
+        if not any(t.startswith("-i") for t in tokens[1:]):
+            return []  # not in-place: reads, does not write
+        return _operands_after_script(tokens[1:])
+
+    if tokens[0] == "tee":
+        return [t for t in tokens[1:] if not t.startswith("-")]
+
+    return []
+
+
+def _operands_after_script(tokens: list[str]) -> list[str]:
+    """Drop flags and the sed script expression; what remains are the files."""
+    operands: list[str] = []
+    script_seen = False
+    skip_next = False
+    for token in tokens:
+        if skip_next:
+            skip_next = False
+            continue
+        if token.startswith("-"):
+            # -e/-f take the script as a separate argument.
+            if token in {"-e", "-f"}:
+                skip_next = True
+                script_seen = True
+            continue
+        if not script_seen:
+            script_seen = True  # first bare operand is the script itself
+            continue
+        operands.append(token)
+    return operands

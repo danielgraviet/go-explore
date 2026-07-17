@@ -11,6 +11,7 @@ from go_explore.snapshots.backends import DaytonaSnapshotBackend
 from go_explore.snapshots.manager import AsyncSnapshotManager
 from go_explore.snapshots.models import SnapshotContext
 from go_explore.snapshots.policies import InterestingAgentStepPolicy
+from go_explore.snapshots.archive import ArchiveStore
 from go_explore.snapshots.stores import InMemorySnapshotStore
 
 
@@ -45,7 +46,8 @@ async def test_snapshot_aware_agent_creates_snapshots_on_agent_steps():
     assert isinstance(manager, AsyncSnapshotManager)
     # Policy is private but we can verify backend and store
     assert isinstance(manager.backend, DaytonaSnapshotBackend)
-    assert isinstance(manager.store, InMemorySnapshotStore)
+    # The agent now records into the persistent archive rather than memory.
+    assert isinstance(manager.store, ArchiveStore)
 
 
 @pytest.mark.asyncio
