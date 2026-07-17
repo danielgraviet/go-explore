@@ -1,6 +1,6 @@
 # The Archive
 
-A cell keyed store of snapshots that turns "we made snapshots" into "we can rank and refork them."
+A cell keyed store of snapshots that allows us to make snapshots that we can rank and refork.
 <img width="2538" height="1054" alt="image" src="https://github.com/user-attachments/assets/98b1131c-0ff2-4848-a00c-d18a5d8c88f3" />
 
 ## How it plugs in
