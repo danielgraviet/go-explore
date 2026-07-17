@@ -29,6 +29,7 @@ continue-from-snapshots --from-archive
 
 - **`SnapshotArchive`** is a data structure, no Harbor/Daytona, fully unit testable. Methods: `add` / `select(k)` / `mark_selected` / `promote` / `save` / `load`.
 - **`ArchiveStore`** is an adapter satisfying the store protocol so the manager needs no change; delegates to a `SnapshotArchive` and saves on every `put`.
+<img width="1518" height="1198" alt="image" src="https://github.com/user-attachments/assets/f17c8d48-3ce5-4d27-8ab1-46f90274523a" />
 
 ## The one idea: cells
 
