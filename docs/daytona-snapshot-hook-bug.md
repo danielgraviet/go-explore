@@ -22,7 +22,7 @@ The Harbor command passed both:
 
 ```bash
 --agent terminus-2
---agent-import-path go_explore.agents.factory:snapshot_aware_terminus2_factory
+--agent go_explore.agents.factory:SnapshotAwareTerminus2
 ```
 
 For Harbor `jobs`, the agent factory checks the named agent first. If `config.agent.name` is set to a valid built-in agent name, Harbor instantiates that built-in agent and never uses `config.agent.import_path`.
@@ -32,7 +32,7 @@ The saved job config still showed the import path, which was misleading:
 ```json
 {
   "name": "terminus-2",
-  "import_path": "go_explore.agents.factory:snapshot_aware_terminus2_factory"
+  "import_path": "go_explore.agents.factory:SnapshotAwareTerminus2"
 }
 ```
 
@@ -54,9 +54,9 @@ harbor run \
   --n-concurrent 1 \
   --dataset terminal-bench@2.0 \
   --model anthropic/claude-haiku-4-5-20251001 \
-  --task-name fix-git \
+  --include-task-name fix-git \
   --job-name <job-name> \
-  --agent-import-path go_explore.agents.factory:snapshot_aware_terminus2_factory
+  --agent go_explore.agents.factory:SnapshotAwareTerminus2
 ```
 
 `HarborRunConfig.agent` now accepts `None`, and `build_harbor_command()` skips `--agent` when it is `None`.
@@ -70,7 +70,7 @@ Second, the snapshot-aware factory now wraps Harbor's actual async `Terminus2` c
   - `build_harbor_command()` omits `--agent` for import-path-only runs.
 
 - `go_explore/agents/factory.py`
-  - `snapshot_aware_terminus2_factory()`
+  - `SnapshotAwareTerminus2`
   - `create_snapshot_aware_terminus2()` imports `harbor.agents.terminus_2.Terminus2`.
   - Harbor-provided `logs_dir`, `model_name`, and `logger` are passed to the wrapped agent.
 
@@ -82,11 +82,11 @@ Second, the snapshot-aware factory now wraps Harbor's actual async `Terminus2` c
 
 - `tests/e2e/test_daytona_oracle.py`
   - `test_daytona_terminus2_with_snapshotting_command_runs_successfully()`
-  - Uses `agent=None` and `--agent-import-path`.
+  - Uses the custom factory import path as the `--agent` value.
   - Verifies Daytona snapshots exist after the run.
 
 - `tests/test_harbor.py`
-  - Guards the command builder against reintroducing the bad `--agent` plus `--agent-import-path` shape.
+  - Guards the command builder against reintroducing the built-in `terminus-2` agent when the snapshot wrapper is required.
 
 - `investigate_tbench_hooks.py`
   - Parses ATIF trajectories and prints command batches under `tool_calls[*].arguments.keystrokes`.

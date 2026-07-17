@@ -55,7 +55,7 @@ def test_build_snapshot_continuation_config_restores_daytona_snapshot():
         "terminal-bench@2.0",
         "--model",
         "anthropic/claude-haiku-4-5-20251001",
-        "--task-name",
+        "--include-task-name",
         "fix-git",
         "--n-tasks",
         "1",
@@ -133,11 +133,8 @@ def test_harbor_config_from_job_preserves_import_path_shape(tmp_path):
 
     config = harbor_config_from_job(job_dir)
 
-    assert config.agent is None
-    assert config.extra_args == (
-        "--agent-import-path",
-        "go_explore.agents.factory:factory",
-    )
+    assert config.agent == "go_explore.agents.factory:factory"
+    assert config.extra_args == ()
 
 
 def test_plan_snapshot_continuations_records_parent_lineage():

@@ -5,7 +5,7 @@ Use this page to verify the project before and after changes.
 ## Prereqs
 
 - Python env managed by `uv`.
-- Harbor installed and available as `harbor`: need version 0.1.44!
+- Harbor installed and available as `harbor`: need version 0.19.0 with the `daytona` extra.
 - Docker running for local Docker Harbor runs.
 - `.env` with Daytona/model credentials for Daytona or model-backed runs.
 
@@ -76,6 +76,7 @@ Load credentials, then run an oracle task in Daytona:
 
 ```bash
 set -a; source .env; set +a
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 harbor run \
   --agent oracle \
   --env daytona \
@@ -103,10 +104,10 @@ harbor run \
   --n-concurrent 1 \
   --dataset terminal-bench@2.0 \
   --model anthropic/claude-haiku-4-5-20251001 \
-  --task-name fix-git \
+  --include-task-name fix-git \
   --job-name daytona-terminus-snapshot-smoke \
   --export-traces \
-  --agent-import-path go_explore.agents.factory:snapshot_aware_terminus2_factory
+  --agent go_explore.agents.factory:SnapshotAwareTerminus2
 ```
 
 Do not pass `--agent terminus-2` with this command. Harbor will use the built-in agent and skip the import-path wrapper.
@@ -143,5 +144,6 @@ python -m go_explore.cli list-cached-tasks
 | `Cannot connect to the Docker daemon` | Docker is not running. |
 | Daytona auth or sandbox creation error | `.env` is missing or has bad Daytona credentials. |
 | Model/provider auth error | Model API key is missing or invalid. |
+| `No module named 'go_explore'` | Export `PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"` before running global `harbor` with a custom agent import path. |
 | No `trajectory.json` for oracle | Oracle runs may not export ATIF traces; inspect `result.json` instead. |
-| No Daytona snapshots from Terminus run | Check that the command uses `--agent-import-path` and does not also pass `--agent terminus-2`. |
+| No Daytona snapshots from Terminus run | Check that the command uses `--agent go_explore.agents.factory:SnapshotAwareTerminus2`, not `--agent terminus-2`. |

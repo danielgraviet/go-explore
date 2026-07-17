@@ -21,6 +21,12 @@ test = [
 [tool.hatch.build.targets.wheel]
 packages = ["go_explore"]
 
+[tool.go-explore.external-tools.harbor]
+# Harbor is a system-wide CLI requirement, usually installed with `uv tool`.
+version = "0.19.0"
+extras = ["daytona"]
+install = "uv tool install 'harbor[daytona]==0.19.0' --force"
+
 [project.scripts]
 go-explore = "go_explore.cli:main"
 

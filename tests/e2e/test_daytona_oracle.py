@@ -15,6 +15,11 @@ from go_explore.results import summarize_job
 
 def _load_env_file(path: Path) -> dict[str, str]:
     env = os.environ.copy()
+    project_root = str(Path.cwd())
+    pythonpath = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = (
+        f"{project_root}{os.pathsep}{pythonpath}" if pythonpath else project_root
+    )
     if not path.exists():
         return env
 
@@ -133,7 +138,7 @@ def test_daytona_oracle_harbor_command_runs_successfully(capsys):
 def test_daytona_terminus2_with_snapshotting_command_runs_successfully(capsys):
     job_name = f"e2e-daytona-terminus2-snapshotting-agent-{uuid4().hex[:8]}"
     config = HarborRunConfig(
-        agent=None,
+        agent="go_explore.agents.factory:SnapshotAwareTerminus2",
         model="anthropic/claude-haiku-4-5-20251001",
         env="daytona",
         jobs_dir=Path("jobs"),
@@ -143,10 +148,6 @@ def test_daytona_terminus2_with_snapshotting_command_runs_successfully(capsys):
         task_name="fix-git",
         job_name=job_name,
         export_traces=False,
-        extra_args=(
-            "--agent-import-path",
-            "go_explore.agents.factory:snapshot_aware_terminus2_factory",
-        ),
     )
 
     cmd = build_harbor_command(config)
@@ -157,6 +158,8 @@ def test_daytona_terminus2_with_snapshotting_command_runs_successfully(capsys):
     assert cmd == [
         "harbor",
         "run",
+        "--agent",
+        "go_explore.agents.factory:SnapshotAwareTerminus2",
         "--env",
         "daytona",
         "--jobs-dir",
@@ -169,12 +172,10 @@ def test_daytona_terminus2_with_snapshotting_command_runs_successfully(capsys):
         "terminal-bench@2.0",
         "--model",
         "anthropic/claude-haiku-4-5-20251001",
-        "--task-name",
+        "--include-task-name",
         "fix-git",
         "--job-name",
         job_name,
-        "--agent-import-path",
-        "go_explore.agents.factory:snapshot_aware_terminus2_factory",
     ]
 
     result = subprocess.run(

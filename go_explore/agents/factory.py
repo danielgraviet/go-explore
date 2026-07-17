@@ -54,26 +54,10 @@ def create_snapshot_aware_terminus2(
     Returns:
         SnapshotAwareAgent wrapping Terminus-2
     """
-    from harbor.agents.terminus_2 import Terminus2
-
-    hooks_debug = _as_bool(kwargs.pop("hooks_debug", False))
-    snapshot_policy = _resolve_snapshot_policy(kwargs.pop("snapshot_policy", None))
-    logs_dir = kwargs.pop("logs_dir")
-    logger = kwargs.pop("logger", None)
-    wrapped = Terminus2(
-        logs_dir=logs_dir,
+    return SnapshotAwareTerminus2(
         model_name=model_name,
-        logger=logger,
-        **kwargs,
-    )
-    return SnapshotAwareAgent(
-        wrapped_agent=wrapped,
         sandbox=sandbox,
-        hooks_debug=hooks_debug,
-        snapshot_policy=snapshot_policy,
-        logs_dir=logs_dir,
-        model_name=model_name,
-        logger=logger,
+        **kwargs,
     )
 
 
@@ -92,27 +76,78 @@ def create_snapshot_aware_oracle(
     Returns:
         SnapshotAwareAgent wrapping Oracle
     """
-    from harbor.agents.oracle import OracleAgent
-
-    hooks_debug = _as_bool(kwargs.pop("hooks_debug", False))
-    snapshot_policy = _resolve_snapshot_policy(kwargs.pop("snapshot_policy", None))
-    logs_dir = kwargs.pop("logs_dir")
-    logger = kwargs.pop("logger", None)
-    wrapped = OracleAgent(
-        logs_dir=logs_dir,
+    return SnapshotAwareOracle(
         model_name=model_name,
-        logger=logger,
+        sandbox=sandbox,
         **kwargs,
     )
-    return SnapshotAwareAgent(
-        wrapped_agent=wrapped,
-        sandbox=sandbox,
-        hooks_debug=hooks_debug,
-        snapshot_policy=snapshot_policy,
-        logs_dir=logs_dir,
-        model_name=model_name,
-        logger=logger,
-    )
+
+
+class SnapshotAwareTerminus2(SnapshotAwareAgent):
+    """Harbor 0.19-compatible import path for snapshot-aware Terminus-2."""
+
+    def __init__(
+        self,
+        logs_dir: Any,
+        model_name: str | None = None,
+        logger: Any = None,
+        sandbox: Any = None,
+        **kwargs: Any,
+    ) -> None:
+        if model_name is None:
+            raise ValueError("model_name is required for terminus-2")
+
+        from harbor.agents.terminus_2 import Terminus2
+
+        hooks_debug = _as_bool(kwargs.pop("hooks_debug", False))
+        snapshot_policy = _resolve_snapshot_policy(kwargs.pop("snapshot_policy", None))
+        wrapped = Terminus2(
+            logs_dir=logs_dir,
+            model_name=model_name,
+            logger=logger,
+            **kwargs,
+        )
+        super().__init__(
+            wrapped_agent=wrapped,
+            sandbox=sandbox,
+            hooks_debug=hooks_debug,
+            snapshot_policy=snapshot_policy,
+            logs_dir=logs_dir,
+            model_name=model_name,
+            logger=logger,
+        )
+
+
+class SnapshotAwareOracle(SnapshotAwareAgent):
+    """Harbor 0.19-compatible import path for snapshot-aware Oracle."""
+
+    def __init__(
+        self,
+        logs_dir: Any,
+        model_name: str | None = None,
+        logger: Any = None,
+        sandbox: Any = None,
+        **kwargs: Any,
+    ) -> None:
+        from harbor.agents.oracle import OracleAgent
+
+        hooks_debug = _as_bool(kwargs.pop("hooks_debug", False))
+        snapshot_policy = _resolve_snapshot_policy(kwargs.pop("snapshot_policy", None))
+        wrapped = OracleAgent(
+            logs_dir=logs_dir,
+            model_name=model_name,
+            logger=logger,
+            **kwargs,
+        )
+        super().__init__(
+            wrapped_agent=wrapped,
+            sandbox=sandbox,
+            hooks_debug=hooks_debug,
+            snapshot_policy=snapshot_policy,
+            logs_dir=logs_dir,
+            model_name=model_name,
+            logger=logger,
+        )
 
 
 def create_snapshot_aware_agent(
@@ -133,8 +168,8 @@ def create_snapshot_aware_agent(
         SnapshotAwareAgent wrapping the specified agent
 
     Example:
-        # From Harbor CLI with agent-import-path
-        # --agent-import-path go_explore.agents.factory:snapshot_aware_terminus2_factory
+        # From Harbor CLI with an agent import path
+        # --agent go_explore.agents.factory:SnapshotAwareTerminus2
         # --ak model_name="anthropic/claude-haiku-4-5-20251001"
         # --ak sandbox="<daytona_sandbox>"
     """
@@ -149,13 +184,13 @@ def create_snapshot_aware_agent(
         raise ValueError(f"Unknown agent: {agent_name}")
 
 
-# Harbor-compatible factory functions (these are what --agent-import-path will call)
+# Factory functions kept for direct Python callers.
 def snapshot_aware_terminus2_factory(**kwargs: Any) -> SnapshotAwareAgent:
     """Factory function for Harbor: creates snapshot-aware Terminus-2.
 
     Usage:
         harbor run \
-          --agent-import-path go_explore.agents.factory:snapshot_aware_terminus2_factory \
+          --agent go_explore.agents.factory:SnapshotAwareTerminus2 \
           --model anthropic/claude-haiku-4-5-20251001 \
           ...
     """
@@ -171,7 +206,7 @@ def snapshot_aware_oracle_factory(**kwargs: Any) -> SnapshotAwareAgent:
 
     Usage:
         harbor run \
-          --agent-import-path go_explore.agents.factory:snapshot_aware_oracle_factory \
+          --agent go_explore.agents.factory:SnapshotAwareOracle \
           ...
     """
     sandbox = kwargs.pop("sandbox", None)

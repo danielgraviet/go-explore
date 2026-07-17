@@ -156,8 +156,7 @@ def harbor_config_from_job(
     root_agent_name = agent_config.get("name")
 
     if import_path and agent is None:
-        root_agent_name = None
-        base_extra_args.extend(["--agent-import-path", str(import_path)])
+        root_agent_name = str(import_path)
 
     return HarborRunConfig(
         jobs_dir=Path(root_config.get("jobs_dir") or job_dir.parent),

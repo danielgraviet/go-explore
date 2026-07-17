@@ -1,6 +1,8 @@
 """Snapshot-aware agents for Harbor integration."""
 
 from go_explore.agents.factory import (
+    SnapshotAwareOracle,
+    SnapshotAwareTerminus2,
     create_snapshot_aware_agent,
     create_snapshot_aware_oracle,
     create_snapshot_aware_terminus2,
@@ -11,6 +13,8 @@ from go_explore.agents.snapshot_agent import SnapshotAwareAgent
 
 __all__ = [
     "SnapshotAwareAgent",
+    "SnapshotAwareTerminus2",
+    "SnapshotAwareOracle",
     "create_snapshot_aware_agent",
     "create_snapshot_aware_terminus2",
     "create_snapshot_aware_oracle",

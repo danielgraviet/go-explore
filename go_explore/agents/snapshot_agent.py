@@ -151,7 +151,9 @@ class SnapshotAwareAgent(BaseAgent):
         trial_paths = getattr(environment, "trial_paths", None)
         trial_dir = getattr(trial_paths, "trial_dir", None)
         session_id = getattr(environment, "session_id", None)
-        self._trial_name = str(session_id or (trial_dir.name if trial_dir else "trial"))
+        self._trial_name = str(
+            (trial_dir.name if trial_dir else None) or session_id or "trial"
+        )
         self._step_counter = 0
         self._debug_log_path = (
             Path("jobs") / f"{self._trial_name}-hook_debug.log"

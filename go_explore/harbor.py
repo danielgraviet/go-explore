@@ -61,7 +61,7 @@ def build_harbor_command(config: HarborRunConfig) -> list[str]:
     if config.model:
         cmd.extend(["--model", config.model])
     if config.task_name:
-        cmd.extend(["--task-name", config.task_name])
+        cmd.extend(["--include-task-name", config.task_name])
     if config.n_tasks is not None:
         cmd.extend(["--n-tasks", str(config.n_tasks)])
     if config.job_name:

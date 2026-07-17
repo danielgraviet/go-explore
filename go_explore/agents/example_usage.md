@@ -10,7 +10,7 @@ Use the pre-built factory function from `go_explore.agents.factory`:
 
 ```bash
 harbor run \
-  --agent-import-path go_explore.agents.factory:snapshot_aware_terminus2_factory \
+  --agent go_explore.agents.factory:SnapshotAwareTerminus2 \
   --model anthropic/claude-haiku-4-5-20251001 \
   --env daytona \
   --dataset terminal-bench-sample@2.0 \
@@ -22,26 +22,26 @@ harbor run \
 
 ```bash
 harbor run \
-  --agent-import-path go_explore.agents.factory:snapshot_aware_oracle_factory \
+  --agent go_explore.agents.factory:SnapshotAwareOracle \
   --env daytona \
   --dataset terminal-bench-sample@2.0 \
   --n-tasks 3 \
   --job-name go-explore-oracle-test
 ```
 
-### Generic Factory
+### Snapshot Policy Option
 
-For custom agent creation:
+The wrapper accepts snapshot policy kwargs through Harbor's agent kwarg flag:
 
 ```bash
 harbor run \
-  --agent-import-path go_explore.agents.factory:create_snapshot_aware_agent \
-  --ak agent_name=terminus-2 \
-  --ak model_name="anthropic/claude-haiku-4-5-20251001" \
+  --agent go_explore.agents.factory:SnapshotAwareTerminus2 \
+  --model anthropic/claude-haiku-4-5-20251001 \
+  --ak snapshot_policy=every_step \
   --env daytona \
   --dataset terminal-bench-sample@2.0 \
   --n-tasks 3 \
-  --job-name go-explore-generic
+  --job-name go-explore-every-step
 ```
 
 ## How It Works

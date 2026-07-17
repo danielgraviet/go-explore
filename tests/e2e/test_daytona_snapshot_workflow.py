@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from uuid import uuid4
 from unittest.mock import AsyncMock
 
 import pytest
@@ -33,13 +34,14 @@ async def test_daytona_snapshot_workflow_creates_real_snapshots():
         sandbox = await daytona.create()
         sandbox_id = sandbox.id
         sandbox_obj = sandbox
+        snapshot_prefix = f"test-go-explore-{uuid4().hex[:8]}"
 
         try:
             # Create snapshot backend (with longer timeout for Daytona API)
             backend = DaytonaSnapshotBackend(
                 sandbox,
                 timeout=300.0,  # 5 minutes - Daytona snapshot creation can be slow
-                name_prefix="test-go-explore",
+                name_prefix=snapshot_prefix,
             )
 
             steps = [
@@ -104,11 +106,11 @@ async def test_daytona_snapshot_workflow_creates_real_snapshots():
                 assert snapshot_handle.environment_id == sandbox_id
 
             # Verify snapshot exists in Daytona
-            snapshots_page = await daytona.snapshot.list()
+            snapshots_page = await daytona.snapshot.list(limit=200)
             snapshot_names = {
                 snapshot.name
                 for snapshot in snapshots_page.items
-                if snapshot.name.startswith("test-go-explore-")
+                if snapshot.name.startswith(f"{snapshot_prefix}-")
             }
             expected_names = {handle.restore_ref for handle in snapshot_handles}
 
@@ -184,12 +186,13 @@ async def test_snapshot_workflow_end_to_end_with_real_daytona_sandbox():
     async with AsyncDaytona() as daytona:
         sandbox = await daytona.create()
         sandbox_id = sandbox.id
+        snapshot_prefix = f"real-daytona-test-{uuid4().hex[:8]}"
 
         try:
             backend = DaytonaSnapshotBackend(
                 sandbox,
                 timeout=300.0,
-                name_prefix="real-daytona-test",
+                name_prefix=snapshot_prefix,
             )
 
             steps = [
@@ -231,11 +234,18 @@ async def test_snapshot_workflow_end_to_end_with_real_daytona_sandbox():
                 assert handle.restore_ref is not None
                 assert handle.environment_id == sandbox_id
 
-            snapshots_page = await daytona.snapshot.list()
-            snapshot_names = {str(item.name) for item in snapshots_page.items if hasattr(item, "name")}
+            snapshots_page = await daytona.snapshot.list(limit=200)
+            snapshot_names = {
+                str(item.name)
+                for item in snapshots_page.items
+                if hasattr(item, "name") and str(item.name).startswith(f"{snapshot_prefix}-")
+            }
+            expected_names = {handle.restore_ref for handle in snapshot_handles}
 
-            for handle in snapshot_handles:
-                assert handle.restore_ref in snapshot_names
+            assert expected_names <= snapshot_names, (
+                f"Expected Daytona snapshots {sorted(expected_names)} but saw "
+                f"{sorted(snapshot_names)}"
+            )
         finally:
             try:
                 await daytona.delete(sandbox)

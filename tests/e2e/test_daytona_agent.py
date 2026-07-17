@@ -12,6 +12,11 @@ from go_explore.results import summarize_job
 
 def _load_env_file(path: Path) -> dict[str, str]:
     env = os.environ.copy()
+    project_root = str(Path.cwd())
+    pythonpath = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = (
+        f"{project_root}{os.pathsep}{pythonpath}" if pythonpath else project_root
+    )
     if not path.exists():
         return env
 
@@ -80,7 +85,7 @@ def test_daytona_terminus2_claude_agent_runs_fix_git_successfully(capsys):
         "terminal-bench@2.0",
         "--model",
         "anthropic/claude-haiku-4-5-20251001",
-        "--task-name",
+        "--include-task-name",
         "fix-git",
         "--job-name",
         job_name,
