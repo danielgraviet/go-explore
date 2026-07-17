@@ -81,7 +81,6 @@ def continue_from_snapshots(args: argparse.Namespace) -> int:
     )
 
     snapshots = tuple(args.snapshot)
-    archive: SnapshotArchive | None = None
     if not snapshots and args.from_archive:
         archive_path = args.archive_path or args.root_job_dir / ARCHIVE_FILENAME
         archive = SnapshotArchive.load(archive_path)
@@ -96,6 +95,11 @@ def continue_from_snapshots(args: argparse.Namespace) -> int:
                 f"  select {entry.snapshot_name}"
                 f"  cell={entry.cell_key}  score={entry.score:.2f}"
             )
+        # Record the fork so a later run rotates to the rest of the frontier
+        # instead of picking these same cells again.
+        for entry in chosen:
+            archive.mark_selected(entry.cell_key)
+        archive.save()
     if not snapshots:
         snapshots = tuple(
             list_daytona_snapshots_for_trial_sync(

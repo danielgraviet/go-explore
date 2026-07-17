@@ -74,8 +74,8 @@ def test_unbalanced_quotes_do_not_raise():
     assert _changed_files_from_commands("sed -i 's/a/b/ broken.py") == ()
 
 
-def test_every_recognized_edit_form_can_name_its_target():
-    """Guards the invariant the bug broke: detection and extraction agree."""
+def test_supported_edit_forms_can_name_their_target():
+    """Guards the property the bug broke: detection and extraction agree."""
     for cmd in (
         "cat > f.py",
         "sed -i 's/a/b/' f.py",
@@ -83,3 +83,15 @@ def test_every_recognized_edit_form_can_name_its_target():
     ):
         assert _looks_like_file_edit(cmd), cmd
         assert _changed_files_from_commands(cmd) == ("f.py",), cmd
+
+
+def test_unextractable_edit_forms_are_detected_but_name_no_file():
+    """Documents the known boundary rather than implying full coverage.
+
+    These are recognized as edits, but their target lives inside a patch body or
+    heredoc script, so they still collapse into the coarse `<file_edit>` cell.
+    If either becomes extractable, move it to the test above.
+    """
+    for cmd in ("apply_patch f.py", "python - <<'EOF'"):
+        assert _looks_like_file_edit(cmd), cmd
+        assert _changed_files_from_commands(cmd) == (), cmd

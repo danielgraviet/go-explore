@@ -202,10 +202,16 @@ def _looks_like_investigation(command_text: str) -> bool:
 def _changed_files_from_commands(command_text: str) -> tuple[str, ...]:
     """Names of files a command batch wrote to.
 
-    Must stay in sync with `_looks_like_file_edit`: any edit form recognized
-    there should have its target extracted here, otherwise the step is tagged a
-    file edit with no files, and callers that bucket by changed files (the
-    archive's cell key) silently collapse unrelated states together.
+    Extracts targets of `cat >`, `git add`, `sed -i` and `tee`. When an edit
+    form is recognized by `_looks_like_file_edit` but its target cannot be named
+    here, the step is tagged a file edit with no files, and callers that bucket
+    by changed files (the archive's cell key) collapse unrelated states
+    together — the failure mode that discarded 5 of 6 `sed` edits before this
+    parsed them.
+
+    Known unextractable: `apply_patch` and `python - <<HEREDOC`, whose targets
+    live inside a patch body or script rather than in the command line. Steps
+    using those still fall back to the coarse `<file_edit>` cell.
     """
     changed_files: list[str] = []
     for line in command_text.splitlines():
