@@ -10,7 +10,7 @@ Use the pre-built factory function from `go_explore.agents.factory`:
 
 ```bash
 harbor run \
-  --agent go_explore.agents.factory:SnapshotAwareTerminus2 \
+  --agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2 \
   --model anthropic/claude-haiku-4-5-20251001 \
   --env daytona \
   --dataset terminal-bench-sample@2.0 \
@@ -22,7 +22,7 @@ harbor run \
 
 ```bash
 harbor run \
-  --agent go_explore.agents.factory:SnapshotAwareOracle \
+  --agent-import-path go_explore.agents.factory:SnapshotAwareOracle \
   --env daytona \
   --dataset terminal-bench-sample@2.0 \
   --n-tasks 3 \
@@ -35,7 +35,7 @@ The wrapper accepts snapshot policy kwargs through Harbor's agent kwarg flag:
 
 ```bash
 harbor run \
-  --agent go_explore.agents.factory:SnapshotAwareTerminus2 \
+  --agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2 \
   --model anthropic/claude-haiku-4-5-20251001 \
   --ak snapshot_policy=every_step \
   --env daytona \

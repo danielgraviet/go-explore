@@ -138,7 +138,8 @@ def test_daytona_oracle_harbor_command_runs_successfully(capsys):
 def test_daytona_terminus2_with_snapshotting_command_runs_successfully(capsys):
     job_name = f"e2e-daytona-terminus2-snapshotting-agent-{uuid4().hex[:8]}"
     config = HarborRunConfig(
-        agent="go_explore.agents.factory:SnapshotAwareTerminus2",
+        agent=None,
+        agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
         model="anthropic/claude-haiku-4-5-20251001",
         env="daytona",
         jobs_dir=Path("jobs"),
@@ -158,7 +159,7 @@ def test_daytona_terminus2_with_snapshotting_command_runs_successfully(capsys):
     assert cmd == [
         "harbor",
         "run",
-        "--agent",
+        "--agent-import-path",
         "go_explore.agents.factory:SnapshotAwareTerminus2",
         "--env",
         "daytona",

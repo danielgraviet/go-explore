@@ -5,7 +5,7 @@ Use this page to verify the project before and after changes.
 ## Prereqs
 
 - Python env managed by `uv`.
-- Harbor installed and available as `harbor`: need version 0.19.0 with the `daytona` extra.
+- Harbor installed and available as `harbor`: need version 0.19.0 with the `daytona` and `huggingface` extras.
 - Docker running for local Docker Harbor runs.
 - `.env` with Daytona/model credentials for Daytona or model-backed runs.
 
@@ -107,10 +107,10 @@ harbor run \
   --include-task-name fix-git \
   --job-name daytona-terminus-snapshot-smoke \
   --export-traces \
-  --agent go_explore.agents.factory:SnapshotAwareTerminus2
+  --agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2
 ```
 
-Do not pass `--agent terminus-2` with this command. Harbor will use the built-in agent and skip the import-path wrapper.
+Do not pass `--agent terminus-2` with this command. Harbor will use the built-in agent and skip the import-path wrapper. Use `--agent-import-path` for the wrapper so Harbor's ATIF exporter records the underlying Terminus-2 agent metadata correctly.
 
 ## Summaries
 
@@ -146,4 +146,4 @@ python -m go_explore.cli list-cached-tasks
 | Model/provider auth error | Model API key is missing or invalid. |
 | `No module named 'go_explore'` | Export `PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"` before running global `harbor` with a custom agent import path. |
 | No `trajectory.json` for oracle | Oracle runs may not export ATIF traces; inspect `result.json` instead. |
-| No Daytona snapshots from Terminus run | Check that the command uses `--agent go_explore.agents.factory:SnapshotAwareTerminus2`, not `--agent terminus-2`. |
+| No Daytona snapshots from Terminus run | Check that the command uses `--agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2`, not `--agent terminus-2`. |

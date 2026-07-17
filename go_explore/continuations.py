@@ -154,13 +154,19 @@ def harbor_config_from_job(
     base_extra_args: list[str] = []
     import_path = agent_config.get("import_path")
     root_agent_name = agent_config.get("name")
+    agent_import_path = None
 
-    if import_path and agent is None:
-        root_agent_name = str(import_path)
+    if agent is None and import_path:
+        root_agent_name = None
+        agent_import_path = str(import_path)
+    elif agent is None and isinstance(root_agent_name, str) and ":" in root_agent_name:
+        agent_import_path = root_agent_name
+        root_agent_name = None
 
     return HarborRunConfig(
         jobs_dir=Path(root_config.get("jobs_dir") or job_dir.parent),
         agent=agent if agent is not None else root_agent_name,
+        agent_import_path=agent_import_path,
         env=environment.get("type") or "daytona",
         dataset=dataset,
         path=path,
@@ -203,6 +209,7 @@ def build_snapshot_continuation_config(
 
     return HarborRunConfig(
         agent=agent if agent is not None else root_config.agent,
+        agent_import_path=None if agent is not None else root_config.agent_import_path,
         model=model if model is not None else root_config.model,
         env="daytona",
         jobs_dir=root_config.jobs_dir,

@@ -11,6 +11,7 @@ class HarborRunConfig:
 
     jobs_dir: Path = Path("jobs")
     agent: str | None = "oracle"
+    agent_import_path: str | None = None
     env: str = "docker"
     dataset: str | None = None
     path: Path | None = None
@@ -27,6 +28,8 @@ class HarborRunConfig:
     def validate(self) -> None:
         if bool(self.dataset) == bool(self.path):
             raise ValueError("Set exactly one of dataset or path.")
+        if self.agent is not None and self.agent_import_path is not None:
+            raise ValueError("Set only one of agent or agent_import_path.")
         if self.n_attempts < 1:
             raise ValueError("n_attempts must be >= 1.")
         if self.n_concurrent < 1:
@@ -40,6 +43,8 @@ def build_harbor_command(config: HarborRunConfig) -> list[str]:
 
     if config.agent is not None:
         cmd.extend(["--agent", config.agent])
+    if config.agent_import_path is not None:
+        cmd.extend(["--agent-import-path", config.agent_import_path])
 
     cmd.extend(
         [

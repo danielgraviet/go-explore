@@ -22,7 +22,7 @@ The Harbor command passed both:
 
 ```bash
 --agent terminus-2
---agent go_explore.agents.factory:SnapshotAwareTerminus2
+--agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2
 ```
 
 For Harbor `jobs`, the agent factory checks the named agent first. If `config.agent.name` is set to a valid built-in agent name, Harbor instantiates that built-in agent and never uses `config.agent.import_path`.
@@ -56,7 +56,7 @@ harbor run \
   --model anthropic/claude-haiku-4-5-20251001 \
   --include-task-name fix-git \
   --job-name <job-name> \
-  --agent go_explore.agents.factory:SnapshotAwareTerminus2
+  --agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2
 ```
 
 `HarborRunConfig.agent` now accepts `None`, and `build_harbor_command()` skips `--agent` when it is `None`.
