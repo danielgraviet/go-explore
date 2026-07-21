@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from go_explore.cli import continue_from_snapshots
+from go_explore.cli import continue_from_snapshots, plan_start_state_baselines_cmd
 from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
 from go_explore.snapshots.models import SnapshotCandidate, SnapshotEvent
@@ -129,3 +129,48 @@ def test_continue_from_snapshots_uses_configured_archive_selector(
     assert events[-1]["selector_mode"] == "oracle"
     assert events[-1]["selector_reasons"] == ["oracle_label=1"]
     assert events[-1]["cell_key"] == "{low.py}"
+
+
+def test_plan_start_state_baselines_command_writes_manifest(tmp_path, capsys):
+    root_job_dir = tmp_path / "jobs" / "root"
+    root_job_dir.mkdir(parents=True)
+    _write_root_job(root_job_dir)
+    manifest_path = tmp_path / "plans" / "claim1.json"
+    diff_path = tmp_path / "artifacts" / "parent.diff"
+
+    exit_code = plan_start_state_baselines_cmd(
+        argparse.Namespace(
+            root_job_dir=root_job_dir,
+            trial_name=None,
+            start_state_type=["clean", "diff_only", "full_snapshot"],
+            snapshot=["snapshot-a"],
+            from_archive=False,
+            selector_mode="archive_priority",
+            selector_seed=None,
+            oracle_labels=None,
+            archive_path=None,
+            diff_path=diff_path,
+            manifest_path=manifest_path,
+            job_prefix="claim1",
+            max_snapshots=1,
+            agent=None,
+            model=None,
+            extra_arg=[],
+        )
+    )
+
+    assert exit_code == 0
+    stdout = capsys.readouterr().out
+    assert "clean\toriginal_task_only\tready\tclaim1-clean" in stdout
+    assert "diff_only\toriginal_task_only\tmanifest_only\tclaim1-diff-only" in stdout
+    assert "full_snapshot\tparent_summary\tready\tclaim1-full-snapshot-0" in stdout
+
+    data = json.loads(manifest_path.read_text())
+    assert [plan["start_state_type"] for plan in data["plans"]] == [
+        "clean",
+        "diff_only",
+        "full_snapshot",
+    ]
+    assert data["plans"][1]["parent_artifacts"] == [str(diff_path)]
+    assert data["plans"][1]["executor_status"] == "manifest_only"
+    assert data["plans"][2]["parent_snapshot"] == "snapshot-a"

@@ -5,7 +5,7 @@ import json
 import subprocess
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Literal, Sequence
 
 from daytona import AsyncDaytona
 
@@ -16,6 +16,10 @@ from go_explore.results import BudgetSummary, JobSummary, TrialSummary, summariz
 
 class ContinuationError(ValueError):
     """Raised when a continuation run cannot be planned from job metadata."""
+
+
+StartStateType = Literal["clean", "diff_only", "full_snapshot"]
+ContextMode = Literal["original_task_only", "parent_summary"]
 
 
 def snapshot_prefix_for_trial(
@@ -32,9 +36,26 @@ class ContinuationPlan:
 
     parent_job_dir: Path
     parent_trial_name: str
-    snapshot_name: str
+    snapshot_name: str | None
     job_name: str
     command: tuple[str, ...]
+    start_state_type: StartStateType = "full_snapshot"
+    context_mode: ContextMode = "parent_summary"
+    parent_artifacts: tuple[str, ...] = ()
+    executor_status: str = "ready"
+
+    def to_json_dict(self) -> dict[str, Any]:
+        return {
+            "parent_job_dir": str(self.parent_job_dir),
+            "parent_trial_name": self.parent_trial_name,
+            "parent_snapshot": self.snapshot_name,
+            "job_name": self.job_name,
+            "command": list(self.command),
+            "start_state_type": self.start_state_type,
+            "context_mode": self.context_mode,
+            "parent_artifacts": list(self.parent_artifacts),
+            "executor_status": self.executor_status,
+        }
 
 
 @dataclass(frozen=True)
@@ -56,12 +77,15 @@ class ContinuationAttempt:
 
     parent_job_dir: str
     parent_trial_name: str
-    snapshot_name: str
+    snapshot_name: str | None
     continuation_job_dir: str
     continuation_trial_name: str | None
     reward: float | None
     exception_type: str | None
     budget: BudgetSummary = field(default_factory=BudgetSummary)
+    start_state_type: StartStateType = "full_snapshot"
+    context_mode: ContextMode = "parent_summary"
+    parent_artifacts: tuple[str, ...] = ()
 
     @property
     def succeeded(self) -> bool:
@@ -243,6 +267,36 @@ def build_snapshot_continuation_config(
     )
 
 
+def build_clean_start_config(
+    *,
+    root_config: HarborRunConfig,
+    job_name: str,
+    agent: str | None = None,
+    model: str | None = None,
+    extra_args: Sequence[str] = (),
+) -> HarborRunConfig:
+    """Build a Harbor job that starts from the original clean task state."""
+
+    combined_extra_args = tuple(root_config.extra_args) + tuple(extra_args)
+
+    return HarborRunConfig(
+        agent=agent if agent is not None else root_config.agent,
+        agent_import_path=None if agent is not None else root_config.agent_import_path,
+        model=model if model is not None else root_config.model,
+        env=root_config.env,
+        jobs_dir=root_config.jobs_dir,
+        n_attempts=1,
+        n_concurrent=1,
+        dataset=root_config.dataset,
+        path=root_config.path,
+        task_name=root_config.task_name,
+        n_tasks=1,
+        job_name=job_name,
+        export_traces=root_config.export_traces,
+        extra_args=combined_extra_args,
+    )
+
+
 def plan_snapshot_continuations(
     *,
     root_config: HarborRunConfig,
@@ -286,6 +340,8 @@ def plan_snapshot_continuations(
                     or f"{continuation_job_prefix}-snapshot-{index}"
                 ),
                 command=tuple(build_harbor_command(config)),
+                start_state_type="full_snapshot",
+                context_mode="parent_summary",
             )
         )
 
@@ -313,6 +369,126 @@ def plan_snapshot_continuations(
             )
 
     return plans
+
+
+def plan_start_state_baselines(
+    *,
+    root_config: HarborRunConfig,
+    root_summary: JobSummary,
+    continuation_job_prefix: str,
+    start_state_types: Sequence[StartStateType],
+    snapshots: Sequence[str] = (),
+    diff_path: Path | None = None,
+    agent: str | None = None,
+    model: str | None = None,
+    extra_args: Sequence[str] = (),
+    max_snapshots: int | None = None,
+    parent_trial_name: str | None = None,
+) -> list[ContinuationPlan]:
+    """Plan Claim 1 child-start conditions without executing them.
+
+    `diff_only` is intentionally manifest-only for now: the plan records the
+    parent diff artifact and the clean Harbor command shape, but no executor
+    applies the diff yet.
+    """
+
+    parent_trial = select_trial(root_summary, parent_trial_name)
+    plans: list[ContinuationPlan] = []
+
+    for start_state_type in start_state_types:
+        if start_state_type == "clean":
+            config = build_clean_start_config(
+                root_config=root_config,
+                job_name=f"{continuation_job_prefix}-clean",
+                agent=agent,
+                model=model,
+                extra_args=extra_args,
+            )
+            plans.append(
+                ContinuationPlan(
+                    parent_job_dir=root_summary.job_dir,
+                    parent_trial_name=parent_trial.trial_name,
+                    snapshot_name=None,
+                    job_name=config.job_name or f"{continuation_job_prefix}-clean",
+                    command=tuple(build_harbor_command(config)),
+                    start_state_type="clean",
+                    context_mode="original_task_only",
+                )
+            )
+
+        elif start_state_type == "diff_only":
+            artifact_path = diff_path or root_summary.job_dir / "parent.diff"
+            config = build_clean_start_config(
+                root_config=root_config,
+                job_name=f"{continuation_job_prefix}-diff-only",
+                agent=agent,
+                model=model,
+                extra_args=extra_args,
+            )
+            plans.append(
+                ContinuationPlan(
+                    parent_job_dir=root_summary.job_dir,
+                    parent_trial_name=parent_trial.trial_name,
+                    snapshot_name=None,
+                    job_name=(
+                        config.job_name or f"{continuation_job_prefix}-diff-only"
+                    ),
+                    command=tuple(build_harbor_command(config)),
+                    start_state_type="diff_only",
+                    context_mode="original_task_only",
+                    parent_artifacts=(str(artifact_path),),
+                    executor_status="manifest_only",
+                )
+            )
+
+        elif start_state_type == "full_snapshot":
+            selected_snapshots = (
+                list(snapshots[:max_snapshots])
+                if max_snapshots
+                else list(snapshots)
+            )
+            for index, snapshot_name in enumerate(selected_snapshots):
+                config = build_snapshot_continuation_config(
+                    root_config=root_config,
+                    snapshot_name=snapshot_name,
+                    job_name=f"{continuation_job_prefix}-full-snapshot-{index}",
+                    agent=agent,
+                    model=model,
+                    extra_args=extra_args,
+                )
+                plans.append(
+                    ContinuationPlan(
+                        parent_job_dir=root_summary.job_dir,
+                        parent_trial_name=parent_trial.trial_name,
+                        snapshot_name=snapshot_name,
+                        job_name=(
+                            config.job_name
+                            or f"{continuation_job_prefix}-full-snapshot-{index}"
+                        ),
+                        command=tuple(build_harbor_command(config)),
+                        start_state_type="full_snapshot",
+                        context_mode="parent_summary",
+                    )
+                )
+
+        else:
+            raise ContinuationError(f"Unsupported start_state_type: {start_state_type}")
+
+    return plans
+
+
+def write_plan_manifest(plans: Sequence[ContinuationPlan], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "go-explore-start-state-plan-v1",
+                "plans": [plan.to_json_dict() for plan in plans],
+            },
+            indent=2,
+        )
+        + "\n"
+    )
 
 
 def log_snapshot_selected(
@@ -358,8 +534,8 @@ def log_continuation_started(
     *,
     event_log_path: Path,
     experiment_id: str | None = None,
-    start_state_type: str = "full_snapshot",
-    context_mode: str = "parent_summary",
+    start_state_type: str | None = None,
+    context_mode: str | None = None,
 ) -> None:
     child_job_dir = plan.parent_job_dir.parent / plan.job_name
     event = base_event(
@@ -376,8 +552,10 @@ def log_continuation_started(
             "child_job_dir": str(child_job_dir),
             "parent_run_id": plan.parent_trial_name,
             "parent_snapshot": plan.snapshot_name,
-            "start_state_type": start_state_type,
-            "context_mode": context_mode,
+            "start_state_type": start_state_type or plan.start_state_type,
+            "context_mode": context_mode or plan.context_mode,
+            "parent_artifacts": list(plan.parent_artifacts),
+            "executor_status": plan.executor_status,
         }
     )
     append_event(event_log_path, event)
@@ -397,6 +575,9 @@ def _attempt_from_summary(
         reward=trial.reward if trial else None,
         exception_type=trial.exception_type if trial else "missing-trial-result",
         budget=trial.budget if trial else BudgetSummary(),
+        start_state_type=plan.start_state_type,
+        context_mode=plan.context_mode,
+        parent_artifacts=plan.parent_artifacts,
     )
 
 
@@ -433,6 +614,9 @@ def run_continuation_plan(
             reward=None,
             exception_type=f"harbor-return-code-{result.returncode}",
             budget=BudgetSummary(),
+            start_state_type=plan.start_state_type,
+            context_mode=plan.context_mode,
+            parent_artifacts=plan.parent_artifacts,
         )
 
     summary = summarize_job(job_dir)
