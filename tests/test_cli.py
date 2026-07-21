@@ -4,7 +4,11 @@ import argparse
 import json
 from pathlib import Path
 
-from go_explore.cli import continue_from_snapshots, plan_start_state_baselines_cmd
+from go_explore.cli import (
+    continue_from_snapshots,
+    plan_fixed_budget,
+    plan_start_state_baselines_cmd,
+)
 from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
 from go_explore.snapshots.models import SnapshotCandidate, SnapshotEvent
@@ -174,3 +178,46 @@ def test_plan_start_state_baselines_command_writes_manifest(tmp_path, capsys):
     assert data["plans"][1]["parent_artifacts"] == [str(diff_path)]
     assert data["plans"][1]["executor_status"] == "manifest_only"
     assert data["plans"][2]["parent_snapshot"] == "snapshot-a"
+
+
+def test_plan_fixed_budget_command_writes_manifest(tmp_path, capsys):
+    manifest_path = tmp_path / "plans" / "fixed-budget.json"
+
+    exit_code = plan_fixed_budget(
+        argparse.Namespace(
+            dataset="terminal-bench@2.0",
+            path=None,
+            jobs_dir=Path("jobs"),
+            task_name="fix-git",
+            env="daytona",
+            model="model-a",
+            agent=None,
+            agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
+            extra_arg=[],
+            experiment_id="pilot-1",
+            job_prefix="pilot",
+            manifest_path=manifest_path,
+            total_token_budget=100_000,
+            method=["single", "retry", "random_branch"],
+            seed=[5],
+            n_retries=2,
+            n_branch_continuations=1,
+            branch_root_fraction=0.25,
+            snapshot=["snapshot-a"],
+        )
+    )
+
+    assert exit_code == 0
+    stdout = capsys.readouterr().out
+    assert f"manifest: {manifest_path}" in stdout
+    assert "single\tsingle\tseed=5\tbudget=100000\tready\tpilot-single-seed-5" in stdout
+    assert "retry\tretry_attempt\tseed=5\tbudget=50000\tready" in stdout
+    assert "random_branch\troot\tseed=5\tbudget=25000\tready" in stdout
+
+    data = json.loads(manifest_path.read_text())
+    assert data["schema_version"] == "go-explore-fixed-budget-plan-v1"
+    assert data["experiment_id"] == "pilot-1"
+    assert data["methods"] == ["single", "retry", "random_branch"]
+    assert data["seeds"] == [5]
+    assert data["jobs"][-1]["parent_snapshot"] == "snapshot-a"
+    assert data["jobs"][-1]["budget"]["token_budget"] == 75_000

@@ -15,6 +15,11 @@ from go_explore.continuations import (
     write_plan_manifest,
 )
 from go_explore.events import EVENT_LOG_FILENAME
+from go_explore.fixed_budget import (
+    FixedBudgetPlanConfig,
+    plan_fixed_budget_runs,
+    write_fixed_budget_manifest,
+)
 from go_explore.harbor import HarborRunConfig, run_harbor
 from go_explore.results import format_job_summary, summarize_job
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
@@ -252,6 +257,56 @@ def plan_start_state_baselines_cmd(args: argparse.Namespace) -> int:
     return 0
 
 
+def plan_fixed_budget(args: argparse.Namespace) -> int:
+    agent = args.agent
+    if agent is None and args.agent_import_path is None:
+        agent = "terminus-2"
+
+    base_config = HarborRunConfig(
+        jobs_dir=args.jobs_dir,
+        agent=agent,
+        agent_import_path=args.agent_import_path,
+        env=args.env,
+        dataset=args.dataset,
+        path=args.path,
+        model=args.model,
+        task_name=args.task_name,
+        n_tasks=1,
+        n_attempts=1,
+        n_concurrent=1,
+        export_traces=True,
+        extra_args=tuple(args.extra_arg),
+    )
+    manifest = plan_fixed_budget_runs(
+        FixedBudgetPlanConfig(
+            experiment_id=args.experiment_id,
+            base_config=base_config,
+            job_prefix=args.job_prefix,
+            total_token_budget=args.total_token_budget,
+            methods=tuple(
+                args.method or ("single", "retry", "random_branch", "promising_branch")
+            ),
+            seeds=tuple(args.seed or (0,)),
+            n_retries=args.n_retries,
+            n_branch_continuations=args.n_branch_continuations,
+            branch_root_fraction=args.branch_root_fraction,
+            snapshots=tuple(args.snapshot),
+        )
+    )
+
+    write_fixed_budget_manifest(manifest, args.manifest_path)
+    print(f"manifest: {args.manifest_path}")
+    for job in manifest.jobs:
+        print(
+            f"{job.method}\t{job.role}\tseed={job.seed}\t"
+            f"budget={job.budget.token_budget}\t{job.executor_status}\t"
+            f"{job.job_name}"
+        )
+        if job.command:
+            print(shlex.join(job.command))
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="go-explore")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -357,6 +412,60 @@ def main() -> int:
     start_state_parser.add_argument("--model")
     start_state_parser.add_argument("--extra-arg", action="append", default=[])
     start_state_parser.set_defaults(func=plan_start_state_baselines_cmd)
+
+    fixed_budget_parser = subparsers.add_parser(
+        "plan-fixed-budget",
+        help="Expand fixed-budget method settings into a dry-run manifest.",
+    )
+    fixed_source = fixed_budget_parser.add_mutually_exclusive_group(required=True)
+    fixed_source.add_argument(
+        "--dataset",
+        help="Registered Harbor dataset name, optionally with @version.",
+    )
+    fixed_source.add_argument(
+        "--path",
+        type=Path,
+        help="Local Harbor task or dataset path.",
+    )
+    fixed_budget_parser.add_argument("--jobs-dir", type=Path, default=Path("jobs"))
+    fixed_budget_parser.add_argument("--task-name")
+    fixed_budget_parser.add_argument("--env", default="daytona")
+    fixed_budget_parser.add_argument("--model")
+    fixed_agent = fixed_budget_parser.add_mutually_exclusive_group()
+    fixed_agent.add_argument("--agent")
+    fixed_agent.add_argument("--agent-import-path")
+    fixed_budget_parser.add_argument("--extra-arg", action="append", default=[])
+    fixed_budget_parser.add_argument("--experiment-id", required=True)
+    fixed_budget_parser.add_argument("--job-prefix", required=True)
+    fixed_budget_parser.add_argument("--manifest-path", type=Path, required=True)
+    fixed_budget_parser.add_argument("--total-token-budget", type=int)
+    fixed_budget_parser.add_argument(
+        "--method",
+        action="append",
+        choices=("single", "retry", "random_branch", "promising_branch"),
+        default=[],
+        help="Method to include. Repeat to include multiple methods.",
+    )
+    fixed_budget_parser.add_argument(
+        "--seed",
+        action="append",
+        type=int,
+        default=[],
+        help="Experiment seed. Repeat to plan multiple seeds.",
+    )
+    fixed_budget_parser.add_argument("--n-retries", type=int, default=5)
+    fixed_budget_parser.add_argument("--n-branch-continuations", type=int, default=2)
+    fixed_budget_parser.add_argument("--branch-root-fraction", type=float, default=0.3)
+    fixed_budget_parser.add_argument(
+        "--snapshot",
+        action="append",
+        default=[],
+        help=(
+            "Optional known snapshot name for branch continuation commands. "
+            "If omitted, branch continuations are marked pending_root_archive."
+        ),
+    )
+    fixed_budget_parser.set_defaults(func=plan_fixed_budget)
 
     args = parser.parse_args()
     return args.func(args)
