@@ -18,6 +18,11 @@ from go_explore.continuations import (
     write_plan_manifest,
 )
 from go_explore.events import EVENT_LOG_FILENAME
+from go_explore.fixed_budget import (
+    FixedBudgetPlanConfig,
+    plan_fixed_budget_runs,
+    write_fixed_budget_manifest,
+)
 from go_explore.harbor import HarborRunConfig, build_harbor_command
 from go_explore.results import BudgetSummary, JobSummary, TrialSummary, summarize_job
 
@@ -724,3 +729,153 @@ def test_continuation_report_includes_budget_fields():
     assert data["attempts"][0]["budget"]["total_tokens"] == 12
     assert data["attempts"][0]["budget"]["cost_usd"] == 0.12
     assert data["attempts"][0]["budget"]["duration_seconds"] == 3.0
+
+
+def test_fixed_budget_planner_allocates_single_retry_and_branch_budgets():
+    base_config = HarborRunConfig(
+        agent="terminus-2",
+        env="daytona",
+        jobs_dir=Path("jobs"),
+        dataset="terminal-bench@2.0",
+        model="model-a",
+        task_name="fix-git",
+    )
+
+    manifest = plan_fixed_budget_runs(
+        FixedBudgetPlanConfig(
+            experiment_id="pilot-1",
+            base_config=base_config,
+            job_prefix="pilot",
+            total_token_budget=100_000,
+            methods=("single", "retry", "random_branch", "promising_branch"),
+            seeds=(3,),
+            n_retries=5,
+            n_branch_continuations=2,
+            branch_root_fraction=0.3,
+            snapshots=("snapshot-a", "snapshot-b"),
+        )
+    )
+
+    jobs = manifest.jobs
+    single = [job for job in jobs if job.method == "single"]
+    retries = [job for job in jobs if job.method == "retry"]
+    random_branch = [job for job in jobs if job.method == "random_branch"]
+    promising_branch = [job for job in jobs if job.method == "promising_branch"]
+
+    assert single[0].budget.token_budget == 100_000
+    assert [job.budget.token_budget for job in retries] == [20_000] * 5
+    assert [job.budget.token_budget for job in random_branch] == [
+        30_000,
+        35_000,
+        35_000,
+    ]
+    assert [job.budget.token_budget for job in promising_branch] == [
+        30_000,
+        35_000,
+        35_000,
+    ]
+    assert {job.seed for job in jobs} == {3}
+    assert manifest.to_json_dict()["budget"]["enforcement"] == "planning_only"
+
+
+def test_fixed_budget_planner_generates_method_commands_and_snapshot_children():
+    base_config = HarborRunConfig(
+        agent=None,
+        agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
+        env="daytona",
+        jobs_dir=Path("jobs"),
+        dataset="terminal-bench@2.0",
+        model="model-a",
+        task_name="fix-git",
+    )
+
+    manifest = plan_fixed_budget_runs(
+        FixedBudgetPlanConfig(
+            experiment_id="pilot-1",
+            base_config=base_config,
+            job_prefix="pilot",
+            total_token_budget=90_000,
+            methods=("random_branch",),
+            seeds=(11,),
+            n_branch_continuations=2,
+            branch_root_fraction=0.5,
+            snapshots=("snapshot-a", "snapshot-b"),
+        )
+    )
+
+    root, child_0, child_1 = manifest.jobs
+    assert root.role == "root"
+    assert root.start_state_type == "clean"
+    assert root.selector_mode == "random"
+    assert root.job_name == "pilot-random-branch-seed-11-root"
+    assert "--agent-import-path" in root.command
+    assert "--ek" not in root.command
+    assert child_0.role == "continuation"
+    assert child_0.start_state_type == "full_snapshot"
+    assert child_0.context_mode == "parent_summary"
+    assert child_0.selector_mode == "random"
+    assert child_0.executor_status == "ready"
+    assert "snapshot_template_name=" in " ".join(child_0.command)
+    assert child_1.parent_run_id == root.job_name
+
+
+def test_fixed_budget_planner_marks_branch_children_pending_without_snapshots():
+    base_config = HarborRunConfig(
+        agent="terminus-2",
+        env="daytona",
+        jobs_dir=Path("jobs"),
+        dataset="terminal-bench@2.0",
+        model="model-a",
+        task_name="fix-git",
+    )
+
+    manifest = plan_fixed_budget_runs(
+        FixedBudgetPlanConfig(
+            experiment_id="pilot-1",
+            base_config=base_config,
+            job_prefix="pilot",
+            total_token_budget=60_000,
+            methods=("promising_branch",),
+            seeds=(0,),
+            n_branch_continuations=2,
+            snapshots=(),
+        )
+    )
+
+    _, child_0, child_1 = manifest.jobs
+    assert child_0.executor_status == "pending_root_archive"
+    assert child_0.command == ()
+    assert child_0.parent_snapshot is None
+    assert child_1.executor_status == "pending_root_archive"
+
+
+def test_write_fixed_budget_manifest_serializes_budget_and_commands(tmp_path):
+    base_config = HarborRunConfig(
+        agent="terminus-2",
+        env="daytona",
+        jobs_dir=Path("jobs"),
+        dataset="terminal-bench@2.0",
+        model="model-a",
+        task_name="fix-git",
+    )
+    manifest = plan_fixed_budget_runs(
+        FixedBudgetPlanConfig(
+            experiment_id="pilot-1",
+            base_config=base_config,
+            job_prefix="pilot",
+            total_token_budget=10_000,
+            methods=("single",),
+            seeds=(0,),
+        )
+    )
+    path = tmp_path / "plans" / "fixed-budget.json"
+
+    write_fixed_budget_manifest(manifest, path)
+
+    data = json.loads(path.read_text())
+    assert data["schema_version"] == "go-explore-fixed-budget-plan-v1"
+    assert data["experiment_id"] == "pilot-1"
+    assert data["task_id"] == "fix-git"
+    assert data["jobs"][0]["method"] == "single"
+    assert data["jobs"][0]["budget"]["token_budget"] == 10_000
+    assert data["jobs"][0]["command"][0:2] == ["harbor", "run"]
