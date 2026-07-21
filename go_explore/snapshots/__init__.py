@@ -1,3 +1,10 @@
+from go_explore.snapshots.archive import (
+    ARCHIVE_FILENAME,
+    ArchiveEntry,
+    ArchiveStore,
+    SnapshotArchive,
+    cell_key_for,
+)
 from go_explore.snapshots.backends import (
     AsyncNoopSnapshotBackend,
     AsyncSnapshotBackend,

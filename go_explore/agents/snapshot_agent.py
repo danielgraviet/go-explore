@@ -33,6 +33,7 @@ except ImportError:
 
         pass
 
+from go_explore.snapshots.archive import ARCHIVE_FILENAME, ArchiveStore
 from go_explore.snapshots.backends import DaytonaSnapshotBackend
 from go_explore.snapshots.live import AsyncLiveSnapshotSession
 from go_explore.snapshots.manager import AsyncSnapshotManager
@@ -78,6 +79,12 @@ class SnapshotAwareAgent(BaseAgent):
         self._commands_in_step: list[str] = []
         self._trajectory_log: list[str] = []
 
+    def _archive_path(self) -> Path | None:
+        """Job-level archive path: logs_dir is jobs/<job>/<trial>/agent."""
+        if self._logs_dir is None:
+            return None
+        return self._logs_dir.parent.parent / ARCHIVE_FILENAME
+
     def _ensure_snapshot_session(self, sandbox: Any) -> None:
         if sandbox is None or isinstance(sandbox, str) or self._snapshot_session is not None:
             return
@@ -85,6 +92,7 @@ class SnapshotAwareAgent(BaseAgent):
         self._sandbox = sandbox
         manager = AsyncSnapshotManager(
             policy=self._snapshot_policy,
+            store=ArchiveStore(path=self._archive_path()),
             backend=DaytonaSnapshotBackend(
                 sandbox=sandbox,
                 name_prefix="go-explore",
