@@ -110,7 +110,7 @@ run, and where did it come from?
 | `environment_setup_seconds` | no | exists when Harbor records | Trial `environment_setup.started_at`/`finished_at`. |
 | `snapshot_overhead_seconds` | no | missing | Persist `SnapshotTiming.backend_seconds`. |
 | `restore_overhead_seconds` | no | missing | Needs continuation environment timing. |
-| `repeated_setup_score` | no | missing | P3-T004. |
+| `repeated_setup_score` | no | partial | P3-T004 emits repeated-work JSON; P3-T006 should join it into analysis tables. |
 | `failure_mode` | no | missing | P4-T004 audit or later classifier. |
 
 Example:

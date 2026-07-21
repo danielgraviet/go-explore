@@ -2,7 +2,13 @@ import asyncio
 from pathlib import Path
 
 from go_explore.snapshots import AsyncSnapshotManager, EveryAgentStepPolicy, SnapshotHandle
+from go_explore.repeated_work import (
+    repeated_work_from_event_logs,
+    repeated_work_from_signals,
+    write_repeated_work_report,
+)
 from go_explore.snapshots.replay import (
+    ExtractedSignal,
     extract_signals_from_atif_step,
     extract_signals_from_atif_steps,
     process_atif_trajectory,
@@ -157,3 +163,100 @@ def test_extract_signals_from_steps_skips_non_agent_steps():
         "command_executed",
         "test_run",
     ]
+
+
+def test_repeated_work_counts_repeated_setup_test_and_discovery_signals():
+    report = repeated_work_from_signals(
+        {
+            "root": [
+                ExtractedSignal("command_executed", "pip install pytest"),
+                ExtractedSignal("dependency_installed", "pip install pytest"),
+                ExtractedSignal("command_executed", "pytest tests -q"),
+                ExtractedSignal("test_run", "pytest tests -q"),
+                ExtractedSignal("command_executed", "rg TODO ."),
+            ],
+            "retry": [
+                ExtractedSignal("command_executed", "pip install pytest"),
+                ExtractedSignal("dependency_installed", "pip install pytest"),
+                ExtractedSignal("command_executed", "pytest tests -q"),
+                ExtractedSignal("test_run", "pytest tests -q"),
+                ExtractedSignal("command_executed", "rg TODO ."),
+            ],
+        }
+    )
+
+    root = {run.run_id: run for run in report.runs}["root"]
+    assert root.repeated_command_count == 3
+    assert root.repeated_prefix_count == 3
+    assert root.repeated_setup_count == 1
+    assert root.repeated_test_count == 1
+    assert root.repeated_discovery_count == 1
+    assert root.repeated_setup_score == 3
+    assert root.repeated_sibling_command_count == 3
+    assert root.repeated_setup_commands == ("pip install pytest",)
+    assert root.repeated_test_commands == ("pytest tests -q",)
+    assert root.repeated_discovery_commands == ("rg TODO .",)
+
+
+def test_repeated_work_counts_repeated_command_prefixes_without_exact_match():
+    report = repeated_work_from_signals(
+        {
+            "root": [
+                ExtractedSignal("command_executed", "pytest tests/test_a.py -q"),
+            ],
+            "retry": [
+                ExtractedSignal("command_executed", "pytest tests/test_b.py -q"),
+            ],
+        }
+    )
+
+    root = {run.run_id: run for run in report.runs}["root"]
+    assert root.repeated_command_count == 0
+    assert root.repeated_prefix_count == 1
+    assert root.repeated_sibling_command_count == 0
+    assert root.repeated_sibling_prefix_count == 1
+    assert root.repeated_command_prefixes == ("pytest",)
+
+
+def test_repeated_work_reports_no_repeats_for_unique_commands():
+    report = repeated_work_from_signals(
+        {
+            "root": [ExtractedSignal("command_executed", "ls")],
+            "retry": [ExtractedSignal("command_executed", "pytest tests -q")],
+        }
+    )
+
+    metrics = {run.run_id: run for run in report.runs}
+    assert metrics["root"].repeated_command_count == 0
+    assert metrics["root"].repeated_prefix_count == 0
+    assert metrics["root"].repeated_setup_score == 0
+    assert metrics["retry"].repeated_command_count == 0
+    assert metrics["retry"].repeated_prefix_count == 0
+
+
+def test_repeated_work_reads_event_logs_and_writes_report(tmp_path):
+    event_log = tmp_path / "events.jsonl"
+    event_log.write_text(
+        "\n".join(
+            [
+                '{"event_type":"command_executed","run_id":"root","command":"npm install"}',
+                '{"event_type":"dependency_installed","run_id":"root","command":"npm install"}',
+                '{"event_type":"command_executed","run_id":"child","command":"npm install"}',
+                '{"event_type":"dependency_installed","run_id":"child","command":"npm install"}',
+                '{"event_type":"snapshot_created","run_id":"root","snapshot_name":"snap-a"}',
+            ]
+        )
+        + "\n"
+    )
+
+    report = repeated_work_from_event_logs((event_log,))
+    output_path = tmp_path / "repeated-work.json"
+    write_repeated_work_report(report, output_path)
+
+    child = {run.run_id: run for run in report.runs}["child"]
+    assert child.repeated_setup_count == 1
+    assert child.repeated_sibling_command_count == 1
+
+    data = output_path.read_text()
+    assert "go-explore-repeated-work-v1" in data
+    assert "No semantic equivalence is attempted." in data
