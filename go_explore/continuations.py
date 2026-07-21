@@ -9,6 +9,7 @@ from typing import Any, Sequence
 
 from daytona import AsyncDaytona
 
+from go_explore.events import EVENT_LOG_FILENAME, append_event, base_event
 from go_explore.harbor import HarborRunConfig, build_harbor_command
 from go_explore.results import JobSummary, TrialSummary, summarize_job
 
@@ -237,6 +238,9 @@ def plan_snapshot_continuations(
     extra_args: Sequence[str] = (),
     max_snapshots: int | None = None,
     parent_trial_name: str | None = None,
+    event_log_path: Path | None = None,
+    experiment_id: str | None = None,
+    selector_mode: str = "list_order",
 ) -> list[ContinuationPlan]:
     parent_trial = select_trial(root_summary, parent_trial_name)
     selected_snapshots = (
@@ -268,7 +272,85 @@ def plan_snapshot_continuations(
             )
         )
 
+    if event_log_path is not None:
+        for index, plan in enumerate(plans):
+            log_snapshot_selected(
+                plan,
+                event_log_path=event_log_path,
+                experiment_id=experiment_id,
+                selector_mode=selector_mode,
+                selection_index=index,
+            )
+
     return plans
+
+
+def log_snapshot_selected(
+    plan: ContinuationPlan,
+    *,
+    event_log_path: Path,
+    experiment_id: str | None = None,
+    selector_mode: str = "list_order",
+    selection_index: int = 0,
+    cell_key: str | None = None,
+    priority: float | None = None,
+    score: float | None = None,
+    times_selected: int | None = None,
+    selector_reasons: Sequence[str] = (),
+) -> None:
+    event = base_event(
+        event_type="snapshot_selected",
+        event_id=(
+            f"{plan.parent_trial_name}:snapshot_selected:"
+            f"{selection_index}:{plan.snapshot_name}"
+        ),
+        experiment_id=experiment_id,
+        run_id=plan.parent_trial_name,
+        job_dir=plan.parent_job_dir,
+        trial_name=plan.parent_trial_name,
+    )
+    event.update(
+        {
+            "snapshot_name": plan.snapshot_name,
+            "cell_key": cell_key,
+            "priority": priority,
+            "score": score,
+            "times_selected": times_selected,
+            "selector_mode": selector_mode,
+            "selector_reasons": list(selector_reasons),
+        }
+    )
+    append_event(event_log_path, event)
+
+
+def log_continuation_started(
+    plan: ContinuationPlan,
+    *,
+    event_log_path: Path,
+    experiment_id: str | None = None,
+    start_state_type: str = "full_snapshot",
+    context_mode: str = "parent_summary",
+) -> None:
+    child_job_dir = plan.parent_job_dir.parent / plan.job_name
+    event = base_event(
+        event_type="continuation_started",
+        event_id=f"{plan.job_name}:continuation_started",
+        experiment_id=experiment_id,
+        run_id=plan.parent_trial_name,
+        job_dir=plan.parent_job_dir,
+        trial_name=plan.parent_trial_name,
+    )
+    event.update(
+        {
+            "child_run_id": plan.job_name,
+            "child_job_dir": str(child_job_dir),
+            "parent_run_id": plan.parent_trial_name,
+            "parent_snapshot": plan.snapshot_name,
+            "start_state_type": start_state_type,
+            "context_mode": context_mode,
+        }
+    )
+    append_event(event_log_path, event)
 
 
 def _attempt_from_summary(
@@ -292,7 +374,16 @@ def run_continuation_plan(
     *,
     env: dict[str, str] | None = None,
     capture_output: bool = True,
+    event_log_path: Path | None = None,
+    experiment_id: str | None = None,
 ) -> ContinuationAttempt:
+    if event_log_path is not None:
+        log_continuation_started(
+            plan,
+            event_log_path=event_log_path,
+            experiment_id=experiment_id,
+        )
+
     result = subprocess.run(
         list(plan.command),
         check=False,
@@ -329,8 +420,19 @@ def run_continuation_plans(
     root_trial: TrialSummary,
     report_path: Path,
     env: dict[str, str] | None = None,
+    event_log_path: Path | None = None,
+    experiment_id: str | None = None,
 ) -> ContinuationReport:
-    attempts = tuple(run_continuation_plan(plan, env=env) for plan in plans)
+    events_path = event_log_path or report_path.parent / EVENT_LOG_FILENAME
+    attempts = tuple(
+        run_continuation_plan(
+            plan,
+            env=env,
+            event_log_path=events_path,
+            experiment_id=experiment_id,
+        )
+        for plan in plans
+    )
     report = ContinuationReport(
         root_job_dir=str(root_summary.job_dir),
         root_trial_name=root_trial.trial_name,

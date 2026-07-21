@@ -11,6 +11,7 @@ from go_explore.continuations import (
     run_continuation_plans,
     select_trial,
 )
+from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.harbor import HarborRunConfig, run_harbor
 from go_explore.results import format_job_summary, summarize_job
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
@@ -81,6 +82,7 @@ def continue_from_snapshots(args: argparse.Namespace) -> int:
     )
 
     snapshots = tuple(args.snapshot)
+    selector_mode = "explicit"
     if not snapshots and args.from_archive:
         archive_path = args.archive_path or args.root_job_dir / ARCHIVE_FILENAME
         archive = SnapshotArchive.load(archive_path)
@@ -89,6 +91,7 @@ def continue_from_snapshots(args: argparse.Namespace) -> int:
             return 1
         chosen = archive.select(args.max_snapshots or 3)
         snapshots = tuple(entry.snapshot_name for entry in chosen)
+        selector_mode = "archive_priority"
         print(f"archive: {archive_path} ({len(archive)} cells)")
         for entry in chosen:
             print(
@@ -107,7 +110,9 @@ def continue_from_snapshots(args: argparse.Namespace) -> int:
                 name_prefix=args.snapshot_prefix,
             )
         )
+        selector_mode = "daytona_list"
 
+    event_log_path = args.root_job_dir / EVENT_LOG_FILENAME
     plans = plan_snapshot_continuations(
         root_config=root_config,
         root_summary=root_summary,
@@ -117,6 +122,8 @@ def continue_from_snapshots(args: argparse.Namespace) -> int:
         model=args.model,
         max_snapshots=args.max_snapshots,
         parent_trial_name=root_trial.trial_name,
+        event_log_path=event_log_path,
+        selector_mode=selector_mode,
     )
 
     if not plans:
@@ -134,6 +141,7 @@ def continue_from_snapshots(args: argparse.Namespace) -> int:
         root_summary=root_summary,
         root_trial=root_trial,
         report_path=report_path,
+        event_log_path=event_log_path,
     )
     print(f"continuation_report: {report_path}")
     print(f"attempts: {len(report.attempts)}")
