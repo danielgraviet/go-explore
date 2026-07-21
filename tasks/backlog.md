@@ -23,7 +23,7 @@ Phase 2+ supersedes unfinished Phase 1 tickets. Phase 1 remains archived for his
 
 | ID | Title | Owner | Status | Depends On | Artifact |
 | --- | --- | --- | --- | --- | --- |
-| P2-T001 | Experiment data contract | TBD | ready | - | `docs/experiment-data-contract.md` |
+| P2-T001 | Experiment data contract | TBD | review | - | `docs/experiment-data-contract.md` |
 | P2-T002 | Archive load/merge safety | TBD | ready | - | code/tests |
 | P2-T003 | Snapshot event log | TBD | ready | P2-T001 | event JSONL and code/tests |
 | P2-T004 | Budget accounting v1 | TBD | ready | P2-T001 | report fields and code/tests |
