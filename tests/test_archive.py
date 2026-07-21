@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+
+from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.snapshots.archive import (
     ArchiveStore,
     SnapshotArchive,
@@ -149,6 +152,64 @@ def test_archive_store_satisfies_store_protocol_and_persists(tmp_path):
     assert len(store.archive) == 1
     assert path.exists()
     assert SnapshotArchive.load(path).select(k=1)[0].snapshot_name == "s-a"
+
+
+def test_archive_store_writes_snapshot_created_event(tmp_path):
+    path = tmp_path / "archive.json"
+    store = ArchiveStore(path=path)
+
+    store.put(
+        SnapshotRecord(
+            candidate=_candidate(
+                id="trial:step-2",
+                event=SnapshotEvent.TEST_RUN,
+                changed_files=(),
+                restore_ref="s-test",
+                trial="trial",
+                step=2,
+            ),
+            description="test run",
+            backend="daytona",
+        )
+    )
+
+    events = [
+        json.loads(line)
+        for line in (tmp_path / EVENT_LOG_FILENAME).read_text().splitlines()
+    ]
+    assert len(events) == 1
+    assert events[0]["schema_version"] == "go-explore-event-v1"
+    assert events[0]["event_type"] == "snapshot_created"
+    assert events[0]["event_id"] == "trial:snapshot_created:s-test"
+    assert events[0]["run_id"] == "trial"
+    assert events[0]["trial_name"] == "trial"
+    assert events[0]["step_id"] == 2
+    assert events[0]["snapshot_name"] == "s-test"
+    assert events[0]["cell_key"] == "<test_run>"
+    assert events[0]["score"] == 3.0
+    assert events[0]["selector_reasons"] == ["has validation signal"]
+    assert events[0]["backend"] == "daytona"
+    assert events[0]["archive_accepted"] is True
+
+
+def test_archive_store_appends_snapshot_created_events(tmp_path):
+    path = tmp_path / "archive.json"
+    store = ArchiveStore(path=path)
+
+    for name, changed_files in (("s-a", ("a.py",)), ("s-b", ("b.py",))):
+        store.put(
+            SnapshotRecord(
+                candidate=_candidate(changed_files=changed_files, restore_ref=name),
+                description="file edit",
+                backend="daytona",
+            )
+        )
+
+    events = [
+        json.loads(line)
+        for line in (tmp_path / EVENT_LOG_FILENAME).read_text().splitlines()
+    ]
+    assert [event["snapshot_name"] for event in events] == ["s-a", "s-b"]
 
 
 def test_archive_store_with_missing_path_starts_empty_and_persists(tmp_path):

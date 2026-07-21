@@ -16,7 +16,8 @@ from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
-from go_explore.snapshots.models import SnapshotCandidate, SnapshotRecord
+from go_explore.events import EVENT_LOG_FILENAME, append_event, base_event
+from go_explore.snapshots.models import ScoredSnapshot, SnapshotCandidate, SnapshotRecord
 from go_explore.snapshots.policies import HeuristicSnapshotSelector
 
 ARCHIVE_FILENAME = "archive.json"
@@ -91,6 +92,9 @@ class SnapshotArchive:
     def __len__(self) -> int:
         return len(self._entries)
 
+    def score(self, candidate: SnapshotCandidate) -> ScoredSnapshot:
+        return self._selector.score(candidate)
+
     # ---- writes ----------------------------------------------------------
 
     def add(
@@ -111,7 +115,7 @@ class SnapshotArchive:
             return None
 
         key = cell_key_for(candidate)
-        score = self._selector.score(candidate).score
+        score = self.score(candidate).score
         incumbent = self._entries.get(key)
         if incumbent is not None and incumbent.score >= score:
             return None
@@ -224,7 +228,9 @@ class ArchiveStore:
 
     def put(self, record: SnapshotRecord) -> None:
         self._records[record.id] = record
-        self._archive.add(record.candidate)
+        scored = self._archive.score(record.candidate)
+        entry = self._archive.add(record.candidate)
+        self._write_snapshot_created_event(record, scored, entry is not None)
         self._archive.save()
 
     def get(self, snapshot_id: str) -> SnapshotRecord | None:
@@ -232,3 +238,49 @@ class ArchiveStore:
 
     def list(self) -> list[SnapshotRecord]:
         return list(self._records.values())
+
+    def _write_snapshot_created_event(
+        self,
+        record: SnapshotRecord,
+        scored: ScoredSnapshot,
+        archive_accepted: bool,
+    ) -> None:
+        if self._archive.path is None:
+            return
+
+        candidate = record.candidate
+        snapshot_name = candidate.restore_ref
+        if not snapshot_name:
+            return
+
+        event_log_path = self._archive.path.parent / EVENT_LOG_FILENAME
+        trial_name = candidate.metadata.get("trial_name") or None
+        run_id = trial_name or candidate.id
+        raw_step_id = candidate.metadata.get("step_id")
+        try:
+            step_id = int(raw_step_id) if raw_step_id is not None else None
+        except ValueError:
+            step_id = None
+
+        event = base_event(
+            event_type="snapshot_created",
+            event_id=f"{run_id}:snapshot_created:{snapshot_name}",
+            experiment_id=candidate.metadata.get("experiment_id"),
+            run_id=run_id,
+            job_dir=self._archive.path.parent,
+            trial_name=trial_name,
+            task_id=candidate.metadata.get("task_id"),
+            step_id=step_id,
+        )
+        event.update(
+            {
+                "snapshot_name": snapshot_name,
+                "cell_key": cell_key_for(candidate),
+                "score": scored.score,
+                "selector_reasons": list(scored.reasons),
+                "backend": record.backend,
+                "overhead_seconds": None,
+                "archive_accepted": archive_accepted,
+            }
+        )
+        append_event(event_log_path, event)

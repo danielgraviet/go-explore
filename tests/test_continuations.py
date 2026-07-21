@@ -5,12 +5,15 @@ from pathlib import Path
 
 from go_explore.continuations import (
     ContinuationAttempt,
+    ContinuationPlan,
     ContinuationReport,
     build_snapshot_continuation_config,
     harbor_config_from_job,
+    log_continuation_started,
     plan_snapshot_continuations,
     snapshot_prefix_for_trial,
 )
+from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.harbor import HarborRunConfig, build_harbor_command
 from go_explore.results import JobSummary, TrialSummary
 
@@ -215,6 +218,88 @@ def test_plan_snapshot_continuations_records_parent_lineage():
     assert "model-b" in plans[0].command
     assert "--ek" in plans[0].command
     assert "snapshot_template_name=go-explore-fix-git__root-step-0" in plans[0].command
+
+
+def test_plan_snapshot_continuations_logs_selected_snapshots(tmp_path):
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    root_summary = JobSummary(
+        job_dir=tmp_path / "jobs" / "root",
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name="fix-git__root",
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+    event_log_path = root_summary.job_dir / EVENT_LOG_FILENAME
+
+    plan_snapshot_continuations(
+        root_config=root_config,
+        root_summary=root_summary,
+        snapshots=("snapshot-0", "snapshot-1"),
+        continuation_job_prefix="cont",
+        max_snapshots=2,
+        event_log_path=event_log_path,
+        selector_mode="test_selector",
+    )
+
+    events = [json.loads(line) for line in event_log_path.read_text().splitlines()]
+    assert [event["event_type"] for event in events] == [
+        "snapshot_selected",
+        "snapshot_selected",
+    ]
+    assert [event["snapshot_name"] for event in events] == ["snapshot-0", "snapshot-1"]
+    assert events[0]["schema_version"] == "go-explore-event-v1"
+    assert events[0]["event_id"] == "fix-git__root:snapshot_selected:0:snapshot-0"
+    assert events[0]["run_id"] == "fix-git__root"
+    assert events[0]["job_dir"] == str(root_summary.job_dir)
+    assert events[0]["selector_mode"] == "test_selector"
+
+
+def test_log_continuation_started_writes_lineage_event(tmp_path):
+    event_log_path = tmp_path / "jobs" / "root" / EVENT_LOG_FILENAME
+    plan = ContinuationPlan(
+        parent_job_dir=tmp_path / "jobs" / "root",
+        parent_trial_name="fix-git__root",
+        snapshot_name="snapshot-0",
+        job_name="cont-snapshot-0",
+        command=("harbor", "run"),
+    )
+
+    log_continuation_started(
+        plan,
+        event_log_path=event_log_path,
+        experiment_id="experiment-1",
+    )
+
+    events = [json.loads(line) for line in event_log_path.read_text().splitlines()]
+    assert len(events) == 1
+    event = events[0]
+    assert event["schema_version"] == "go-explore-event-v1"
+    assert event["event_type"] == "continuation_started"
+    assert event["event_id"] == "cont-snapshot-0:continuation_started"
+    assert event["experiment_id"] == "experiment-1"
+    assert event["run_id"] == "fix-git__root"
+    assert event["parent_run_id"] == "fix-git__root"
+    assert event["parent_snapshot"] == "snapshot-0"
+    assert event["child_run_id"] == "cont-snapshot-0"
+    assert event["child_job_dir"] == str(tmp_path / "jobs" / "cont-snapshot-0")
+    assert event["start_state_type"] == "full_snapshot"
+    assert event["context_mode"] == "parent_summary"
 
 
 def test_continuation_report_tracks_any_success():
