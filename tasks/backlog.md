@@ -26,7 +26,7 @@ Phase 2+ supersedes unfinished Phase 1 tickets. Phase 1 remains archived for his
 | P2-T001 | Experiment data contract | TBD | review | - | `docs/experiment-data-contract.md` |
 | P2-T002 | Archive load/merge safety | TBD | review | - | code/tests |
 | P2-T003 | Snapshot event log | TBD | review | P2-T001 | event JSONL and code/tests |
-| P2-T004 | Budget accounting v1 | TBD | ready | P2-T001 | report fields and code/tests |
+| P2-T004 | Budget accounting v1 | TBD | review | P2-T001 | report fields and code/tests |
 | P2-T005 | Command and test signal extraction | TBD | ready | P2-T001 | code/tests |
 | P2-T006 | Continuation context modes spec | TBD | ready | - | `docs/continuation-context-modes.md` |
 

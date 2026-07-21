@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import subprocess
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -11,7 +11,7 @@ from daytona import AsyncDaytona
 
 from go_explore.events import EVENT_LOG_FILENAME, append_event, base_event
 from go_explore.harbor import HarborRunConfig, build_harbor_command
-from go_explore.results import JobSummary, TrialSummary, summarize_job
+from go_explore.results import BudgetSummary, JobSummary, TrialSummary, summarize_job
 
 
 class ContinuationError(ValueError):
@@ -48,6 +48,7 @@ class ContinuationAttempt:
     continuation_trial_name: str | None
     reward: float | None
     exception_type: str | None
+    budget: BudgetSummary = field(default_factory=BudgetSummary)
 
     @property
     def succeeded(self) -> bool:
@@ -62,6 +63,7 @@ class ContinuationReport:
     root_trial_name: str
     root_reward: float | None
     attempts: tuple[ContinuationAttempt, ...]
+    root_budget: BudgetSummary = field(default_factory=BudgetSummary)
 
     @property
     def any_success(self) -> bool:
@@ -72,6 +74,7 @@ class ContinuationReport:
             "root_job_dir": self.root_job_dir,
             "root_trial_name": self.root_trial_name,
             "root_reward": self.root_reward,
+            "root_budget": asdict(self.root_budget),
             "any_success": self.any_success,
             "attempts": [
                 asdict(attempt) | {"succeeded": attempt.succeeded}
@@ -366,6 +369,7 @@ def _attempt_from_summary(
         continuation_trial_name=trial.trial_name if trial else None,
         reward=trial.reward if trial else None,
         exception_type=trial.exception_type if trial else "missing-trial-result",
+        budget=trial.budget if trial else BudgetSummary(),
     )
 
 
@@ -401,6 +405,7 @@ def run_continuation_plan(
             continuation_trial_name=None,
             reward=None,
             exception_type=f"harbor-return-code-{result.returncode}",
+            budget=BudgetSummary(),
         )
 
     summary = summarize_job(job_dir)
@@ -438,6 +443,7 @@ def run_continuation_plans(
         root_trial_name=root_trial.trial_name,
         root_reward=root_trial.reward,
         attempts=attempts,
+        root_budget=root_trial.budget,
     )
     write_continuation_report(report, report_path)
     return report
