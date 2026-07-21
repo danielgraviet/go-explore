@@ -25,6 +25,11 @@ from go_explore.fixed_budget import (
     plan_fixed_budget_runs,
     write_fixed_budget_manifest,
 )
+from go_explore.figure_tables import (
+    FigureTableInputs,
+    build_figure_tables,
+    write_figure_tables,
+)
 from go_explore.harbor import HarborRunConfig, run_harbor
 from go_explore.results import format_job_summary, summarize_job
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
@@ -334,6 +339,25 @@ def build_analysis_tables_cmd(args: argparse.Namespace) -> int:
     return 0
 
 
+def build_figure_tables_cmd(args: argparse.Namespace) -> int:
+    report = build_figure_tables(
+        FigureTableInputs(
+            task_summary_paths=tuple(args.task_summary),
+            run_summary_paths=tuple(args.run_summary),
+            execution_status_path=args.execution_status,
+        )
+    )
+    write_figure_tables(report, args.output_dir)
+    print(f"figure_dir: {args.output_dir}")
+    print(f"figure_status: {args.output_dir / 'figure-status.csv'}")
+    for status in report.statuses:
+        print(
+            f"{status['figure']}\t{status['status']}\t"
+            f"rows={status['source_rows']}"
+        )
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="go-explore")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -535,6 +559,32 @@ def main() -> int:
         help="Do not emit missing_result rows for planned jobs absent from disk.",
     )
     analysis_parser.set_defaults(func=build_analysis_tables_cmd)
+
+    figure_parser = subparsers.add_parser(
+        "build-figure-tables",
+        help="Generate paper figure source tables from normalized analysis CSVs.",
+    )
+    figure_parser.add_argument(
+        "--task-summary",
+        type=Path,
+        action="append",
+        default=[],
+        help="task-summary.csv path. Repeat to include multiple result shards.",
+    )
+    figure_parser.add_argument(
+        "--run-summary",
+        type=Path,
+        action="append",
+        default=[],
+        help="run-summary.csv path. Repeat to include multiple result shards.",
+    )
+    figure_parser.add_argument(
+        "--execution-status",
+        type=Path,
+        help="Optional execution-status.csv ledger for planned job coverage.",
+    )
+    figure_parser.add_argument("--output-dir", type=Path, required=True)
+    figure_parser.set_defaults(func=build_figure_tables_cmd)
 
     args = parser.parse_args()
     return args.func(args)

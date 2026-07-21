@@ -1,0 +1,9 @@
+artifact,figure,interpretation,source_rows,status
+solve_rate_by_method.csv,solve_rate_by_method,Requires completed task-summary rows.,0,deferred_no_task_summary
+cost_per_solved_task.csv,cost_per_solved_task,Requires solved tasks with cost fields.,0,deferred_no_task_summary
+unique_task_overlap.csv,unique_task_overlap,Requires at least one solved task.,0,deferred_no_task_summary
+branch_success_by_snapshot_event_type.csv,branch_success_by_snapshot_event_type,Requires continuation run rows joined with snapshot cell keys.,0,deferred_no_run_summary
+promising_vs_random_branch_lift.csv,promising_vs_random_branch_lift,Requires paired random_branch and promising_branch task outcomes.,0,deferred_no_task_summary
+repeated_setup_work.csv,repeated_setup_work,Requires repeated-work metrics joined into run rows.,0,deferred_no_run_summary
+snapshot_overhead.csv,snapshot_overhead,Requires persisted snapshot/restore overhead fields.,0,deferred_no_run_summary
+oracle_gap.csv,oracle_gap,Requires oracle_branch rows or precomputed oracle labels.,0,deferred_no_task_summary
