@@ -13,6 +13,7 @@ Task states:
 - `in-progress`: actively owned.
 - `review`: implementation, experiment, or writeup is ready for review.
 - `done`: accepted and linked from the backlog.
+- `superseded`: kept for history, but replaced by a newer task or phase.
 
 Keep `tasks/backlog.md` as the source of truth for status. Individual task files should contain the details needed to execute the work.
 
