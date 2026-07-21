@@ -45,7 +45,7 @@ Phase 2+ supersedes unfinished Phase 1 tickets. Phase 1 remains archived for his
 
 | ID | Title | Owner | Status | Depends On | Artifact |
 | --- | --- | --- | --- | --- | --- |
-| P4-T001 | Task set curation | TBD | backlog | P3-T005 | `docs/experiments/task-set.md` |
+| P4-T001 | Task set curation | TBD | review | P3-T005 | `docs/experiments/task-set.md` |
 | P4-T002 | Main benchmark execution | TBD | backlog | P4-T001, P3-T003 | manifests, job paths, raw reports |
 | P4-T003 | Paper figures v1 | TBD | backlog | P4-T002, P3-T006 | `docs/experiments/figures/` |
 | P4-T004 | Failure case audit | TBD | backlog | P4-T002 | `docs/experiments/failure-case-audit.md` |
