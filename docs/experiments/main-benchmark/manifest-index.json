@@ -1,0 +1,332 @@
+{
+  "schema_version": "go-explore-benchmark-manifest-index-v1",
+  "date": "2026-07-21",
+  "dataset": "terminal-bench@2.0",
+  "model": "anthropic/claude-haiku-4-5-20251001",
+  "agent_import_path": "go_explore.agents.factory:SnapshotAwareTerminus2",
+  "environment": "daytona",
+  "total_token_budget": 100000,
+  "budget_enforcement": "planning_only",
+  "methods": [
+    "single",
+    "retry",
+    "random_branch",
+    "promising_branch"
+  ],
+  "seeds": [
+    0
+  ],
+  "n_retries": 5,
+  "n_branch_continuations": 2,
+  "branch_root_fraction": 0.3,
+  "groups": {
+    "smoke": {
+      "n_tasks": 6,
+      "n_planned_jobs": 72,
+      "n_pending_root_archive_jobs": 24,
+      "manifests": [
+        {
+          "task_id": "fix-git",
+          "path": "docs/experiments/main-benchmark/manifests/smoke/fix-git.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "regex-log",
+          "path": "docs/experiments/main-benchmark/manifests/smoke/regex-log.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "git-leak-recovery",
+          "path": "docs/experiments/main-benchmark/manifests/smoke/git-leak-recovery.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "openssl-selfsigned-cert",
+          "path": "docs/experiments/main-benchmark/manifests/smoke/openssl-selfsigned-cert.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "sqlite-db-truncate",
+          "path": "docs/experiments/main-benchmark/manifests/smoke/sqlite-db-truncate.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "qemu-startup",
+          "path": "docs/experiments/main-benchmark/manifests/smoke/qemu-startup.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        }
+      ]
+    },
+    "primary": {
+      "n_tasks": 43,
+      "n_planned_jobs": 516,
+      "n_pending_root_archive_jobs": 172,
+      "manifests": [
+        {
+          "task_id": "regex-log",
+          "path": "docs/experiments/main-benchmark/manifests/primary/regex-log.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "log-summary-date-ranges",
+          "path": "docs/experiments/main-benchmark/manifests/primary/log-summary-date-ranges.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "multi-source-data-merger",
+          "path": "docs/experiments/main-benchmark/manifests/primary/multi-source-data-merger.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "financial-document-processor",
+          "path": "docs/experiments/main-benchmark/manifests/primary/financial-document-processor.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "hf-model-inference",
+          "path": "docs/experiments/main-benchmark/manifests/primary/hf-model-inference.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "query-optimize",
+          "path": "docs/experiments/main-benchmark/manifests/primary/query-optimize.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "mteb-retrieve",
+          "path": "docs/experiments/main-benchmark/manifests/primary/mteb-retrieve.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "build-cython-ext",
+          "path": "docs/experiments/main-benchmark/manifests/primary/build-cython-ext.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "merge-diff-arc-agi-task",
+          "path": "docs/experiments/main-benchmark/manifests/primary/merge-diff-arc-agi-task.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "sqlite-db-truncate",
+          "path": "docs/experiments/main-benchmark/manifests/primary/sqlite-db-truncate.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "custom-memory-heap-crash",
+          "path": "docs/experiments/main-benchmark/manifests/primary/custom-memory-heap-crash.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "db-wal-recovery",
+          "path": "docs/experiments/main-benchmark/manifests/primary/db-wal-recovery.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "extract-elf",
+          "path": "docs/experiments/main-benchmark/manifests/primary/extract-elf.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "large-scale-text-editing",
+          "path": "docs/experiments/main-benchmark/manifests/primary/large-scale-text-editing.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "caffe-cifar-10",
+          "path": "docs/experiments/main-benchmark/manifests/primary/caffe-cifar-10.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "count-dataset-tokens",
+          "path": "docs/experiments/main-benchmark/manifests/primary/count-dataset-tokens.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "pytorch-model-cli",
+          "path": "docs/experiments/main-benchmark/manifests/primary/pytorch-model-cli.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "pytorch-model-recovery",
+          "path": "docs/experiments/main-benchmark/manifests/primary/pytorch-model-recovery.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "modernize-scientific-stack",
+          "path": "docs/experiments/main-benchmark/manifests/primary/modernize-scientific-stack.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "adaptive-rejection-sampler",
+          "path": "docs/experiments/main-benchmark/manifests/primary/adaptive-rejection-sampler.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "raman-fitting",
+          "path": "docs/experiments/main-benchmark/manifests/primary/raman-fitting.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "tune-mjcf",
+          "path": "docs/experiments/main-benchmark/manifests/primary/tune-mjcf.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "dna-insert",
+          "path": "docs/experiments/main-benchmark/manifests/primary/dna-insert.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "openssl-selfsigned-cert",
+          "path": "docs/experiments/main-benchmark/manifests/primary/openssl-selfsigned-cert.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "sanitize-git-repo",
+          "path": "docs/experiments/main-benchmark/manifests/primary/sanitize-git-repo.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "vulnerable-secret",
+          "path": "docs/experiments/main-benchmark/manifests/primary/vulnerable-secret.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "break-filter-js-from-html",
+          "path": "docs/experiments/main-benchmark/manifests/primary/break-filter-js-from-html.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "crack-7z-hash",
+          "path": "docs/experiments/main-benchmark/manifests/primary/crack-7z-hash.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "git-leak-recovery",
+          "path": "docs/experiments/main-benchmark/manifests/primary/git-leak-recovery.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "headless-terminal",
+          "path": "docs/experiments/main-benchmark/manifests/primary/headless-terminal.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "kv-store-grpc",
+          "path": "docs/experiments/main-benchmark/manifests/primary/kv-store-grpc.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "polyglot-c-py",
+          "path": "docs/experiments/main-benchmark/manifests/primary/polyglot-c-py.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "pypi-server",
+          "path": "docs/experiments/main-benchmark/manifests/primary/pypi-server.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "code-from-image",
+          "path": "docs/experiments/main-benchmark/manifests/primary/code-from-image.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "git-multibranch",
+          "path": "docs/experiments/main-benchmark/manifests/primary/git-multibranch.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "nginx-request-logging",
+          "path": "docs/experiments/main-benchmark/manifests/primary/nginx-request-logging.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "qemu-startup",
+          "path": "docs/experiments/main-benchmark/manifests/primary/qemu-startup.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "sqlite-with-gcov",
+          "path": "docs/experiments/main-benchmark/manifests/primary/sqlite-with-gcov.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "qemu-alpine-ssh",
+          "path": "docs/experiments/main-benchmark/manifests/primary/qemu-alpine-ssh.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "gcode-to-text",
+          "path": "docs/experiments/main-benchmark/manifests/primary/gcode-to-text.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "largest-eigenval",
+          "path": "docs/experiments/main-benchmark/manifests/primary/largest-eigenval.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "constraints-scheduling",
+          "path": "docs/experiments/main-benchmark/manifests/primary/constraints-scheduling.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        },
+        {
+          "task_id": "chess-best-move",
+          "path": "docs/experiments/main-benchmark/manifests/primary/chess-best-move.json",
+          "planned_jobs": 12,
+          "pending_root_archive_jobs": 4
+        }
+      ]
+    }
+  }
+}
