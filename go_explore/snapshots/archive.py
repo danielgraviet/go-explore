@@ -208,7 +208,14 @@ class ArchiveStore:
     """
 
     def __init__(self, archive: SnapshotArchive | None = None, path: Path | None = None):
-        self._archive = archive or SnapshotArchive(path=path)
+        if archive is not None:
+            self._archive = archive
+        elif path is not None:
+            # Load before writing so later process-local stores do not clobber
+            # entries already persisted by earlier roots or continuations.
+            self._archive = SnapshotArchive.load(Path(path))
+        else:
+            self._archive = SnapshotArchive()
         self._records: dict[str, SnapshotRecord] = {}
 
     @property
