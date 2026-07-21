@@ -8,11 +8,14 @@ from go_explore.continuations import (
     ContinuationPlan,
     ContinuationReport,
     SnapshotSelectionMetadata,
+    build_clean_start_config,
     build_snapshot_continuation_config,
     harbor_config_from_job,
     log_continuation_started,
+    plan_start_state_baselines,
     plan_snapshot_continuations,
     snapshot_prefix_for_trial,
+    write_plan_manifest,
 )
 from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.harbor import HarborRunConfig, build_harbor_command
@@ -68,6 +71,49 @@ def test_build_snapshot_continuation_config_restores_daytona_snapshot():
         "--export-traces",
         "--ek",
         "snapshot_template_name=go-explore-fix-git__abc-step-2",
+    ]
+
+
+def test_build_clean_start_config_uses_original_task_without_snapshot():
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+
+    config = build_clean_start_config(
+        root_config=root_config,
+        job_name="cont-clean",
+    )
+
+    assert config.environment_kwargs == ()
+    assert build_harbor_command(config) == [
+        "harbor",
+        "run",
+        "--agent",
+        "terminus-2",
+        "--env",
+        "daytona",
+        "--jobs-dir",
+        "jobs",
+        "--n-attempts",
+        "1",
+        "--n-concurrent",
+        "1",
+        "--dataset",
+        "terminal-bench@2.0",
+        "--model",
+        "model-a",
+        "--include-task-name",
+        "fix-git",
+        "--n-tasks",
+        "1",
+        "--job-name",
+        "cont-clean",
+        "--export-traces",
     ]
 
 
@@ -436,6 +482,89 @@ def test_plan_snapshot_continuations_logs_selector_metadata(tmp_path):
     assert event["times_selected"] == 3
 
 
+def test_plan_start_state_baselines_records_modes_and_artifacts(tmp_path):
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    root_summary = JobSummary(
+        job_dir=tmp_path / "jobs" / "root",
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name="fix-git__root",
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+
+    plans = plan_start_state_baselines(
+        root_config=root_config,
+        root_summary=root_summary,
+        continuation_job_prefix="claim1",
+        start_state_types=("clean", "diff_only", "full_snapshot"),
+        snapshots=("snapshot-a", "snapshot-b"),
+        diff_path=tmp_path / "parent.diff",
+        max_snapshots=1,
+    )
+
+    assert [plan.start_state_type for plan in plans] == [
+        "clean",
+        "diff_only",
+        "full_snapshot",
+    ]
+    assert [plan.context_mode for plan in plans] == [
+        "original_task_only",
+        "original_task_only",
+        "parent_summary",
+    ]
+    assert plans[0].snapshot_name is None
+    assert plans[0].parent_artifacts == ()
+    assert "--ek" not in plans[0].command
+    assert plans[1].snapshot_name is None
+    assert plans[1].parent_artifacts == (str(tmp_path / "parent.diff"),)
+    assert plans[1].executor_status == "manifest_only"
+    assert "--ek" not in plans[1].command
+    assert plans[2].snapshot_name == "snapshot-a"
+    assert plans[2].executor_status == "ready"
+    assert "snapshot_template_name=snapshot-a" in plans[2].command
+
+
+def test_write_plan_manifest_serializes_start_state_metadata(tmp_path):
+    plan = ContinuationPlan(
+        parent_job_dir=tmp_path / "jobs" / "root",
+        parent_trial_name="fix-git__root",
+        snapshot_name=None,
+        job_name="claim1-diff-only",
+        command=("harbor", "run"),
+        start_state_type="diff_only",
+        context_mode="original_task_only",
+        parent_artifacts=(str(tmp_path / "parent.diff"),),
+        executor_status="manifest_only",
+    )
+    manifest_path = tmp_path / "plans" / "start-state-plan.json"
+
+    write_plan_manifest((plan,), manifest_path)
+
+    data = json.loads(manifest_path.read_text())
+    assert data["schema_version"] == "go-explore-start-state-plan-v1"
+    assert data["plans"][0]["parent_snapshot"] is None
+    assert data["plans"][0]["start_state_type"] == "diff_only"
+    assert data["plans"][0]["context_mode"] == "original_task_only"
+    assert data["plans"][0]["parent_artifacts"] == [str(tmp_path / "parent.diff")]
+    assert data["plans"][0]["executor_status"] == "manifest_only"
+
+
 def test_log_continuation_started_writes_lineage_event(tmp_path):
     event_log_path = tmp_path / "jobs" / "root" / EVENT_LOG_FILENAME
     plan = ContinuationPlan(
@@ -466,6 +595,59 @@ def test_log_continuation_started_writes_lineage_event(tmp_path):
     assert event["child_job_dir"] == str(tmp_path / "jobs" / "cont-snapshot-0")
     assert event["start_state_type"] == "full_snapshot"
     assert event["context_mode"] == "parent_summary"
+    assert event["parent_artifacts"] == []
+    assert event["executor_status"] == "ready"
+
+
+def test_log_continuation_started_uses_plan_start_state_metadata(tmp_path):
+    event_log_path = tmp_path / "jobs" / "root" / EVENT_LOG_FILENAME
+    plan = ContinuationPlan(
+        parent_job_dir=tmp_path / "jobs" / "root",
+        parent_trial_name="fix-git__root",
+        snapshot_name=None,
+        job_name="cont-diff-only",
+        command=("harbor", "run"),
+        start_state_type="diff_only",
+        context_mode="original_task_only",
+        parent_artifacts=(str(tmp_path / "parent.diff"),),
+        executor_status="manifest_only",
+    )
+
+    log_continuation_started(plan, event_log_path=event_log_path)
+
+    event = json.loads(event_log_path.read_text())
+    assert event["parent_snapshot"] is None
+    assert event["start_state_type"] == "diff_only"
+    assert event["context_mode"] == "original_task_only"
+    assert event["parent_artifacts"] == [str(tmp_path / "parent.diff")]
+    assert event["executor_status"] == "manifest_only"
+
+
+def test_continuation_report_includes_start_state_fields():
+    attempt = ContinuationAttempt(
+        parent_job_dir="jobs/root",
+        parent_trial_name="fix-git__root",
+        snapshot_name=None,
+        continuation_job_dir="jobs/claim1-diff-only",
+        continuation_trial_name=None,
+        reward=None,
+        exception_type="manifest-only",
+        start_state_type="diff_only",
+        context_mode="original_task_only",
+        parent_artifacts=("jobs/root/parent.diff",),
+    )
+    report = ContinuationReport(
+        root_job_dir="jobs/root",
+        root_trial_name="fix-git__root",
+        root_reward=0.0,
+        attempts=(attempt,),
+    )
+
+    data = report.to_json_dict()
+    assert data["attempts"][0]["snapshot_name"] is None
+    assert data["attempts"][0]["start_state_type"] == "diff_only"
+    assert data["attempts"][0]["context_mode"] == "original_task_only"
+    assert data["attempts"][0]["parent_artifacts"] == ("jobs/root/parent.diff",)
 
 
 def test_continuation_report_tracks_any_success():

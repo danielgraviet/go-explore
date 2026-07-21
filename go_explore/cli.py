@@ -8,9 +8,11 @@ from go_explore.continuations import (
     SnapshotSelectionMetadata,
     harbor_config_from_job,
     list_daytona_snapshots_for_trial_sync,
+    plan_start_state_baselines,
     plan_snapshot_continuations,
     run_continuation_plans,
     select_trial,
+    write_plan_manifest,
 )
 from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.harbor import HarborRunConfig, run_harbor
@@ -184,6 +186,72 @@ def continue_from_snapshots(args: argparse.Namespace) -> int:
     return 0 if report.any_success else 1
 
 
+def plan_start_state_baselines_cmd(args: argparse.Namespace) -> int:
+    root_summary = summarize_job(args.root_job_dir)
+    root_trial = select_trial(root_summary, args.trial_name)
+    root_config = harbor_config_from_job(
+        args.root_job_dir,
+        agent=args.agent,
+        model=args.model,
+        extra_args=tuple(args.extra_arg),
+    )
+
+    snapshots = tuple(args.snapshot)
+    if not snapshots and args.from_archive:
+        archive_path = args.archive_path or args.root_job_dir / ARCHIVE_FILENAME
+        archive = SnapshotArchive.load(archive_path)
+        if not len(archive):
+            print(f"Archive {archive_path} is empty or missing.")
+            return 1
+        oracle_labels = (
+            load_oracle_labels(args.oracle_labels) if args.oracle_labels else None
+        )
+        try:
+            chosen = select_archive_entries(
+                archive,
+                mode=args.selector_mode,
+                k=args.max_snapshots or 3,
+                seed=args.selector_seed,
+                oracle_labels=oracle_labels,
+            )
+        except ValueError as error:
+            print(str(error))
+            return 1
+        snapshots = tuple(selection.entry.snapshot_name for selection in chosen)
+
+    start_state_types = tuple(
+        args.start_state_type or ("clean", "diff_only", "full_snapshot")
+    )
+    if "full_snapshot" in start_state_types and not snapshots:
+        print("Full snapshot planning requires --snapshot or --from-archive.")
+        return 1
+
+    plans = plan_start_state_baselines(
+        root_config=root_config,
+        root_summary=root_summary,
+        continuation_job_prefix=args.job_prefix,
+        start_state_types=start_state_types,
+        snapshots=snapshots,
+        diff_path=args.diff_path,
+        agent=args.agent,
+        model=args.model,
+        max_snapshots=args.max_snapshots,
+        parent_trial_name=root_trial.trial_name,
+    )
+
+    if args.manifest_path:
+        write_plan_manifest(plans, args.manifest_path)
+        print(f"manifest: {args.manifest_path}")
+
+    for plan in plans:
+        print(
+            f"{plan.start_state_type}\t{plan.context_mode}\t"
+            f"{plan.executor_status}\t{plan.job_name}"
+        )
+        print(shlex.join(plan.command))
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="go-explore")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -253,6 +321,42 @@ def main() -> int:
         help="Run Harbor continuation jobs instead of printing commands.",
     )
     continue_parser.set_defaults(func=continue_from_snapshots)
+
+    start_state_parser = subparsers.add_parser(
+        "plan-start-state-baselines",
+        help="Plan clean, diff-only, and full-snapshot baseline child jobs.",
+    )
+    start_state_parser.add_argument("root_job_dir", type=Path)
+    start_state_parser.add_argument("--trial-name")
+    start_state_parser.add_argument(
+        "--start-state-type",
+        action="append",
+        choices=("clean", "diff_only", "full_snapshot"),
+        help="Start-state mode to include. Repeat to plan multiple modes.",
+    )
+    start_state_parser.add_argument("--snapshot", action="append", default=[])
+    start_state_parser.add_argument(
+        "--from-archive",
+        action="store_true",
+        help="Use archive.json to choose snapshots for full-snapshot plans.",
+    )
+    start_state_parser.add_argument(
+        "--selector-mode",
+        choices=("archive_priority", "list_order", "random", "oracle"),
+        default="archive_priority",
+        help="Archive selector policy used with --from-archive.",
+    )
+    start_state_parser.add_argument("--selector-seed", type=int)
+    start_state_parser.add_argument("--oracle-labels", type=Path)
+    start_state_parser.add_argument("--archive-path", type=Path)
+    start_state_parser.add_argument("--diff-path", type=Path)
+    start_state_parser.add_argument("--manifest-path", type=Path)
+    start_state_parser.add_argument("--job-prefix", required=True)
+    start_state_parser.add_argument("--max-snapshots", type=int)
+    start_state_parser.add_argument("--agent")
+    start_state_parser.add_argument("--model")
+    start_state_parser.add_argument("--extra-arg", action="append", default=[])
+    start_state_parser.set_defaults(func=plan_start_state_baselines_cmd)
 
     args = parser.parse_args()
     return args.func(args)
