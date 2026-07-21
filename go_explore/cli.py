@@ -4,6 +4,11 @@ import argparse
 import shlex
 from pathlib import Path
 
+from go_explore.analysis_tables import (
+    AnalysisInputs,
+    build_analysis_tables,
+    write_analysis_tables,
+)
 from go_explore.continuations import (
     SnapshotSelectionMetadata,
     harbor_config_from_job,
@@ -307,6 +312,28 @@ def plan_fixed_budget(args: argparse.Namespace) -> int:
     return 0
 
 
+def build_analysis_tables_cmd(args: argparse.Namespace) -> int:
+    tables = build_analysis_tables(
+        AnalysisInputs(
+            manifest_path=args.manifest,
+            job_dirs=tuple(args.job_dir),
+            continuation_report_paths=tuple(args.continuation_report),
+            event_log_paths=tuple(args.event_log),
+            repeated_work_report_paths=tuple(args.repeated_work_report),
+            jobs_dir=args.jobs_dir,
+            include_missing_planned=not args.only_observed_runs,
+        )
+    )
+    write_analysis_tables(tables, args.output_dir)
+    print(f"run_summary: {args.output_dir / 'run-summary.csv'}")
+    print(f"task_summary: {args.output_dir / 'task-summary.csv'}")
+    print(f"warnings: {args.output_dir / 'warnings.json'}")
+    print(f"run_rows: {len(tables.run_rows)}")
+    print(f"task_rows: {len(tables.task_rows)}")
+    print(f"warnings_count: {len(tables.warnings)}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="go-explore")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -466,6 +493,48 @@ def main() -> int:
         ),
     )
     fixed_budget_parser.set_defaults(func=plan_fixed_budget)
+
+    analysis_parser = subparsers.add_parser(
+        "build-analysis-tables",
+        help="Generate normalized run and task summary tables from experiment artifacts.",
+    )
+    analysis_parser.add_argument("--manifest", type=Path)
+    analysis_parser.add_argument(
+        "--job-dir",
+        type=Path,
+        action="append",
+        default=[],
+        help="Harbor job directory to include. Repeat for multiple jobs.",
+    )
+    analysis_parser.add_argument(
+        "--continuation-report",
+        type=Path,
+        action="append",
+        default=[],
+        help="continuation-report.json path to join lineage metadata.",
+    )
+    analysis_parser.add_argument(
+        "--event-log",
+        type=Path,
+        action="append",
+        default=[],
+        help="events.jsonl path to join snapshot counts and selector metadata.",
+    )
+    analysis_parser.add_argument(
+        "--repeated-work-report",
+        type=Path,
+        action="append",
+        default=[],
+        help="Repeated-work JSON report to join run-level repeated setup scores.",
+    )
+    analysis_parser.add_argument("--jobs-dir", type=Path, default=Path("jobs"))
+    analysis_parser.add_argument("--output-dir", type=Path, required=True)
+    analysis_parser.add_argument(
+        "--only-observed-runs",
+        action="store_true",
+        help="Do not emit missing_result rows for planned jobs absent from disk.",
+    )
+    analysis_parser.set_defaults(func=build_analysis_tables_cmd)
 
     args = parser.parse_args()
     return args.func(args)
