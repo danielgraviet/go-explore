@@ -5,6 +5,7 @@ import shlex
 from pathlib import Path
 
 from go_explore.continuations import (
+    SnapshotSelectionMetadata,
     harbor_config_from_job,
     list_daytona_snapshots_for_trial_sync,
     plan_snapshot_continuations,
@@ -15,6 +16,7 @@ from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.harbor import HarborRunConfig, run_harbor
 from go_explore.results import format_job_summary, summarize_job
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
+from go_explore.snapshots.selectors import load_oracle_labels, select_archive_entries
 from go_explore.task_inventory import load_cached_tasks
 
 
@@ -83,25 +85,57 @@ def continue_from_snapshots(args: argparse.Namespace) -> int:
 
     snapshots = tuple(args.snapshot)
     selector_mode = "explicit"
+    selection_metadata: tuple[SnapshotSelectionMetadata, ...] = ()
+    plan_max_snapshots = args.max_snapshots
     if not snapshots and args.from_archive:
         archive_path = args.archive_path or args.root_job_dir / ARCHIVE_FILENAME
         archive = SnapshotArchive.load(archive_path)
         if not len(archive):
             print(f"Archive {archive_path} is empty or missing.")
             return 1
-        chosen = archive.select(args.max_snapshots or 3)
-        snapshots = tuple(entry.snapshot_name for entry in chosen)
-        selector_mode = "archive_priority"
+        oracle_labels = (
+            load_oracle_labels(args.oracle_labels) if args.oracle_labels else None
+        )
+        try:
+            chosen = select_archive_entries(
+                archive,
+                mode=args.selector_mode,
+                k=args.max_snapshots or 3,
+                seed=args.selector_seed,
+                oracle_labels=oracle_labels,
+            )
+        except ValueError as error:
+            print(str(error))
+            return 1
+        snapshots = tuple(selection.entry.snapshot_name for selection in chosen)
+        plan_max_snapshots = None
+        selector_mode = args.selector_mode
+        selection_metadata = tuple(
+            SnapshotSelectionMetadata(
+                snapshot_name=selection.entry.snapshot_name,
+                selector_mode=selection.selector_mode,
+                cell_key=selection.entry.cell_key,
+                priority=selection.entry.priority,
+                score=selection.entry.score,
+                times_selected=selection.entry.times_selected,
+                selector_reasons=selection.selector_reasons,
+            )
+            for selection in chosen
+        )
         print(f"archive: {archive_path} ({len(archive)} cells)")
-        for entry in chosen:
+        for selection in chosen:
+            entry = selection.entry
             print(
                 f"  select {entry.snapshot_name}"
-                f"  cell={entry.cell_key}  score={entry.score:.2f}"
+                f"  mode={selection.selector_mode}"
+                f"  cell={entry.cell_key}"
+                f"  priority={entry.priority:.2f}"
+                f"  score={entry.score:.2f}"
             )
         # Record the fork so a later run rotates to the rest of the frontier
         # instead of picking these same cells again.
-        for entry in chosen:
-            archive.mark_selected(entry.cell_key)
+        for selection in chosen:
+            archive.mark_selected(selection.entry.cell_key)
         archive.save()
     if not snapshots:
         snapshots = tuple(
@@ -120,10 +154,11 @@ def continue_from_snapshots(args: argparse.Namespace) -> int:
         continuation_job_prefix=args.job_prefix,
         agent=args.agent,
         model=args.model,
-        max_snapshots=args.max_snapshots,
+        max_snapshots=plan_max_snapshots,
         parent_trial_name=root_trial.trial_name,
         event_log_path=event_log_path,
         selector_mode=selector_mode,
+        selection_metadata=selection_metadata,
     )
 
     if not plans:
@@ -180,7 +215,26 @@ def main() -> int:
     continue_parser.add_argument(
         "--from-archive",
         action="store_true",
-        help="Pick snapshots by archive score (select_k) instead of listing Daytona.",
+        help="Pick snapshots from archive.json instead of listing Daytona.",
+    )
+    continue_parser.add_argument(
+        "--selector-mode",
+        choices=("archive_priority", "list_order", "random", "oracle"),
+        default="archive_priority",
+        help="Archive selector policy used with --from-archive.",
+    )
+    continue_parser.add_argument(
+        "--selector-seed",
+        type=int,
+        help="Seed for --selector-mode random.",
+    )
+    continue_parser.add_argument(
+        "--oracle-labels",
+        type=Path,
+        help=(
+            "JSON object mapping snapshot names or archive cell keys to oracle "
+            "scores for --selector-mode oracle."
+        ),
     )
     continue_parser.add_argument(
         "--archive-path",

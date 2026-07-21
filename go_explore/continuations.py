@@ -38,6 +38,19 @@ class ContinuationPlan:
 
 
 @dataclass(frozen=True)
+class SnapshotSelectionMetadata:
+    """Selector metadata associated with one planned snapshot continuation."""
+
+    snapshot_name: str
+    selector_mode: str
+    cell_key: str | None = None
+    priority: float | None = None
+    score: float | None = None
+    times_selected: int | None = None
+    selector_reasons: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class ContinuationAttempt:
     """Result lineage for a continuation trial."""
 
@@ -244,6 +257,7 @@ def plan_snapshot_continuations(
     event_log_path: Path | None = None,
     experiment_id: str | None = None,
     selector_mode: str = "list_order",
+    selection_metadata: Sequence[SnapshotSelectionMetadata] = (),
 ) -> list[ContinuationPlan]:
     parent_trial = select_trial(root_summary, parent_trial_name)
     selected_snapshots = (
@@ -276,13 +290,26 @@ def plan_snapshot_continuations(
         )
 
     if event_log_path is not None:
+        metadata_by_snapshot = {
+            metadata.snapshot_name: metadata for metadata in selection_metadata
+        }
         for index, plan in enumerate(plans):
+            metadata = metadata_by_snapshot.get(plan.snapshot_name)
             log_snapshot_selected(
                 plan,
                 event_log_path=event_log_path,
                 experiment_id=experiment_id,
-                selector_mode=selector_mode,
+                selector_mode=(
+                    metadata.selector_mode if metadata else selector_mode
+                ),
                 selection_index=index,
+                cell_key=metadata.cell_key if metadata else None,
+                priority=metadata.priority if metadata else None,
+                score=metadata.score if metadata else None,
+                times_selected=metadata.times_selected if metadata else None,
+                selector_reasons=(
+                    metadata.selector_reasons if metadata else ()
+                ),
             )
 
     return plans

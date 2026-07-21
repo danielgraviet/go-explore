@@ -24,6 +24,11 @@ from go_explore.snapshots.models import (
     context_from_atif_step,
 )
 from go_explore.snapshots.replay import process_atif_steps, process_atif_trajectory
+from go_explore.snapshots.selectors import (
+    ArchiveSelection,
+    ArchiveSelectorMode,
+    select_archive_entries,
+)
 from go_explore.snapshots.policies import (
     EveryAgentStepPolicy,
     HeuristicSnapshotSelector,
@@ -39,6 +44,8 @@ __all__ = [
     "AsyncSnapshotManager",
     "AsyncLiveSnapshotSession",
     "DaytonaSnapshotBackend",
+    "ArchiveSelection",
+    "ArchiveSelectorMode",
     "HeuristicSnapshotSelector",
     "InMemorySnapshotStore",
     "InterestingAgentStepPolicy",
@@ -54,6 +61,7 @@ __all__ = [
     "SnapshotStore",
     "process_atif_steps",
     "process_atif_trajectory",
+    "select_archive_entries",
     "context_from_atif_step",
     "daytona_snapshot_name",
 ]

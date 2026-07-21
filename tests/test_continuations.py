@@ -7,6 +7,7 @@ from go_explore.continuations import (
     ContinuationAttempt,
     ContinuationPlan,
     ContinuationReport,
+    SnapshotSelectionMetadata,
     build_snapshot_continuation_config,
     harbor_config_from_job,
     log_continuation_started,
@@ -376,6 +377,63 @@ def test_plan_snapshot_continuations_logs_selected_snapshots(tmp_path):
     assert events[0]["run_id"] == "fix-git__root"
     assert events[0]["job_dir"] == str(root_summary.job_dir)
     assert events[0]["selector_mode"] == "test_selector"
+
+
+def test_plan_snapshot_continuations_logs_selector_metadata(tmp_path):
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    root_summary = JobSummary(
+        job_dir=tmp_path / "jobs" / "root",
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name="fix-git__root",
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+    event_log_path = root_summary.job_dir / EVENT_LOG_FILENAME
+
+    plan_snapshot_continuations(
+        root_config=root_config,
+        root_summary=root_summary,
+        snapshots=("snapshot-0",),
+        continuation_job_prefix="cont",
+        event_log_path=event_log_path,
+        selector_mode="fallback",
+        selection_metadata=(
+            SnapshotSelectionMetadata(
+                snapshot_name="snapshot-0",
+                selector_mode="random",
+                cell_key="{main.py}",
+                priority=1.25,
+                score=2.25,
+                times_selected=3,
+                selector_reasons=("seed=42",),
+            ),
+        ),
+    )
+
+    event = json.loads(event_log_path.read_text())
+    assert event["snapshot_name"] == "snapshot-0"
+    assert event["selector_mode"] == "random"
+    assert event["selector_reasons"] == ["seed=42"]
+    assert event["cell_key"] == "{main.py}"
+    assert event["priority"] == 1.25
+    assert event["score"] == 2.25
+    assert event["times_selected"] == 3
 
 
 def test_log_continuation_started_writes_lineage_event(tmp_path):
