@@ -149,3 +149,102 @@ def test_archive_store_satisfies_store_protocol_and_persists(tmp_path):
     assert len(store.archive) == 1
     assert path.exists()
     assert SnapshotArchive.load(path).select(k=1)[0].snapshot_name == "s-a"
+
+
+def test_archive_store_with_missing_path_starts_empty_and_persists(tmp_path):
+    path = tmp_path / "missing" / "archive.json"
+    store = ArchiveStore(path=path)
+
+    assert len(store.archive) == 0
+
+    store.put(
+        SnapshotRecord(
+            candidate=_candidate(restore_ref="s-a"),
+            description="file edit",
+            backend="daytona",
+        )
+    )
+
+    loaded = SnapshotArchive.load(path)
+    assert len(loaded) == 1
+    assert loaded.select(k=1)[0].snapshot_name == "s-a"
+
+
+def test_archive_store_loads_existing_archive_before_put(tmp_path):
+    path = tmp_path / "archive.json"
+    existing = SnapshotArchive(path=path)
+    existing.add(_candidate(changed_files=("a.py",), restore_ref="s-a"))
+    existing.save()
+
+    store = ArchiveStore(path=path)
+    store.put(
+        SnapshotRecord(
+            candidate=_candidate(changed_files=("b.py",), restore_ref="s-b"),
+            description="file edit",
+            backend="daytona",
+        )
+    )
+
+    loaded = SnapshotArchive.load(path)
+    assert len(loaded) == 2
+    assert {entry.snapshot_name for entry in loaded.entries()} == {"s-a", "s-b"}
+
+
+def test_archive_store_replaces_same_cell_by_score_after_load(tmp_path):
+    path = tmp_path / "archive.json"
+    existing = SnapshotArchive(path=path)
+    existing.add(
+        _candidate(
+            event=SnapshotEvent.FILE_EDIT,
+            changed_files=("main.py",),
+            restore_ref="s-low",
+        )
+    )
+    existing.save()
+
+    store = ArchiveStore(path=path)
+    store.put(
+        SnapshotRecord(
+            candidate=_candidate(
+                event=SnapshotEvent.TEST_RUN,
+                changed_files=("main.py",),
+                restore_ref="s-high",
+            ),
+            description="test run",
+            backend="daytona",
+        )
+    )
+
+    entry = SnapshotArchive.load(path).get(cell_key_for(_candidate()))
+    assert entry is not None
+    assert entry.snapshot_name == "s-high"
+
+
+def test_archive_store_preserves_higher_score_after_load(tmp_path):
+    path = tmp_path / "archive.json"
+    existing = SnapshotArchive(path=path)
+    existing.add(
+        _candidate(
+            event=SnapshotEvent.TEST_RUN,
+            changed_files=("main.py",),
+            restore_ref="s-high",
+        )
+    )
+    existing.save()
+
+    store = ArchiveStore(path=path)
+    store.put(
+        SnapshotRecord(
+            candidate=_candidate(
+                event=SnapshotEvent.FILE_EDIT,
+                changed_files=("main.py",),
+                restore_ref="s-low",
+            ),
+            description="file edit",
+            backend="daytona",
+        )
+    )
+
+    entry = SnapshotArchive.load(path).get(cell_key_for(_candidate()))
+    assert entry is not None
+    assert entry.snapshot_name == "s-high"
