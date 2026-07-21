@@ -15,7 +15,7 @@ from go_explore.continuations import (
 )
 from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.harbor import HarborRunConfig, build_harbor_command
-from go_explore.results import JobSummary, TrialSummary
+from go_explore.results import BudgetSummary, JobSummary, TrialSummary, summarize_job
 
 
 def test_snapshot_prefix_for_trial_matches_daytona_snapshot_names():
@@ -105,6 +105,114 @@ def test_harbor_config_from_job_reconstructs_dataset_agent_and_model(tmp_path):
     assert config.dataset == "terminal-bench@2.0"
     assert config.task_name == "fix-git"
     assert config.model == "anthropic/claude-haiku-4-5-20251001"
+
+
+def test_summarize_job_includes_complete_budget_metrics(tmp_path):
+    job_dir = tmp_path / "jobs" / "root"
+    trial_dir = job_dir / "trial-a"
+    trial_dir.mkdir(parents=True)
+    (job_dir / "result.json").write_text(
+        json.dumps({"n_total_trials": 1, "stats": {"n_errors": 0}})
+    )
+    (trial_dir / "result.json").write_text(
+        json.dumps(
+            {
+                "trial_name": "trial-a",
+                "task_name": "fix-git",
+                "agent_result": {
+                    "n_input_tokens": 10,
+                    "n_output_tokens": 3,
+                    "n_cache_tokens": 2,
+                    "cost_usd": 0.25,
+                },
+                "verifier_result": {"reward": 1.0},
+                "started_at": "2026-07-06T16:01:38Z",
+                "finished_at": "2026-07-06T16:01:48Z",
+                "environment_setup": {
+                    "started_at": "2026-07-06T16:01:38Z",
+                    "finished_at": "2026-07-06T16:01:40Z",
+                },
+                "agent_execution": {
+                    "started_at": "2026-07-06T16:01:40Z",
+                    "finished_at": "2026-07-06T16:01:47Z",
+                },
+            }
+        )
+    )
+
+    trial = summarize_job(job_dir).trials[0]
+
+    assert trial.budget.n_input_tokens == 10
+    assert trial.budget.n_output_tokens == 3
+    assert trial.budget.n_cache_tokens == 2
+    assert trial.budget.total_tokens == 15
+    assert trial.budget.total_tokens_status == "complete"
+    assert trial.budget.cost_usd == 0.25
+    assert trial.budget.cost_usd_status == "complete"
+    assert trial.budget.duration_seconds == 10.0
+    assert trial.budget.duration_seconds_status == "complete"
+    assert trial.budget.environment_setup_seconds == 2.0
+    assert trial.budget.agent_execution_seconds == 7.0
+
+
+def test_summarize_job_marks_partial_budget_metrics(tmp_path):
+    job_dir = tmp_path / "jobs" / "root"
+    trial_dir = job_dir / "trial-a"
+    trial_dir.mkdir(parents=True)
+    (job_dir / "result.json").write_text(
+        json.dumps({"n_total_trials": 1, "stats": {"n_errors": 0}})
+    )
+    (trial_dir / "result.json").write_text(
+        json.dumps(
+            {
+                "trial_name": "trial-a",
+                "task_name": "fix-git",
+                "agent_result": {
+                    "n_input_tokens": 10,
+                    "n_output_tokens": 3,
+                },
+                "verifier_result": {"reward": 0.0},
+                "started_at": "2026-07-06T16:01:38Z",
+                "finished_at": "2026-07-06T16:01:48Z",
+            }
+        )
+    )
+
+    budget = summarize_job(job_dir).trials[0].budget
+
+    assert budget.total_tokens == 13
+    assert budget.total_tokens_status == "partial"
+    assert budget.cost_usd is None
+    assert budget.cost_usd_status == "unknown"
+
+
+def test_summarize_job_marks_missing_budget_metrics_unknown(tmp_path):
+    job_dir = tmp_path / "jobs" / "root"
+    trial_dir = job_dir / "trial-a"
+    trial_dir.mkdir(parents=True)
+    (job_dir / "result.json").write_text(
+        json.dumps({"n_total_trials": 1, "stats": {"n_errors": 0}})
+    )
+    (trial_dir / "result.json").write_text(
+        json.dumps(
+            {
+                "trial_name": "trial-a",
+                "task_name": "fix-git",
+                "verifier_result": {"reward": 0.0},
+            }
+        )
+    )
+
+    budget = summarize_job(job_dir).trials[0].budget
+
+    assert budget.n_input_tokens is None
+    assert budget.n_output_tokens is None
+    assert budget.total_tokens is None
+    assert budget.total_tokens_status == "unknown"
+    assert budget.cost_usd is None
+    assert budget.cost_usd_status == "unknown"
+    assert budget.duration_seconds is None
+    assert budget.duration_seconds_status == "unknown"
 
 
 def test_harbor_config_from_job_preserves_import_path_shape(tmp_path):
@@ -331,3 +439,48 @@ def test_continuation_report_tracks_any_success():
 
     assert report.any_success
     assert report.to_json_dict()["attempts"][1]["succeeded"] is True
+
+
+def test_continuation_report_includes_budget_fields():
+    attempt = ContinuationAttempt(
+        parent_job_dir="jobs/root",
+        parent_trial_name="fix-git__root",
+        snapshot_name="snapshot-0",
+        continuation_job_dir="jobs/cont-0",
+        continuation_trial_name="fix-git__cont0",
+        reward=1.0,
+        exception_type=None,
+        budget=BudgetSummary(
+            n_input_tokens=5,
+            n_output_tokens=7,
+            total_tokens=12,
+            cost_usd=0.12,
+            duration_seconds=3.0,
+            total_tokens_status="partial",
+            cost_usd_status="complete",
+            duration_seconds_status="complete",
+        ),
+    )
+    report = ContinuationReport(
+        root_job_dir="jobs/root",
+        root_trial_name="fix-git__root",
+        root_reward=0.0,
+        attempts=(attempt,),
+        root_budget=BudgetSummary(
+            total_tokens=None,
+            cost_usd=None,
+            total_tokens_status="unknown",
+            cost_usd_status="unknown",
+        ),
+    )
+
+    data = report.to_json_dict()
+
+    assert data["root_budget"]["total_tokens"] is None
+    assert data["root_budget"]["total_tokens_status"] == "unknown"
+    assert data["attempts"][0]["succeeded"] is True
+    assert data["attempts"][0]["budget"]["n_input_tokens"] == 5
+    assert data["attempts"][0]["budget"]["n_output_tokens"] == 7
+    assert data["attempts"][0]["budget"]["total_tokens"] == 12
+    assert data["attempts"][0]["budget"]["cost_usd"] == 0.12
+    assert data["attempts"][0]["budget"]["duration_seconds"] == 3.0
