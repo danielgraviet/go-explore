@@ -34,7 +34,7 @@ Phase 2+ supersedes unfinished Phase 1 tickets. Phase 1 remains archived for his
 
 | ID | Title | Owner | Status | Depends On | Artifact |
 | --- | --- | --- | --- | --- | --- |
-| P3-T001 | Selector baseline suite | TBD | backlog | P2-T003 | code/tests |
+| P3-T001 | Selector baseline suite | TBD | review | P2-T003 | code/tests |
 | P3-T002 | Start-state baseline modes | TBD | backlog | P2-T006 | code/tests |
 | P3-T003 | Fixed-budget run planner | TBD | backlog | P3-T001, P3-T002, P2-T004 | manifest and code/tests |
 | P3-T004 | Repeated-work metrics | TBD | backlog | P2-T003, P2-T005 | code/tests |
