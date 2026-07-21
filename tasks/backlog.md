@@ -28,7 +28,7 @@ Phase 2+ supersedes unfinished Phase 1 tickets. Phase 1 remains archived for his
 | P2-T003 | Snapshot event log | TBD | review | P2-T001 | event JSONL and code/tests |
 | P2-T004 | Budget accounting v1 | TBD | review | P2-T001 | report fields and code/tests |
 | P2-T005 | Command and test signal extraction | TBD | review | P2-T001 | code/tests |
-| P2-T006 | Continuation context modes spec | TBD | ready | - | `docs/continuation-context-modes.md` |
+| P2-T006 | Continuation context modes spec | TBD | review | - | `docs/continuation-context-modes.md` |
 
 ## Phase 3: Baselines, Selectors, And Harness
 
