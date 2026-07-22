@@ -181,6 +181,7 @@ def continue_from_snapshots(args: argparse.Namespace) -> int:
         event_log_path=event_log_path,
         selector_mode=selector_mode,
         selection_metadata=selection_metadata,
+        context_mode=getattr(args, "context_mode", "parent_summary"),
     )
 
     if not plans:
@@ -306,6 +307,7 @@ def plan_fixed_budget(args: argparse.Namespace) -> int:
             n_branch_continuations=args.n_branch_continuations,
             branch_root_fraction=args.branch_root_fraction,
             snapshots=tuple(args.snapshot),
+            branch_context_mode=args.branch_context_mode,
         )
     )
 
@@ -399,6 +401,7 @@ def run_experiment_cmd(args: argparse.Namespace) -> int:
             n_retries=args.n_retries,
             n_branch_continuations=args.n_branch_continuations,
             branch_root_fraction=args.branch_root_fraction,
+            branch_context_mode=args.branch_context_mode,
             execute=args.execute,
             rerun_existing=args.rerun_existing,
             build_analysis=not args.no_analysis,
@@ -470,6 +473,12 @@ def main() -> int:
     continue_parser.add_argument("--agent")
     continue_parser.add_argument("--model")
     continue_parser.add_argument("--extra-arg", action="append", default=[])
+    continue_parser.add_argument(
+        "--context-mode",
+        choices=("parent_summary", "none"),
+        default="parent_summary",
+        help="Parent context mode for full-snapshot continuation jobs.",
+    )
     continue_parser.add_argument("--report-path", type=Path)
     continue_parser.add_argument(
         "--execute",
@@ -557,6 +566,12 @@ def main() -> int:
     fixed_budget_parser.add_argument("--n-retries", type=int, default=5)
     fixed_budget_parser.add_argument("--n-branch-continuations", type=int, default=2)
     fixed_budget_parser.add_argument("--branch-root-fraction", type=float, default=0.3)
+    fixed_budget_parser.add_argument(
+        "--branch-context-mode",
+        choices=("parent_summary", "none"),
+        default="parent_summary",
+        help="Parent context mode for planned branch continuation jobs.",
+    )
     fixed_budget_parser.add_argument(
         "--snapshot",
         action="append",
@@ -683,6 +698,12 @@ def main() -> int:
     run_parser.add_argument("--n-retries", type=int, default=5)
     run_parser.add_argument("--n-branch-continuations", type=int, default=2)
     run_parser.add_argument("--branch-root-fraction", type=float, default=0.3)
+    run_parser.add_argument(
+        "--branch-context-mode",
+        choices=("parent_summary", "none"),
+        default="parent_summary",
+        help="Parent context mode for branch continuation jobs.",
+    )
     run_parser.add_argument(
         "--execute",
         action="store_true",

@@ -49,6 +49,37 @@ def test_snapshot_aware_terminus2_defaults_to_tmux_preflight_without_recording(
     assert captured["kwargs"]["record_terminal_session"] is False
 
 
+def test_snapshot_aware_terminus2_accepts_context_mode_without_wrapped_leak(
+    tmp_path,
+    monkeypatch,
+):
+    captured: dict[str, object] = {}
+
+    class FakeTerminus2:
+        def __init__(self, *, logs_dir, model_name, logger=None, **kwargs):
+            captured["kwargs"] = kwargs
+
+        def to_agent_info(self):
+            return {"name": "terminus-2"}
+
+    harbor_module = ModuleType("harbor")
+    agents_module = ModuleType("harbor.agents")
+    terminus_module = ModuleType("harbor.agents.terminus_2")
+    terminus_module.Terminus2 = FakeTerminus2
+    monkeypatch.setitem(sys.modules, "harbor", harbor_module)
+    monkeypatch.setitem(sys.modules, "harbor.agents", agents_module)
+    monkeypatch.setitem(sys.modules, "harbor.agents.terminus_2", terminus_module)
+
+    agent = SnapshotAwareTerminus2(
+        logs_dir=tmp_path,
+        model_name="model-a",
+        context_mode="none",
+    )
+
+    assert agent._context_mode == "none"
+    assert "context_mode" not in captured["kwargs"]
+
+
 def test_snapshot_aware_agent_instantiation_without_sandbox():
     """Test that SnapshotAwareAgent can be instantiated without a sandbox."""
     wrapped = MagicMock()
@@ -90,6 +121,55 @@ def test_snapshot_aware_agent_accepts_custom_policy():
     agent = SnapshotAwareAgent(wrapped_agent=wrapped, snapshot_policy=policy)
 
     assert agent._snapshot_policy is policy
+
+
+def test_snapshot_aware_agent_rejects_unknown_context_mode():
+    with pytest.raises(ValueError, match="Unknown context_mode"):
+        SnapshotAwareAgent(wrapped_agent=MagicMock(), context_mode="trust_parent")
+
+
+def test_snapshot_aware_agent_appends_parent_context_by_default():
+    class FakeWrapped:
+        def __init__(self):
+            self.instruction = None
+
+        def perform_task(self, *, instruction, session, logging_dir=None, time_limit_seconds=None):
+            self.instruction = instruction
+            return MagicMock()
+
+        def to_agent_info(self):
+            return {}
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped)
+    agent._load_parent_context = AsyncMock(return_value="step 1: parent note")  # type: ignore[method-assign]
+
+    agent.perform_task("solve task", MagicMock(session_name="trial-a"))
+
+    assert wrapped.instruction is not None
+    assert "solve task" in wrapped.instruction
+    assert "step 1: parent note" in wrapped.instruction
+
+
+def test_snapshot_aware_agent_none_context_mode_does_not_append_parent_context():
+    class FakeWrapped:
+        def __init__(self):
+            self.instruction = None
+
+        def perform_task(self, *, instruction, session, logging_dir=None, time_limit_seconds=None):
+            self.instruction = instruction
+            return MagicMock()
+
+        def to_agent_info(self):
+            return {}
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, context_mode="none")
+    agent._load_parent_context = AsyncMock(return_value="step 1: parent note")  # type: ignore[method-assign]
+
+    agent.perform_task("solve task", MagicMock(session_name="trial-a"))
+
+    assert wrapped.instruction == "solve task"
 
 
 @pytest.mark.asyncio

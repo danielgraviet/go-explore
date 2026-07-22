@@ -76,6 +76,38 @@ def test_build_snapshot_continuation_config_restores_daytona_snapshot():
         "--export-traces",
         "--ek",
         "snapshot_template_name=go-explore-fix-git__abc-step-2",
+        "--ak",
+        "context_mode=parent_summary",
+    ]
+
+
+def test_build_snapshot_continuation_config_can_disable_parent_context():
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+        extra_args=("--ak", "context_mode=parent_summary", "--ak", "hooks_debug=true"),
+    )
+
+    continuation_config = build_snapshot_continuation_config(
+        root_config=root_config,
+        snapshot_name="snapshot-a",
+        job_name="cont-0",
+        context_mode="none",
+    )
+
+    assert continuation_config.extra_args == (
+        "--ak",
+        "hooks_debug=true",
+        "--ak",
+        "context_mode=none",
+    )
+    assert build_harbor_command(continuation_config)[-2:] == [
+        "--ak",
+        "context_mode=none",
     ]
 
 
@@ -458,6 +490,46 @@ def test_plan_snapshot_continuations_records_parent_lineage():
     assert "model-b" in plans[0].command
     assert "--ek" in plans[0].command
     assert "snapshot_template_name=go-explore-fix-git__root-step-0" in plans[0].command
+    assert plans[0].context_mode == "parent_summary"
+    assert "context_mode=parent_summary" in plans[0].command
+
+
+def test_plan_snapshot_continuations_records_none_context_mode():
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    root_summary = JobSummary(
+        job_dir=Path("jobs/root"),
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name="fix-git__root",
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+
+    plans = plan_snapshot_continuations(
+        root_config=root_config,
+        root_summary=root_summary,
+        snapshots=("snapshot-a",),
+        continuation_job_prefix="cont",
+        context_mode="none",
+    )
+
+    assert plans[0].context_mode == "none"
+    assert "context_mode=none" in plans[0].command
 
 
 def test_plan_snapshot_continuations_logs_selected_snapshots(tmp_path):
@@ -601,6 +673,7 @@ def test_plan_start_state_baselines_records_modes_and_artifacts(tmp_path):
         snapshots=("snapshot-a", "snapshot-b"),
         diff_path=tmp_path / "parent.diff",
         max_snapshots=1,
+        full_snapshot_context_mode="none",
     )
 
     assert [plan.start_state_type for plan in plans] == [
@@ -611,7 +684,7 @@ def test_plan_start_state_baselines_records_modes_and_artifacts(tmp_path):
     assert [plan.context_mode for plan in plans] == [
         "original_task_only",
         "original_task_only",
-        "parent_summary",
+        "none",
     ]
     assert plans[0].snapshot_name is None
     assert plans[0].parent_artifacts == ()
@@ -623,6 +696,7 @@ def test_plan_start_state_baselines_records_modes_and_artifacts(tmp_path):
     assert plans[2].snapshot_name == "snapshot-a"
     assert plans[2].executor_status == "ready"
     assert "snapshot_template_name=snapshot-a" in plans[2].command
+    assert "context_mode=none" in plans[2].command
 
 
 def test_write_plan_manifest_serializes_start_state_metadata(tmp_path):
@@ -833,6 +907,7 @@ def test_fixed_budget_planner_allocates_single_retry_and_branch_budgets():
             n_branch_continuations=2,
             branch_root_fraction=0.3,
             snapshots=("snapshot-a", "snapshot-b"),
+            branch_context_mode="none",
         )
     )
 
@@ -880,6 +955,7 @@ def test_fixed_budget_planner_generates_method_commands_and_snapshot_children():
             n_branch_continuations=2,
             branch_root_fraction=0.5,
             snapshots=("snapshot-a", "snapshot-b"),
+            branch_context_mode="none",
         )
     )
 
@@ -892,10 +968,11 @@ def test_fixed_budget_planner_generates_method_commands_and_snapshot_children():
     assert "--ek" not in root.command
     assert child_0.role == "continuation"
     assert child_0.start_state_type == "full_snapshot"
-    assert child_0.context_mode == "parent_summary"
+    assert child_0.context_mode == "none"
     assert child_0.selector_mode == "random"
     assert child_0.executor_status == "ready"
     assert "snapshot_template_name=" in " ".join(child_0.command)
+    assert "context_mode=none" in child_0.command
     assert child_1.parent_run_id == root.job_name
 
 
