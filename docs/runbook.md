@@ -112,6 +112,147 @@ harbor run \
 
 Do not pass `--agent terminus-2` with this command. Harbor will use the built-in agent and skip the import-path wrapper. Use `--agent-import-path` for the wrapper so Harbor's ATIF exporter records the underlying Terminus-2 agent metadata correctly.
 
+## Fixed-Budget Smoke Experiments
+
+Use this workflow to run the cheap smoke benchmark tasks from
+`docs/experiments/main-benchmark/manifests/smoke/`. Start with one task and one
+job. Do not launch the whole manifest until the first completed job has a sane
+cost and artifact shape.
+
+Recommended first task:
+
+- `regex-log`, representative medium task.
+- `fix-git`, cheapest known harness canary, but too easy for evidence.
+
+Load credentials and local imports:
+
+```bash
+set -a; source .env; set +a
+export PATH="$HOME/.local/bin:$PATH"
+export PYTHONPATH="$PWD"
+```
+
+Inspect planned jobs for one smoke task:
+
+```bash
+python3 - <<'PY'
+import json
+
+manifest = json.load(open("docs/experiments/main-benchmark/manifests/smoke/regex-log.json"))
+for job in manifest["jobs"]:
+    print(
+        job["method"],
+        job["role"],
+        job["executor_status"],
+        job["job_name"],
+    )
+PY
+```
+
+Run only the single clean run first:
+
+```bash
+harbor run \
+  --agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2 \
+  --env daytona \
+  --jobs-dir jobs \
+  --n-attempts 1 \
+  --n-concurrent 1 \
+  --dataset terminal-bench@2.0 \
+  --model anthropic/claude-haiku-4-5-20251001 \
+  --include-task-name regex-log \
+  --n-tasks 1 \
+  --job-name phase4-smoke-regex-log-single-seed-0 \
+  --export-traces
+```
+
+Do not start retry jobs until this single run finishes and you have inspected
+cost, duration, and snapshot overhead. If you interrupt Harbor with `Ctrl-C`,
+the job directory may contain partial artifacts and `result.json` may still say
+`n_running_trials: 1`; treat that as an interrupted run, not a completed result.
+
+Summarize the completed job:
+
+```bash
+uv run python -m go_explore.cli summarize-job \
+  jobs/phase4-smoke-regex-log-single-seed-0
+```
+
+Inspect the snapshot artifacts:
+
+```bash
+python3 -m json.tool jobs/phase4-smoke-regex-log-single-seed-0/archive.json
+tail -20 jobs/phase4-smoke-regex-log-single-seed-0/events.jsonl
+```
+
+For branch methods, run roots before continuations:
+
+```bash
+harbor run \
+  --agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2 \
+  --env daytona \
+  --jobs-dir jobs \
+  --n-attempts 1 \
+  --n-concurrent 1 \
+  --dataset terminal-bench@2.0 \
+  --model anthropic/claude-haiku-4-5-20251001 \
+  --include-task-name regex-log \
+  --n-tasks 1 \
+  --job-name phase4-smoke-regex-log-promising-branch-seed-0-root \
+  --export-traces
+```
+
+After the root writes `archive.json`, launch promising continuations:
+
+```bash
+uv run python -m go_explore.cli continue-from-snapshots \
+  jobs/phase4-smoke-regex-log-promising-branch-seed-0-root \
+  --from-archive \
+  --selector-mode archive_priority \
+  --max-snapshots 2 \
+  --job-prefix phase4-smoke-regex-log-promising-branch-seed-0 \
+  --execute
+```
+
+For the random branch condition, run the random root, then use seeded random
+archive selection:
+
+```bash
+uv run python -m go_explore.cli continue-from-snapshots \
+  jobs/phase4-smoke-regex-log-random-branch-seed-0-root \
+  --from-archive \
+  --selector-mode random \
+  --selector-seed 0 \
+  --max-snapshots 2 \
+  --job-prefix phase4-smoke-regex-log-random-branch-seed-0 \
+  --execute
+```
+
+Build analysis tables after the observed jobs finish:
+
+```bash
+uv run python -m go_explore.cli build-analysis-tables \
+  --manifest docs/experiments/main-benchmark/manifests/smoke/regex-log.json \
+  --job-dir jobs/phase4-smoke-regex-log-single-seed-0 \
+  --job-dir jobs/phase4-smoke-regex-log-promising-branch-seed-0-root \
+  --continuation-report jobs/phase4-smoke-regex-log-promising-branch-seed-0-root/continuation-report.json \
+  --event-log jobs/phase4-smoke-regex-log-promising-branch-seed-0-root/events.jsonl \
+  --output-dir docs/experiments/main-benchmark/analysis/smoke/regex-log
+```
+
+Build figure source tables from completed analysis outputs:
+
+```bash
+uv run python -m go_explore.cli build-figure-tables \
+  --task-summary docs/experiments/main-benchmark/analysis/smoke/regex-log/task-summary.csv \
+  --run-summary docs/experiments/main-benchmark/analysis/smoke/regex-log/run-summary.csv \
+  --execution-status docs/experiments/main-benchmark/execution-status.csv \
+  --output-dir docs/experiments/figures
+```
+
+The manifest planner marks branch continuations as `pending_root_archive` until
+the branch root creates snapshots. That is expected.
+
 ## Summaries
 
 Summarize a job:

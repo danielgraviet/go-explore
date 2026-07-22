@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from go_explore.events import EVENT_LOG_FILENAME
 
 
 @dataclass(frozen=True)
@@ -121,26 +123,90 @@ def budget_from_trial_result(trial: dict[str, Any]) -> BudgetSummary:
     )
 
 
+def _snapshot_overhead_from_events(
+    job_dir: Path,
+    *,
+    trial_name: str,
+) -> tuple[float | None, str]:
+    event_log_path = job_dir / EVENT_LOG_FILENAME
+    if not event_log_path.exists():
+        return None, "unknown"
+
+    seen_snapshot_event = False
+    missing_overhead = 0
+    overhead_values: list[float] = []
+
+    for line in event_log_path.read_text().splitlines():
+        if not line.strip():
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if event.get("event_type") != "snapshot_created":
+            continue
+        if event.get("trial_name") != trial_name and event.get("run_id") != trial_name:
+            continue
+
+        seen_snapshot_event = True
+        overhead = _optional_float(event.get("overhead_seconds"))
+        if overhead is None:
+            overhead = _optional_float(event.get("snapshot_backend_seconds"))
+        if overhead is None:
+            missing_overhead += 1
+        else:
+            overhead_values.append(overhead)
+
+    if not seen_snapshot_event:
+        return 0.0, "complete"
+    if missing_overhead and overhead_values:
+        return sum(overhead_values), "partial"
+    if missing_overhead:
+        return None, "unknown"
+    return sum(overhead_values), "complete"
+
+
+def _optional_float(value: Any) -> float | None:
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
 def summarize_job(job_dir: Path) -> JobSummary:
     result = _read_json(job_dir / "result.json")
     trials: list[TrialSummary] = []
 
     for trial_result_path in sorted(job_dir.glob("*/result.json")):
         trial = _read_json(trial_result_path)
+        trial_name = trial.get("trial_name") or trial_result_path.parent.name
         exception = trial.get("exception_info") or {}
         verifier = trial.get("verifier_result") or {}
         rewards = verifier.get("rewards") or {}
         reward = verifier.get("reward", rewards.get("reward"))
+        budget = budget_from_trial_result(trial)
+        snapshot_overhead_seconds, snapshot_overhead_status = (
+            _snapshot_overhead_from_events(job_dir, trial_name=str(trial_name))
+        )
+        budget = replace(
+            budget,
+            snapshot_overhead_seconds=snapshot_overhead_seconds,
+            snapshot_overhead_seconds_status=snapshot_overhead_status,
+        )
 
         trials.append(
             TrialSummary(
-                trial_name=trial.get("trial_name") or trial_result_path.parent.name,
+                trial_name=str(trial_name),
                 task_name=trial.get("task_name"),
                 source=trial.get("source"),
                 reward=reward,
                 exception_type=exception.get("exception_type"),
                 exception_message=exception.get("exception_message"),
-                budget=budget_from_trial_result(trial),
+                budget=budget,
             )
         )
 

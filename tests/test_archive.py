@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.snapshots.archive import (
@@ -25,13 +26,14 @@ def _candidate(
     restore_ref: str = "go-explore-trial-step-0",
     trial: str = "trial",
     step: int = 0,
+    metadata: dict[str, Any] | None = None,
 ) -> SnapshotCandidate:
     return SnapshotCandidate(
         id=id,
         event=event,
         restore_ref=restore_ref,
         changed_files=changed_files,
-        metadata={"trial_name": trial, "step_id": str(step)},
+        metadata={"trial_name": trial, "step_id": str(step)} | (metadata or {}),
     )
 
 
@@ -189,7 +191,31 @@ def test_archive_store_writes_snapshot_created_event(tmp_path):
     assert events[0]["score"] == 3.0
     assert events[0]["selector_reasons"] == ["has validation signal"]
     assert events[0]["backend"] == "daytona"
+    assert events[0]["overhead_seconds"] is None
     assert events[0]["archive_accepted"] is True
+
+
+def test_archive_store_writes_snapshot_latency_to_event(tmp_path):
+    path = tmp_path / "archive.json"
+    store = ArchiveStore(path=path)
+
+    store.put(
+        SnapshotRecord(
+            candidate=_candidate(
+                restore_ref="s-test",
+                metadata={"snapshot_backend_seconds": 1.25},
+            ),
+            description="snapshot with latency",
+            backend="daytona",
+        )
+    )
+
+    events = [
+        json.loads(line)
+        for line in (tmp_path / EVENT_LOG_FILENAME).read_text().splitlines()
+    ]
+    assert events[0]["overhead_seconds"] == 1.25
+    assert events[0]["snapshot_backend_seconds"] == 1.25
 
 
 def test_archive_store_appends_snapshot_created_events(tmp_path):

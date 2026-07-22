@@ -1,2 +1,5 @@
-status
-no_rows
+mean_repeated_setup_score,method,n_runs_missing_metric,n_runs_with_metric
+,promising_branch,3,0
+,random_branch,3,0
+,retry,5,0
+,single,1,0

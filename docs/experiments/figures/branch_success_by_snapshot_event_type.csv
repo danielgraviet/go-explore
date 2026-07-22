@@ -1,2 +1,5 @@
-status
-no_rows
+method,n_branch_runs,n_successes,snapshot_cell_key,success_rate
+promising_branch,1,1,<test_run>,1.0
+promising_branch,1,1,{_includes/about.md},1.0
+random_branch,1,1,<command>,1.0
+random_branch,1,1,<test_run>,1.0

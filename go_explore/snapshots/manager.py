@@ -61,7 +61,12 @@ class AsyncSnapshotManager:
             backend_started_at = clock()
             handle = await self._backend.create_snapshot(candidate, context)
             backend_finished_at = clock()
-            saved_candidate = _candidate_with_handle(candidate, handle)
+            backend_elapsed = backend_finished_at - backend_started_at
+            saved_candidate = _candidate_with_handle(
+                candidate,
+                handle,
+                backend_seconds=backend_elapsed,
+            )
             record = SnapshotRecord(
                 candidate=saved_candidate,
                 description=_describe_candidate(context, saved_candidate),
@@ -70,7 +75,7 @@ class AsyncSnapshotManager:
             store_started_at = clock()
             self._store.put(record)
             store_finished_at = clock()
-            backend_seconds += backend_finished_at - backend_started_at
+            backend_seconds += backend_elapsed
             store_seconds += store_finished_at - store_started_at
             records.append(record)
 
@@ -97,6 +102,8 @@ class AsyncSnapshotManager:
 def _candidate_with_handle(
     candidate: SnapshotCandidate,
     handle: SnapshotHandle,
+    *,
+    backend_seconds: float,
 ) -> SnapshotCandidate:
     return SnapshotCandidate(
         id=candidate.id,
@@ -109,7 +116,12 @@ def _candidate_with_handle(
         changed_files=candidate.changed_files,
         command=candidate.command,
         notes=candidate.notes,
-        metadata={**candidate.metadata, **handle.metadata, "snapshot_backend": handle.backend},
+        metadata={
+            **candidate.metadata,
+            **handle.metadata,
+            "snapshot_backend": handle.backend,
+            "snapshot_backend_seconds": backend_seconds,
+        },
     )
 
 

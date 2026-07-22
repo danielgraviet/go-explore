@@ -1,2 +1,5 @@
-status
-no_rows
+cost_per_solved_task,method,n_solved,total_cost_usd
+0.0889171,promising_branch,1,0.0889171
+0.07294,random_branch,1,0.07294
+,retry,0,
+0.017064,single,1,0.017064

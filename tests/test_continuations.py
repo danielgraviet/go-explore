@@ -207,6 +207,86 @@ def test_summarize_job_includes_complete_budget_metrics(tmp_path):
     assert trial.budget.agent_execution_seconds == 7.0
 
 
+def test_summarize_job_includes_snapshot_overhead_from_events(tmp_path):
+    job_dir = tmp_path / "jobs" / "root"
+    trial_dir = job_dir / "trial-a"
+    trial_dir.mkdir(parents=True)
+    (job_dir / "result.json").write_text(
+        json.dumps({"n_total_trials": 1, "stats": {"n_errors": 0}})
+    )
+    (trial_dir / "result.json").write_text(
+        json.dumps(
+            {
+                "trial_name": "trial-a",
+                "task_name": "fix-git",
+                "verifier_result": {"reward": 1.0},
+            }
+        )
+    )
+    (job_dir / EVENT_LOG_FILENAME).write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "event_type": "snapshot_created",
+                        "trial_name": "trial-a",
+                        "snapshot_name": "snap-a",
+                        "overhead_seconds": 1.25,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "event_type": "snapshot_created",
+                        "run_id": "trial-a",
+                        "snapshot_name": "snap-b",
+                        "snapshot_backend_seconds": 2.5,
+                    }
+                ),
+            ]
+        )
+        + "\n"
+    )
+
+    budget = summarize_job(job_dir).trials[0].budget
+
+    assert budget.snapshot_overhead_seconds == 3.75
+    assert budget.snapshot_overhead_seconds_status == "complete"
+
+
+def test_summarize_job_marks_legacy_snapshot_overhead_unknown(tmp_path):
+    job_dir = tmp_path / "jobs" / "root"
+    trial_dir = job_dir / "trial-a"
+    trial_dir.mkdir(parents=True)
+    (job_dir / "result.json").write_text(
+        json.dumps({"n_total_trials": 1, "stats": {"n_errors": 0}})
+    )
+    (trial_dir / "result.json").write_text(
+        json.dumps(
+            {
+                "trial_name": "trial-a",
+                "task_name": "fix-git",
+                "verifier_result": {"reward": 1.0},
+            }
+        )
+    )
+    (job_dir / EVENT_LOG_FILENAME).write_text(
+        json.dumps(
+            {
+                "event_type": "snapshot_created",
+                "trial_name": "trial-a",
+                "snapshot_name": "snap-a",
+                "overhead_seconds": None,
+            }
+        )
+        + "\n"
+    )
+
+    budget = summarize_job(job_dir).trials[0].budget
+
+    assert budget.snapshot_overhead_seconds is None
+    assert budget.snapshot_overhead_seconds_status == "unknown"
+
+
 def test_summarize_job_marks_partial_budget_metrics(tmp_path):
     job_dir = tmp_path / "jobs" / "root"
     trial_dir = job_dir / "trial-a"
