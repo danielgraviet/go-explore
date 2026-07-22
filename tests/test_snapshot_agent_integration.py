@@ -177,3 +177,6 @@ async def test_snapshot_metrics_are_recorded():
 
     # Verify records match count
     assert len(result.records) == result.timing.n_snapshots
+    for record in result.records:
+        assert isinstance(record.candidate.metadata["snapshot_backend_seconds"], float)
+        assert record.candidate.metadata["snapshot_backend_seconds"] >= 0

@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import json
 from collections import defaultdict
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -172,6 +172,12 @@ def build_analysis_tables(inputs: AnalysisInputs) -> AnalysisTables:
         planned_by_job_dir=planned_by_job_dir,
         planned_by_job_name=planned_by_job_name,
     )
+    planned_aliases = _planned_aliases_from_reports(
+        continuation_reports,
+        planned_jobs=planned_jobs,
+        planned_by_job_dir=planned_by_job_dir,
+        planned_by_job_name=planned_by_job_name,
+    )
     repeated_work = _read_repeated_work(inputs.repeated_work_report_paths, warnings)
     archive_entries = _read_archive_entries(inputs.job_dirs, warnings)
     selection_by_snapshot = _snapshot_selections(events, archive_entries)
@@ -182,8 +188,11 @@ def build_analysis_tables(inputs: AnalysisInputs) -> AnalysisTables:
 
     for job_dir in sorted(_dedupe_paths(inputs.job_dirs), key=_normalize_path):
         job_dir_key = _normalize_path(job_dir)
-        planned = planned_by_job_dir.get(job_dir_key) or planned_by_job_name.get(
-            job_dir.name
+        planned = (
+            planned_by_job_dir.get(job_dir_key)
+            or planned_by_job_name.get(job_dir.name)
+            or planned_aliases.get(job_dir_key)
+            or planned_aliases.get(job_dir.name)
         )
         if planned is not None:
             seen_job_names.add(planned.job_name)
@@ -587,6 +596,61 @@ def _lineages_from_reports(
             lineages[_normalize_path(Path(child_job_dir))] = lineage
             lineages[Path(child_job_dir).name] = lineage
     return lineages
+
+
+def _planned_aliases_from_reports(
+    reports: Sequence[Mapping[str, Any]],
+    *,
+    planned_jobs: Sequence[PlannedJobMetadata],
+    planned_by_job_dir: Mapping[str, PlannedJobMetadata],
+    planned_by_job_name: Mapping[str, PlannedJobMetadata],
+) -> dict[str, PlannedJobMetadata]:
+    aliases: dict[str, PlannedJobMetadata] = {}
+    for report in reports:
+        parent_job_dir = str(report.get("root_job_dir") or "")
+        if not parent_job_dir:
+            continue
+        parent_job_name = Path(parent_job_dir).name
+        parent_plan = planned_by_job_dir.get(
+            _normalize_path(Path(parent_job_dir))
+        ) or planned_by_job_name.get(parent_job_name)
+        parent_run_ids = {parent_job_name}
+        if parent_plan is not None:
+            parent_run_ids.add(parent_plan.job_name)
+
+        planned_children = sorted(
+            (
+                planned
+                for planned in planned_jobs
+                if planned.role == "continuation"
+                and planned.parent_run_id in parent_run_ids
+                and (parent_plan is None or planned.method == parent_plan.method)
+            ),
+            key=lambda planned: planned.job_name,
+        )
+
+        for index, attempt in enumerate(report.get("attempts") or ()):
+            child_job_dir = str(attempt.get("continuation_job_dir") or "")
+            if not child_job_dir:
+                continue
+            child_job_path = Path(child_job_dir)
+            child_job_dir_key = _normalize_path(child_job_path)
+            if (
+                child_job_dir_key in planned_by_job_dir
+                or child_job_path.name in planned_by_job_name
+            ):
+                continue
+            if index >= len(planned_children):
+                continue
+
+            planned = planned_children[index]
+            parent_snapshot = attempt.get("snapshot_name")
+            if planned.parent_snapshot is None and isinstance(parent_snapshot, str):
+                planned = replace(planned, parent_snapshot=parent_snapshot)
+
+            aliases[child_job_dir_key] = planned
+            aliases[child_job_path.name] = planned
+    return aliases
 
 
 def _read_events(

@@ -1,2 +1,2 @@
-status
-no_rows
+n_solving_methods,solving_methods,task_id,unique_success_method
+3,promising_branch|random_branch|single,fix-git,

@@ -38,7 +38,7 @@ class SnapshotCandidate:
     changed_files: tuple[str, ...] = ()
     command: str | None = None
     notes: str = ""
-    metadata: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -48,7 +48,7 @@ class SnapshotHandle:
     backend: str
     restore_ref: str | None = None
     environment_id: str | None = None
-    metadata: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -85,7 +85,7 @@ class SnapshotContext:
     environment_id: str | None = None
     restore_ref: str | None = None
     trajectory_summary: str = ""
-    metadata: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 def context_from_atif_step(

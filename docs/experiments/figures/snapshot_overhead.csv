@@ -1,2 +1,5 @@
-status
-no_rows
+method,n_restore_overhead_values,n_runs,n_snapshot_overhead_values,total_restore_overhead_seconds,total_snapshot_overhead_seconds
+promising_branch,0,3,0,,
+random_branch,0,3,0,,
+retry,0,5,0,,
+single,0,1,0,,

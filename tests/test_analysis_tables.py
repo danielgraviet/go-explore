@@ -119,7 +119,7 @@ def _write_manifest(path: Path, jobs_dir: Path) -> None:
 def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(tmp_path):
     jobs_dir = tmp_path / "jobs"
     root_job = jobs_dir / "root-job"
-    child_job = jobs_dir / "child-job"
+    child_job = jobs_dir / "root-job-snapshot-0"
     _write_job(root_job, trial_name="root-trial", reward=0.0)
     _write_job(child_job, trial_name="child-trial", reward=1.0)
 
@@ -237,10 +237,14 @@ def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(t
     assert root["repeated_setup_score"] == 1
 
     child = rows_by_run["child-job"]
+    assert child["job_dir"] == str(child_job)
+    assert child["method"] == "promising_branch"
+    assert child["role"] == "continuation"
     assert child["outcome"] == "success"
     assert child["parent_run_id"] == "root-job"
     assert child["parent_job_dir"] == str(root_job)
     assert child["parent_snapshot"] == "snap-a"
+    assert child["planned_token_budget"] == 70_000
     assert child["snapshot_cell_key"] == "<test_run>"
     assert child["selector_mode"] == "archive_priority"
     assert child["selector_score"] == 3.0
@@ -255,6 +259,7 @@ def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(t
     task_rows = {
         (row["method"], row["task_id"]): row for row in tables.task_rows
     }
+    assert all(row["method"] != "unknown" for row in tables.task_rows)
     branch = task_rows[("promising_branch", "fix-git")]
     assert branch["solved"] is True
     assert branch["n_runs"] == 2

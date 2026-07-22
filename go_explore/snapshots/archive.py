@@ -261,6 +261,9 @@ class ArchiveStore:
             step_id = int(raw_step_id) if raw_step_id is not None else None
         except ValueError:
             step_id = None
+        snapshot_backend_seconds = _optional_float(
+            candidate.metadata.get("snapshot_backend_seconds")
+        )
 
         event = base_event(
             event_type="snapshot_created",
@@ -279,8 +282,20 @@ class ArchiveStore:
                 "score": scored.score,
                 "selector_reasons": list(scored.reasons),
                 "backend": record.backend,
-                "overhead_seconds": None,
+                "overhead_seconds": snapshot_backend_seconds,
+                "snapshot_backend_seconds": snapshot_backend_seconds,
                 "archive_accepted": archive_accepted,
             }
         )
         append_event(event_log_path, event)
+
+
+def _optional_float(value: object) -> float | None:
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
