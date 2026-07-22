@@ -172,6 +172,37 @@ def test_snapshot_aware_agent_none_context_mode_does_not_append_parent_context()
     assert wrapped.instruction == "solve task"
 
 
+def test_snapshot_aware_agent_critical_context_uses_untrusted_audit_prompt():
+    class FakeWrapped:
+        def __init__(self):
+            self.instruction = None
+
+        def perform_task(self, *, instruction, session, logging_dir=None, time_limit_seconds=None):
+            self.instruction = instruction
+            return MagicMock()
+
+        def to_agent_info(self):
+            return {}
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        context_mode="critical_parent_summary",
+    )
+    agent._load_parent_context = AsyncMock(return_value="step 1: parent note")  # type: ignore[method-assign]
+
+    agent.perform_task("solve task", MagicMock(session_name="trial-a"))
+
+    assert wrapped.instruction is not None
+    assert "solve task" in wrapped.instruction
+    assert "step 1: parent note" in wrapped.instruction
+    assert "untrusted evidence" in wrapped.instruction
+    assert "unknown or failed" in wrapped.instruction
+    assert "Independently audit" in wrapped.instruction
+    assert "do not declare success solely" in wrapped.instruction
+    assert "so you don't repeat it" not in wrapped.instruction
+
+
 @pytest.mark.asyncio
 async def test_snapshot_aware_agent_tmux_preflight_skips_when_tmux_exists():
     wrapped = MagicMock()

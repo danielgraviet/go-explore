@@ -83,7 +83,7 @@ Likely failure modes:
 | `context_mode` | `parent_summary` |
 | Inputs | Full snapshot plus `/tmp/go_explore_context.md` summary. |
 | Expected artifacts | `archive.json`, `events.jsonl`, continuation report, and sandbox context file captured in the snapshot. |
-| Current status | Implemented implicitly by `SnapshotAwareAgent`. |
+| Current status | Implemented as explicit `context_mode=parent_summary`. |
 | Immediate target | Yes, keep as the default full-snapshot continuation mode. |
 
 This is the current behavior. `DaytonaSnapshotBackend` writes a trajectory
@@ -99,8 +99,8 @@ Likely failure modes:
 
 Implementation constraint:
 
-- P3 should make this mode explicit in manifests/events as
-  `context_mode=parent_summary`; it should not remain an invisible side effect.
+- Keep this mode explicit in manifests/events as `context_mode=parent_summary`
+  so it can be compared against disabled and critical context modes.
 
 ### Full Transcript Summary
 
@@ -202,10 +202,10 @@ Implementation constraint:
 | Property | Value |
 | --- | --- |
 | `start_state_type` | `full_snapshot` |
-| `context_mode` | `none`, `original_task_only`, or `parent_summary` |
+| `context_mode` | `none`, `original_task_only`, `parent_summary`, or `critical_parent_summary` |
 | Inputs | Daytona snapshot name. |
 | Expected artifacts | Parent archive entry, `snapshot_selected` event, `continuation_started` event, child Harbor job. |
-| Current status | Implemented only with implicit `parent_summary` when context file exists. |
+| Current status | Explicit `parent_summary`, `none`, and `critical_parent_summary` modes are implemented. |
 | Immediate target | Yes, with explicit context-mode recording. |
 
 This is the main Go-Explore state representation: fork the exact sandbox from a
@@ -223,6 +223,10 @@ Implementation constraint:
 - P3-T002 should support full snapshot with `context_mode=parent_summary` and,
   if practical, full snapshot with context disabled. The disabled-context mode
   is the cleanest way to measure environment value alone.
+- Use `context_mode=critical_parent_summary` when the parent root failed, timed
+  out, or has unknown reward. The child still receives parent history, but the
+  prompt frames restored files and prior reasoning as untrusted evidence that
+  must be independently audited.
 
 ## Context Misuse And Wrong-Parent-State Failures
 

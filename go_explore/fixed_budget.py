@@ -154,8 +154,15 @@ def _validate_config(config: FixedBudgetPlanConfig) -> None:
         raise ValueError("n_branch_continuations must be >= 1.")
     if not 0 < config.branch_root_fraction < 1:
         raise ValueError("branch_root_fraction must be between 0 and 1.")
-    if config.branch_context_mode not in {"parent_summary", "none"}:
-        raise ValueError("branch_context_mode must be 'parent_summary' or 'none'.")
+    if config.branch_context_mode not in {
+        "parent_summary",
+        "critical_parent_summary",
+        "none",
+    }:
+        raise ValueError(
+            "branch_context_mode must be 'parent_summary', "
+            "'critical_parent_summary', or 'none'."
+        )
 
 
 def _plan_single(

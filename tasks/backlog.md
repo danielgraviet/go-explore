@@ -60,7 +60,7 @@ Phase 5 is inserted after the `regex-log-r3` smoke result and should be complete
 | --- | --- | --- | --- | --- | --- |
 | P5-T001 | Regex-log R3 result audit | TBD | review | completed `phase4-smoke-regex-log-r3` run | `docs/experiments/regex-log-r3-audit.md` |
 | P5-T002 | Explicit context mode controls | TBD | review | P2-T006, P5-T001 | code/tests |
-| P5-T003 | Critical parent summary mode | TBD | ready | P5-T002 | code/tests, docs |
+| P5-T003 | Critical parent summary mode | TBD | review | P5-T002 | code/tests, docs |
 | P5-T004 | Clean parent summary baseline | TBD | ready | P5-T002 | code/tests |
 | P5-T005 | Snapshot probe scoring | TBD | ready | P5-T001 | code/tests |
 | P5-T006 | Budget enforcement or explicit labels | TBD | ready | P3-T003, P3-T006 | code/tests, docs |

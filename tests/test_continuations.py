@@ -532,6 +532,44 @@ def test_plan_snapshot_continuations_records_none_context_mode():
     assert "context_mode=none" in plans[0].command
 
 
+def test_plan_snapshot_continuations_records_critical_parent_summary_mode():
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    root_summary = JobSummary(
+        job_dir=Path("jobs/root"),
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name="fix-git__root",
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+
+    plans = plan_snapshot_continuations(
+        root_config=root_config,
+        root_summary=root_summary,
+        snapshots=("snapshot-a",),
+        continuation_job_prefix="cont",
+        context_mode="critical_parent_summary",
+    )
+
+    assert plans[0].context_mode == "critical_parent_summary"
+    assert "context_mode=critical_parent_summary" in plans[0].command
+
+
 def test_plan_snapshot_continuations_logs_selected_snapshots(tmp_path):
     root_config = HarborRunConfig(
         agent="terminus-2",
@@ -974,6 +1012,36 @@ def test_fixed_budget_planner_generates_method_commands_and_snapshot_children():
     assert "snapshot_template_name=" in " ".join(child_0.command)
     assert "context_mode=none" in child_0.command
     assert child_1.parent_run_id == root.job_name
+
+
+def test_fixed_budget_planner_accepts_critical_parent_summary_context():
+    base_config = HarborRunConfig(
+        agent=None,
+        agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
+        env="daytona",
+        jobs_dir=Path("jobs"),
+        dataset="terminal-bench@2.0",
+        model="model-a",
+        task_name="fix-git",
+    )
+
+    manifest = plan_fixed_budget_runs(
+        FixedBudgetPlanConfig(
+            experiment_id="pilot-1",
+            base_config=base_config,
+            job_prefix="pilot",
+            total_token_budget=90_000,
+            methods=("promising_branch",),
+            seeds=(11,),
+            n_branch_continuations=1,
+            snapshots=("snapshot-a",),
+            branch_context_mode="critical_parent_summary",
+        )
+    )
+
+    child = manifest.jobs[1]
+    assert child.context_mode == "critical_parent_summary"
+    assert "context_mode=critical_parent_summary" in child.command
 
 
 def test_fixed_budget_planner_marks_branch_children_pending_without_snapshots():
