@@ -50,7 +50,7 @@ The implementation should prevent readers from treating planning-only runs as st
 Run:
 
 ```bash
-uv run pytest tests/test_experiment_runner.py tests/test_analysis_tables.py tests/test_cli.py -q
+.venv/bin/python -m pytest tests/test_experiment_runner.py tests/test_analysis_tables.py tests/test_cli.py -q
 ```
 
 If implementation touches docs only, still run the relevant unit tests unless no code changed.

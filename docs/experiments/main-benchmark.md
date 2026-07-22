@@ -18,11 +18,16 @@ archives before they can run.
 | Model | `anthropic/claude-haiku-4-5-20251001` |
 | Agent | `go_explore.agents.factory:SnapshotAwareTerminus2` |
 | Seed | `0` |
-| Total planned budget per method/task | 100,000 tokens |
+| Total planned allocation per method/task | 100,000 tokens |
 | Budget enforcement | `planning_only` |
 | Methods | `single`, `retry`, `random_branch`, `promising_branch` |
 | Retry attempts | 5 scratch attempts, 20,000 planned tokens each |
 | Branch split | 30,000-token root, two 35,000-token continuations |
+
+`planning_only` means these token values are not hard caps. Harbor and the
+agent are not stopped when a job reaches the planned allocation. Use these
+fields to group and interpret runs, then compare actual `total_tokens` before
+making strict fixed-budget claims.
 
 Artifacts:
 

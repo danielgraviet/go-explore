@@ -26,6 +26,8 @@ from go_explore.experiment_runner import (
     run_fixed_budget_experiment,
 )
 from go_explore.fixed_budget import (
+    BUDGET_ENFORCEMENT_DESCRIPTION,
+    BUDGET_ENFORCEMENT_PLANNING_ONLY,
     FixedBudgetPlanConfig,
     plan_fixed_budget_runs,
     write_fixed_budget_manifest,
@@ -314,10 +316,13 @@ def plan_fixed_budget(args: argparse.Namespace) -> int:
 
     write_fixed_budget_manifest(manifest, args.manifest_path)
     print(f"manifest: {args.manifest_path}")
+    print(f"budget_enforcement: {BUDGET_ENFORCEMENT_PLANNING_ONLY}")
+    print(f"budget_note: {BUDGET_ENFORCEMENT_DESCRIPTION}")
     for job in manifest.jobs:
         print(
             f"{job.method}\t{job.role}\tseed={job.seed}\t"
-            f"budget={job.budget.token_budget}\t{job.executor_status}\t"
+            f"planned_budget={job.budget.token_budget}\t"
+            f"enforcement={job.budget.enforcement}\t{job.executor_status}\t"
             f"{job.job_name}"
         )
         if job.command:

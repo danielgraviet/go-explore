@@ -319,6 +319,11 @@ def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(t
         warning.field == "job_dir" and "missing-retry" in warning.artifact
         for warning in tables.warnings
     )
+    assert any(
+        warning.field == "budget_enforcement"
+        and "planning_only labels, not enforced caps" in warning.message
+        for warning in tables.warnings
+    )
 
 
 def test_build_analysis_tables_cli_writes_csv_and_warnings(tmp_path, capsys):
@@ -355,3 +360,4 @@ def test_build_analysis_tables_cli_writes_csv_and_warnings(tmp_path, capsys):
 
     warnings = json.loads((output_dir / "warnings.json").read_text())["warnings"]
     assert any(warning["field"] == "total_tokens" for warning in warnings)
+    assert any(warning["field"] == "budget_enforcement" for warning in warnings)

@@ -11,6 +11,11 @@ from go_explore.harbor import HarborRunConfig, build_harbor_command
 
 ExperimentMethod = Literal["single", "retry", "random_branch", "promising_branch"]
 PlannedJobRole = Literal["single", "retry_attempt", "root", "continuation"]
+BUDGET_ENFORCEMENT_PLANNING_ONLY = "planning_only"
+BUDGET_ENFORCEMENT_DESCRIPTION = (
+    "Token budgets are planned analysis allocations only; Harbor and the agent "
+    "are not stopped when a job reaches this value."
+)
 
 
 @dataclass(frozen=True)
@@ -19,13 +24,14 @@ class BudgetAllocation:
 
     token_budget: int | None
     budget_fraction: float
-    enforcement: str = "planning_only"
+    enforcement: str = BUDGET_ENFORCEMENT_PLANNING_ONLY
 
     def to_json_dict(self) -> dict[str, Any]:
         return {
             "token_budget": self.token_budget,
             "budget_fraction": self.budget_fraction,
             "enforcement": self.enforcement,
+            "enforcement_description": BUDGET_ENFORCEMENT_DESCRIPTION,
         }
 
 
@@ -99,7 +105,8 @@ class FixedBudgetManifest:
             "model": self.model,
             "budget": {
                 "total_token_budget": self.total_token_budget,
-                "enforcement": "planning_only",
+                "enforcement": BUDGET_ENFORCEMENT_PLANNING_ONLY,
+                "enforcement_description": BUDGET_ENFORCEMENT_DESCRIPTION,
             },
             "methods": list(self.methods),
             "seeds": list(self.seeds),

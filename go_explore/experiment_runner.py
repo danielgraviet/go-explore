@@ -24,6 +24,8 @@ from go_explore.continuations import (
 )
 from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.fixed_budget import (
+    BUDGET_ENFORCEMENT_DESCRIPTION,
+    BUDGET_ENFORCEMENT_PLANNING_ONLY,
     ExperimentMethod,
     FixedBudgetManifest,
     FixedBudgetPlanConfig,
@@ -83,6 +85,8 @@ class RunExperimentReport:
     manifest_path: Path
     analysis_dir: Path | None
     execution_report_path: Path
+    budget_enforcement: str
+    budget_enforcement_description: str
     records: tuple[ExperimentExecutionRecord, ...]
     job_dirs: tuple[Path, ...]
     continuation_reports: tuple[Path, ...]
@@ -194,6 +198,8 @@ def run_fixed_budget_experiment(
         manifest_path=manifest_path,
         analysis_dir=analysis_dir if config.build_analysis else None,
         execution_report_path=execution_report_path,
+        budget_enforcement=BUDGET_ENFORCEMENT_PLANNING_ONLY,
+        budget_enforcement_description=BUDGET_ENFORCEMENT_DESCRIPTION,
         records=tuple(records),
         job_dirs=tuple(_dedupe_paths(observed_job_dirs)),
         continuation_reports=tuple(_dedupe_paths(continuation_report_paths)),
@@ -208,6 +214,8 @@ def format_run_experiment_report(report: RunExperimentReport) -> str:
     lines = [
         f"manifest: {report.manifest_path}",
         f"execution_report: {report.execution_report_path}",
+        f"budget_enforcement: {report.budget_enforcement}",
+        f"budget_note: {report.budget_enforcement_description}",
     ]
     if report.analysis_tables is not None and report.analysis_dir is not None:
         lines.extend(
@@ -501,6 +509,10 @@ def _write_execution_report(report: RunExperimentReport) -> None:
                 "experiment_id": report.experiment_id,
                 "manifest_path": str(report.manifest_path),
                 "analysis_dir": str(report.analysis_dir) if report.analysis_dir else None,
+                "budget_enforcement": report.budget_enforcement,
+                "budget_enforcement_description": (
+                    report.budget_enforcement_description
+                ),
                 "job_dirs": [str(path) for path in report.job_dirs],
                 "continuation_reports": [
                     str(path) for path in report.continuation_reports
