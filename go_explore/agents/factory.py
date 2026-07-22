@@ -103,6 +103,9 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
 
         hooks_debug = _as_bool(kwargs.pop("hooks_debug", False))
         snapshot_policy = _resolve_snapshot_policy(kwargs.pop("snapshot_policy", None))
+        preinstall_tmux = _as_bool(kwargs.pop("preinstall_tmux", True))
+        tmux_install_timeout_sec = float(kwargs.pop("tmux_install_timeout_sec", 360.0))
+        kwargs.setdefault("record_terminal_session", False)
         wrapped = Terminus2(
             logs_dir=logs_dir,
             model_name=model_name,
@@ -114,6 +117,8 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
             sandbox=sandbox,
             hooks_debug=hooks_debug,
             snapshot_policy=snapshot_policy,
+            preinstall_tmux=preinstall_tmux,
+            tmux_install_timeout_sec=tmux_install_timeout_sec,
             logs_dir=logs_dir,
             model_name=model_name,
             logger=logger,
