@@ -1,0 +1,118 @@
+{
+  "schema_version": "go-explore-fixed-budget-plan-v1",
+  "experiment_id": "phase5-context-ablation-regex-log-20260722",
+  "task_id": "regex-log",
+  "model": "anthropic/claude-haiku-4-5-20251001",
+  "budget": {
+    "total_token_budget": null,
+    "enforcement": "planning_only",
+    "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
+  },
+  "methods": [
+    "retry",
+    "branch_root",
+    "full_snapshot_parent_summary",
+    "full_snapshot_none",
+    "full_snapshot_critical_parent_summary"
+  ],
+  "seeds": [
+    0
+  ],
+  "jobs": [
+    {
+      "method": "retry",
+      "role": "retry_attempt",
+      "seed": 0,
+      "job_name": "phase5-context-ablation-regex-log-20260722-retry-seed-0-attempt-0",
+      "command": [],
+      "budget": {
+        "token_budget": 20000,
+        "budget_fraction": 1.0,
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
+      },
+      "start_state_type": "clean",
+      "context_mode": "original_task_only",
+      "selector_mode": null,
+      "parent_run_id": null,
+      "parent_snapshot": null,
+      "executor_status": "ready"
+    },
+    {
+      "method": "branch_root",
+      "role": "root",
+      "seed": 0,
+      "job_name": "phase5-context-ablation-regex-log-20260722-root-seed-0",
+      "command": [],
+      "budget": {
+        "token_budget": 30000,
+        "budget_fraction": 1.0,
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
+      },
+      "start_state_type": "clean",
+      "context_mode": "original_task_only",
+      "selector_mode": "archive_priority",
+      "parent_run_id": null,
+      "parent_snapshot": null,
+      "executor_status": "ready"
+    },
+    {
+      "method": "full_snapshot_parent_summary",
+      "role": "continuation",
+      "seed": 0,
+      "job_name": "phase5-context-ablation-regex-log-20260722-parent-summary-snapshot-0",
+      "command": [],
+      "budget": {
+        "token_budget": 35000,
+        "budget_fraction": 1.0,
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
+      },
+      "start_state_type": "full_snapshot",
+      "context_mode": "parent_summary",
+      "selector_mode": "explicit",
+      "parent_run_id": "phase5-context-ablation-regex-log-20260722-root-seed-0",
+      "parent_snapshot": "go-explore-regex-log__VgDNmsH-step-0",
+      "executor_status": "ready"
+    },
+    {
+      "method": "full_snapshot_none",
+      "role": "continuation",
+      "seed": 0,
+      "job_name": "phase5-context-ablation-regex-log-20260722-none-snapshot-0",
+      "command": [],
+      "budget": {
+        "token_budget": 35000,
+        "budget_fraction": 1.0,
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
+      },
+      "start_state_type": "full_snapshot",
+      "context_mode": "none",
+      "selector_mode": "explicit",
+      "parent_run_id": "phase5-context-ablation-regex-log-20260722-root-seed-0",
+      "parent_snapshot": "go-explore-regex-log__VgDNmsH-step-0",
+      "executor_status": "ready"
+    },
+    {
+      "method": "full_snapshot_critical_parent_summary",
+      "role": "continuation",
+      "seed": 0,
+      "job_name": "phase5-context-ablation-regex-log-20260722-critical-parent-summary-snapshot-0",
+      "command": [],
+      "budget": {
+        "token_budget": 35000,
+        "budget_fraction": 1.0,
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
+      },
+      "start_state_type": "full_snapshot",
+      "context_mode": "critical_parent_summary",
+      "selector_mode": "explicit",
+      "parent_run_id": "phase5-context-ablation-regex-log-20260722-root-seed-0",
+      "parent_snapshot": "go-explore-regex-log__VgDNmsH-step-0",
+      "executor_status": "ready"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+phase5-context-ablation-regex-log-20260722,regex-log,,,branch_root,anthropic/claude-haiku-4-5-20251001,false,1,1,3,3,38264,0.03500905,129.514124,37.00042083399603,,false
+phase5-context-ablation-regex-log-20260722,regex-log,,,full_snapshot_critical_parent_summary,anthropic/claude-haiku-4-5-20251001,false,1,1,3,0,109298,0.0461898,149.202586,25.973958998991293,,false
+phase5-context-ablation-regex-log-20260722,regex-log,,,full_snapshot_none,anthropic/claude-haiku-4-5-20251001,false,1,1,2,0,5254,0.013082,78.487925,17.75602600000275,,false
+phase5-context-ablation-regex-log-20260722,regex-log,,,full_snapshot_parent_summary,anthropic/claude-haiku-4-5-20251001,false,1,1,6,0,127274,0.05811875,194.624855,56.117962083983,,false
+phase5-context-ablation-regex-log-20260722,regex-log,,,retry,anthropic/claude-haiku-4-5-20251001,false,1,1,3,0,12054,0.0256025,88.820463,29.59009079200041,,false

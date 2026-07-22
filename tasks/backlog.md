@@ -64,7 +64,7 @@ Phase 5 is inserted after the `regex-log-r3` smoke result and should be complete
 | P5-T004 | Clean parent summary baseline | TBD | review | P5-T002 | code/tests |
 | P5-T005 | Snapshot probe scoring | TBD | review | P5-T001 | code/tests |
 | P5-T006 | Budget enforcement or explicit labels | TBD | review | P3-T003, P3-T006 | code/tests, docs |
-| P5-T007 | Context ablation smoke run | TBD | backlog | P5-T002, P5-T003, P5-T006 | smoke jobs, analysis tables, result memo |
+| P5-T007 | Context ablation smoke run | TBD | review | P5-T002, P5-T003, P5-T006 | smoke jobs, analysis tables, result memo |
 
 ## Near-Term Priorities
 
