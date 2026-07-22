@@ -4,6 +4,8 @@ This is the source of truth for task status. Update this table when a task moves
 
 Phase 2+ supersedes unfinished Phase 1 tickets. Phase 1 remains archived for historical context.
 
+Phase 5 is inserted after the `regex-log-r3` smoke result and should be completed before treating Phase 4 benchmark outputs as paper-grade evidence. Phase 4 remains the paper/benchmark phase, but its analysis tickets should wait for the corrective context-mode and budget-labeling work below.
+
 ## Phase 1 Archive
 
 | ID | Title | Owner | Status | Depends On | Artifact |
@@ -52,6 +54,18 @@ Phase 2+ supersedes unfinished Phase 1 tickets. Phase 1 remains archived for his
 | P4-T005 | Related work citation audit | TBD | ready | - | `docs/related-work-citation-audit.md` |
 | P4-T006 | Result memo and essay fill-in | TBD | backlog | P4-T003, P4-T004, P4-T005 | `docs/phase-4-result-memo.md`, `docs/essay.md` |
 
+## Phase 5: Context Ablations And Corrective Benchmarking
+
+| ID | Title | Owner | Status | Depends On | Artifact |
+| --- | --- | --- | --- | --- | --- |
+| P5-T001 | Regex-log R3 result audit | TBD | ready | completed `phase4-smoke-regex-log-r3` run | `docs/experiments/regex-log-r3-audit.md` |
+| P5-T002 | Explicit context mode controls | TBD | ready | P2-T006, P5-T001 | code/tests |
+| P5-T003 | Critical parent summary mode | TBD | ready | P5-T002 | code/tests, docs |
+| P5-T004 | Clean parent summary baseline | TBD | ready | P5-T002 | code/tests |
+| P5-T005 | Snapshot probe scoring | TBD | ready | P5-T001 | code/tests |
+| P5-T006 | Budget enforcement or explicit labels | TBD | ready | P3-T003, P3-T006 | code/tests, docs |
+| P5-T007 | Context ablation smoke run | TBD | backlog | P5-T002, P5-T003, P5-T006 | smoke jobs, analysis tables, result memo |
+
 ## Near-Term Priorities
 
-Start with P2-T001 so sub-agents have a shared data contract. Then run P2-T002 and P2-T006 in parallel. After those land, P2-T003, P2-T004, and P2-T005 can proceed independently.
+Start with P5-T001 to preserve the `regex-log-r3` evidence. Then run P5-T002 and P5-T006 in parallel. After P5-T002 lands, P5-T003 and P5-T004 can proceed independently. Run P5-T007 only after context modes and budget labeling are merged.
