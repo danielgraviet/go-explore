@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import sys
+from types import ModuleType
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -15,6 +17,36 @@ from go_explore.snapshots.policies import EveryAgentStepPolicy, InterestingAgent
 
 def test_snapshot_aware_terminus2_advertises_atif_support():
     assert SnapshotAwareTerminus2.SUPPORTS_ATIF is True
+
+
+def test_snapshot_aware_terminus2_defaults_to_tmux_preflight_without_recording(
+    tmp_path,
+    monkeypatch,
+):
+    captured: dict[str, object] = {}
+
+    class FakeTerminus2:
+        def __init__(self, *, logs_dir, model_name, logger=None, **kwargs):
+            captured["logs_dir"] = logs_dir
+            captured["model_name"] = model_name
+            captured["logger"] = logger
+            captured["kwargs"] = kwargs
+
+        def to_agent_info(self):
+            return {"name": "terminus-2"}
+
+    harbor_module = ModuleType("harbor")
+    agents_module = ModuleType("harbor.agents")
+    terminus_module = ModuleType("harbor.agents.terminus_2")
+    terminus_module.Terminus2 = FakeTerminus2
+    monkeypatch.setitem(sys.modules, "harbor", harbor_module)
+    monkeypatch.setitem(sys.modules, "harbor.agents", agents_module)
+    monkeypatch.setitem(sys.modules, "harbor.agents.terminus_2", terminus_module)
+
+    agent = SnapshotAwareTerminus2(logs_dir=tmp_path, model_name="model-a")
+
+    assert agent._preinstall_tmux is True
+    assert captured["kwargs"]["record_terminal_session"] is False
 
 
 def test_snapshot_aware_agent_instantiation_without_sandbox():
@@ -58,6 +90,71 @@ def test_snapshot_aware_agent_accepts_custom_policy():
     agent = SnapshotAwareAgent(wrapped_agent=wrapped, snapshot_policy=policy)
 
     assert agent._snapshot_policy is policy
+
+
+@pytest.mark.asyncio
+async def test_snapshot_aware_agent_tmux_preflight_skips_when_tmux_exists():
+    wrapped = MagicMock()
+    wrapped.setup = AsyncMock()
+    environment = MagicMock()
+    environment.exec = AsyncMock(return_value=MagicMock(return_code=0))
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, preinstall_tmux=True)
+
+    await agent.setup(environment)
+
+    environment.exec.assert_awaited_once_with(
+        command="tmux -V",
+        user="root",
+        timeout_sec=30,
+    )
+    wrapped.setup.assert_awaited_once_with(environment)
+
+
+@pytest.mark.asyncio
+async def test_snapshot_aware_agent_tmux_preflight_installs_when_missing():
+    wrapped = MagicMock()
+    wrapped.setup = AsyncMock()
+    environment = MagicMock()
+    environment.exec = AsyncMock(
+        side_effect=[
+            MagicMock(return_code=1),
+            MagicMock(return_code=0),
+        ]
+    )
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        preinstall_tmux=True,
+        tmux_install_timeout_sec=123.0,
+    )
+
+    await agent.setup(environment)
+
+    assert environment.exec.await_count == 2
+    install_call = environment.exec.await_args_list[1].kwargs
+    assert "apt-get install -y tmux" in install_call["command"]
+    assert "asciinema" not in install_call["command"]
+    assert install_call["user"] == "root"
+    assert install_call["timeout_sec"] == 123.0
+    wrapped.setup.assert_awaited_once_with(environment)
+
+
+@pytest.mark.asyncio
+async def test_snapshot_aware_agent_tmux_preflight_raises_clear_error_on_failure():
+    wrapped = MagicMock()
+    wrapped.setup = AsyncMock()
+    environment = MagicMock()
+    environment.exec = AsyncMock(
+        side_effect=[
+            MagicMock(return_code=1),
+            MagicMock(return_code=1, stderr="apt failed"),
+        ]
+    )
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, preinstall_tmux=True)
+
+    with pytest.raises(RuntimeError, match="tmux preflight failed: apt failed"):
+        await agent.setup(environment)
+
+    wrapped.setup.assert_not_awaited()
 
 
 def test_snapshot_aware_agent_name_matches_wrapped():

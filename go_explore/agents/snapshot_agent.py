@@ -56,6 +56,8 @@ class SnapshotAwareAgent(BaseAgent):
         sandbox: Any = None,
         hooks_debug: bool = False,
         snapshot_policy: SnapshotPolicy | None = None,
+        preinstall_tmux: bool = False,
+        tmux_install_timeout_sec: float = 360.0,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -63,6 +65,8 @@ class SnapshotAwareAgent(BaseAgent):
         self._sandbox = sandbox
         self._hooks_debug = hooks_debug
         self._snapshot_policy = snapshot_policy or InterestingAgentStepPolicy()
+        self._preinstall_tmux = preinstall_tmux
+        self._tmux_install_timeout_sec = tmux_install_timeout_sec
         # Peek (don't pop) so logs_dir still reaches BaseAgent/**kwargs above.
         self._logs_dir: Path | None = kwargs.get("logs_dir")
         self._agent_execute_hooked = False
@@ -153,7 +157,49 @@ class SnapshotAwareAgent(BaseAgent):
         return self._wrapped_agent.to_agent_info()
 
     async def setup(self, environment: Any) -> None:
+        if self._preinstall_tmux:
+            await self._ensure_tmux_available(environment)
         await self._wrapped_agent.setup(environment)
+
+    async def _ensure_tmux_available(self, environment: Any) -> None:
+        exec_fn = getattr(environment, "exec", None)
+        if exec_fn is None:
+            return
+
+        check_result = await exec_fn(
+            command="tmux -V",
+            user="root",
+            timeout_sec=30,
+        )
+        if getattr(check_result, "return_code", 1) == 0:
+            return
+
+        install_command = (
+            "if command -v apt-get >/dev/null 2>&1; then "
+            "DEBIAN_FRONTEND=noninteractive apt-get update && "
+            "DEBIAN_FRONTEND=noninteractive apt-get install -y tmux && "
+            "tmux -V; "
+            "elif command -v apk >/dev/null 2>&1; then "
+            "apk add --no-cache tmux && tmux -V; "
+            "elif command -v yum >/dev/null 2>&1; then "
+            "yum install -y tmux && tmux -V; "
+            "else "
+            "echo 'no supported package manager for tmux install' >&2; "
+            "exit 127; "
+            "fi"
+        )
+        install_result = await exec_fn(
+            command=install_command,
+            user="root",
+            timeout_sec=self._tmux_install_timeout_sec,
+        )
+        if getattr(install_result, "return_code", 1) == 0:
+            return
+
+        stderr = (getattr(install_result, "stderr", "") or "").strip()
+        stdout = (getattr(install_result, "stdout", "") or "").strip()
+        detail = stderr or stdout or "tmux install command failed"
+        raise RuntimeError(f"tmux preflight failed: {detail}")
 
     async def run(self, instruction: str, environment: Any, context: Any) -> None:
         trial_paths = getattr(environment, "trial_paths", None)
