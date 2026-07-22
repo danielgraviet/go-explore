@@ -1131,6 +1131,35 @@ def test_fixed_budget_planner_accepts_critical_parent_summary_context():
     assert "context_mode=critical_parent_summary" in child.command
 
 
+def test_fixed_budget_planner_defaults_branch_context_to_none():
+    base_config = HarborRunConfig(
+        agent=None,
+        agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
+        env="daytona",
+        jobs_dir=Path("jobs"),
+        dataset="terminal-bench@2.0",
+        model="model-a",
+        task_name="fix-git",
+    )
+
+    manifest = plan_fixed_budget_runs(
+        FixedBudgetPlanConfig(
+            experiment_id="pilot-1",
+            base_config=base_config,
+            job_prefix="pilot",
+            total_token_budget=90_000,
+            methods=("promising_branch",),
+            seeds=(11,),
+            n_branch_continuations=1,
+            snapshots=("snapshot-a",),
+        )
+    )
+
+    child = manifest.jobs[1]
+    assert child.context_mode == "none"
+    assert "context_mode=none" in child.command
+
+
 def test_fixed_budget_planner_marks_branch_children_pending_without_snapshots():
     base_config = HarborRunConfig(
         agent="terminus-2",

@@ -26,6 +26,7 @@ from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.fixed_budget import (
     BUDGET_ENFORCEMENT_DESCRIPTION,
     BUDGET_ENFORCEMENT_PLANNING_ONLY,
+    DEFAULT_BRANCH_CONTEXT_MODE,
     ExperimentMethod,
     FixedBudgetManifest,
     FixedBudgetPlanConfig,
@@ -61,7 +62,7 @@ class RunExperimentConfig:
     n_retries: int = 5
     n_branch_continuations: int = 2
     branch_root_fraction: float = 0.3
-    branch_context_mode: str = "parent_summary"
+    branch_context_mode: str = DEFAULT_BRANCH_CONTEXT_MODE
     execute: bool = False
     rerun_existing: bool = False
     build_analysis: bool = True

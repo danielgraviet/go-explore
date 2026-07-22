@@ -194,7 +194,7 @@ tail -20 jobs/phase4-smoke-regex-log-single-seed-0/events.jsonl
 For branch methods, run roots before continuations:
 
 ```bash
-uv run python -m go_explore.cli run-experiment \
+.venv/bin/python -m go_explore.cli run-experiment \
   --dataset terminal-bench@2.0 \
   --task-name regex-log \
   --experiment-id phase4-smoke-regex-log-001 \
@@ -208,6 +208,7 @@ uv run python -m go_explore.cli run-experiment \
   --seed 0 \
   --n-retries 5 \
   --n-branch-continuations 2 \
+  --branch-context-mode none \
   --manifest-path docs/experiments/main-benchmark/manifests/smoke/regex-log.json \
   --analysis-dir docs/experiments/main-benchmark/analysis/smoke/regex-log \
   --execute
@@ -218,6 +219,13 @@ roots, selects archive snapshots for `random_branch` and `promising_branch`,
 runs continuations, writes `execution-report.json`, and builds analysis tables.
 It skips jobs that already have `result.json` unless `--rerun-existing` is set.
 Omit `--execute` to print the planned Harbor commands without spending credits.
+
+For new viability experiments, keep `parent_summary` out of the main run. The
+default branch continuation context is `none`, which tests whether the restored
+sandbox state itself helps without paying for inherited parent reasoning. Use
+`--branch-context-mode critical_parent_summary` as the main minimal-context
+alternate when you want parent information, and reserve
+`--branch-context-mode parent_summary` for a small diagnostic ablation.
 
 Budget fields in these manifests and analysis tables are planning labels only.
 They split a target token budget across methods for analysis, but Harbor and
@@ -245,12 +253,13 @@ harbor run \
 After the root writes `archive.json`, launch promising continuations:
 
 ```bash
-uv run python -m go_explore.cli continue-from-snapshots \
+.venv/bin/python -m go_explore.cli continue-from-snapshots \
   jobs/phase4-smoke-regex-log-promising-branch-seed-0-root \
   --from-archive \
   --selector-mode archive_priority \
   --max-snapshots 2 \
   --job-prefix phase4-smoke-regex-log-promising-branch-seed-0 \
+  --context-mode none \
   --execute
 ```
 

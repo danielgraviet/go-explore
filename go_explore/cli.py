@@ -28,6 +28,7 @@ from go_explore.experiment_runner import (
 from go_explore.fixed_budget import (
     BUDGET_ENFORCEMENT_DESCRIPTION,
     BUDGET_ENFORCEMENT_PLANNING_ONLY,
+    DEFAULT_BRANCH_CONTEXT_MODE,
     FixedBudgetPlanConfig,
     plan_fixed_budget_runs,
     write_fixed_budget_manifest,
@@ -581,8 +582,12 @@ def main() -> int:
     fixed_budget_parser.add_argument(
         "--branch-context-mode",
         choices=("parent_summary", "critical_parent_summary", "none"),
-        default="parent_summary",
-        help="Parent context mode for planned branch continuation jobs.",
+        default=DEFAULT_BRANCH_CONTEXT_MODE,
+        help=(
+            "Parent context mode for planned branch continuation jobs. "
+            "Defaults to none for viability runs; use parent_summary only "
+            "as an explicit diagnostic arm."
+        ),
     )
     fixed_budget_parser.add_argument(
         "--snapshot",
@@ -713,8 +718,13 @@ def main() -> int:
     run_parser.add_argument(
         "--branch-context-mode",
         choices=("parent_summary", "critical_parent_summary", "none"),
-        default="parent_summary",
-        help="Parent context mode for branch continuation jobs.",
+        default=DEFAULT_BRANCH_CONTEXT_MODE,
+        help=(
+            "Parent context mode for branch continuation jobs. Defaults to "
+            "none for viability runs; use critical_parent_summary as the main "
+            "minimal-context alternate and parent_summary as an explicit "
+            "diagnostic arm."
+        ),
     )
     run_parser.add_argument(
         "--execute",
