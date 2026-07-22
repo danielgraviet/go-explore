@@ -4,10 +4,13 @@ This spec defines the start-state and context modes needed to test whether
 continuation helps because of the full sandbox, the inherited prompt context,
 or both.
 
-The current implementation only has one real continuation mode: boot a Daytona
-sandbox from `snapshot_template_name=<snapshot>` and let `SnapshotAwareAgent`
-read `/tmp/go_explore_context.md` from that sandbox. If the file exists, the
-agent appends the parent summary to the child instruction.
+The current implementation supports two parent-summary channels:
+
+- boot a Daytona sandbox from `snapshot_template_name=<snapshot>` and let
+  `SnapshotAwareAgent` read `/tmp/go_explore_context.md` from that sandbox;
+- start from a clean Harbor/Daytona environment and pass
+  `parent_context_path=<parent-trial>/agent/trajectory.json` so
+  `SnapshotAwareAgent` can inject a host-side summary of the parent trajectory.
 
 That default is useful, but it confounds two effects:
 
@@ -79,16 +82,19 @@ Likely failure modes:
 
 | Property | Value |
 | --- | --- |
-| `start_state_type` | usually `full_snapshot` |
+| `start_state_type` | `full_snapshot` or `clean` |
 | `context_mode` | `parent_summary` |
-| Inputs | Full snapshot plus `/tmp/go_explore_context.md` summary. |
-| Expected artifacts | `archive.json`, `events.jsonl`, continuation report, and sandbox context file captured in the snapshot. |
-| Current status | Implemented as explicit `context_mode=parent_summary`. |
+| Inputs | Full snapshot plus `/tmp/go_explore_context.md`, or clean environment plus parent `trajectory.json`. |
+| Expected artifacts | For full snapshots: `archive.json`, `events.jsonl`, continuation report, and sandbox context file captured in the snapshot. For clean starts: parent trajectory path recorded in `parent_artifacts`. |
+| Current status | Implemented as explicit `context_mode=parent_summary` for full-snapshot and clean-start plans. |
 | Immediate target | Yes, keep as the default full-snapshot continuation mode. |
 
-This is the current behavior. `DaytonaSnapshotBackend` writes a trajectory
-summary to `/tmp/go_explore_context.md` before snapshotting. A resumed
+For full snapshots, `DaytonaSnapshotBackend` writes a trajectory summary to
+`/tmp/go_explore_context.md` before snapshotting. A resumed
 `SnapshotAwareAgent` downloads that file and appends it to the task instruction.
+For the clean parent-summary baseline, the planner passes the parent
+`trajectory.json` path as an agent kwarg and `SnapshotAwareAgent` injects a
+compact host-side summary before the child starts.
 
 Likely failure modes:
 
@@ -101,6 +107,9 @@ Implementation constraint:
 
 - Keep this mode explicit in manifests/events as `context_mode=parent_summary`
   so it can be compared against disabled and critical context modes.
+- For clean starts, `snapshot_name` and `parent_snapshot` must remain `null`;
+  the recorded parent trajectory path is evidence of text transfer, not
+  restored environment state.
 
 ### Full Transcript Summary
 
@@ -256,6 +265,7 @@ Implement these first:
 3. `full_snapshot` + `parent_summary`
 4. `full_snapshot` + `original_task_only` or `none`, if disabling context can be
    done without invasive agent changes
+5. `clean` + `parent_summary`
 
 Defer these until after the first pilot:
 

@@ -91,6 +91,24 @@ def _write_manifest(path: Path, jobs_dir: Path) -> None:
                         "executor_status": "ready",
                     },
                     {
+                        "method": "clean_parent_summary",
+                        "role": "continuation",
+                        "seed": 0,
+                        "job_name": "clean-parent-child",
+                        "command": [],
+                        "budget": {
+                            "token_budget": 70_000,
+                            "budget_fraction": 0.7,
+                            "enforcement": "planning_only",
+                        },
+                        "start_state_type": "clean",
+                        "context_mode": "parent_summary",
+                        "selector_mode": None,
+                        "parent_run_id": "root-job",
+                        "parent_snapshot": None,
+                        "executor_status": "ready",
+                    },
+                    {
                         "method": "retry",
                         "role": "retry_attempt",
                         "seed": 0,
@@ -120,8 +138,10 @@ def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(t
     jobs_dir = tmp_path / "jobs"
     root_job = jobs_dir / "root-job"
     child_job = jobs_dir / "root-job-snapshot-0"
+    clean_parent_child_job = jobs_dir / "clean-parent-child"
     _write_job(root_job, trial_name="root-trial", reward=0.0)
     _write_job(child_job, trial_name="child-trial", reward=1.0)
+    _write_job(clean_parent_child_job, trial_name="clean-child-trial", reward=0.0)
 
     manifest_path = tmp_path / "fixed-budget.json"
     _write_manifest(manifest_path, jobs_dir)
@@ -145,7 +165,18 @@ def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(t
                         "exception_type": None,
                         "start_state_type": "full_snapshot",
                         "context_mode": "parent_summary",
-                    }
+                    },
+                    {
+                        "parent_job_dir": str(root_job),
+                        "parent_trial_name": "root-trial",
+                        "snapshot_name": None,
+                        "continuation_job_dir": str(clean_parent_child_job),
+                        "continuation_trial_name": "clean-child-trial",
+                        "reward": 0.0,
+                        "exception_type": None,
+                        "start_state_type": "clean",
+                        "context_mode": "parent_summary",
+                    },
                 ],
             }
         )
@@ -218,7 +249,7 @@ def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(t
     tables = build_analysis_tables(
         AnalysisInputs(
             manifest_path=manifest_path,
-            job_dirs=(root_job, child_job),
+            job_dirs=(root_job, child_job, clean_parent_child_job),
             continuation_report_paths=(continuation_report_path,),
             repeated_work_report_paths=(repeated_work_path,),
             jobs_dir=jobs_dir,
@@ -226,7 +257,12 @@ def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(t
     )
 
     rows_by_run = {row["run_id"]: row for row in tables.run_rows}
-    assert set(rows_by_run) == {"root-job", "child-job", "missing-retry"}
+    assert set(rows_by_run) == {
+        "root-job",
+        "child-job",
+        "clean-parent-child",
+        "missing-retry",
+    }
 
     root = rows_by_run["root-job"]
     assert root["method"] == "promising_branch"
@@ -250,6 +286,16 @@ def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(t
     assert child["selector_score"] == 3.0
     assert child["selector_reasons"] == "priority=3"
     assert child["repeated_setup_score"] == 2
+
+    clean_parent = rows_by_run["clean-parent-child"]
+    assert clean_parent["method"] == "clean_parent_summary"
+    assert clean_parent["start_state_type"] == "clean"
+    assert clean_parent["context_mode"] == "parent_summary"
+    assert clean_parent["parent_run_id"] == "root-job"
+    assert clean_parent["parent_job_dir"] == str(root_job)
+    assert clean_parent["parent_snapshot"] is None
+    assert clean_parent["snapshot_cell_key"] is None
+    assert clean_parent["outcome"] == "fail"
 
     missing = rows_by_run["missing-retry"]
     assert missing["method"] == "retry"

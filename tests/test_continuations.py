@@ -151,7 +151,45 @@ def test_build_clean_start_config_uses_original_task_without_snapshot():
         "--job-name",
         "cont-clean",
         "--export-traces",
+        "--ak",
+        "context_mode=original_task_only",
     ]
+
+
+def test_build_clean_start_config_can_pass_parent_summary_without_snapshot(tmp_path):
+    root_config = HarborRunConfig(
+        agent=None,
+        agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+        extra_args=("--ak", "context_mode=none", "--ak", "hooks_debug=true"),
+    )
+    parent_context_path = tmp_path / "jobs" / "root" / "trial-a" / "agent" / "trajectory.json"
+
+    config = build_clean_start_config(
+        root_config=root_config,
+        job_name="cont-clean-parent",
+        context_mode="parent_summary",
+        parent_context_path=parent_context_path,
+    )
+
+    assert config.environment_kwargs == ()
+    assert config.extra_args == (
+        "--ak",
+        "hooks_debug=true",
+        "--ak",
+        "context_mode=parent_summary",
+        "--ak",
+        f"parent_context_path={parent_context_path}",
+    )
+    command = build_harbor_command(config)
+    assert "--ek" not in command
+    assert "snapshot_template_name=" not in " ".join(command)
+    assert "context_mode=parent_summary" in command
+    assert f"parent_context_path={parent_context_path}" in command
 
 
 def test_harbor_config_from_job_reconstructs_dataset_agent_and_model(tmp_path):
@@ -735,6 +773,55 @@ def test_plan_start_state_baselines_records_modes_and_artifacts(tmp_path):
     assert plans[2].executor_status == "ready"
     assert "snapshot_template_name=snapshot-a" in plans[2].command
     assert "context_mode=none" in plans[2].command
+
+
+def test_plan_start_state_baselines_records_clean_parent_summary_metadata(tmp_path):
+    root_config = HarborRunConfig(
+        agent=None,
+        agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    trial_name = "fix-git__root"
+    root_summary = JobSummary(
+        job_dir=tmp_path / "jobs" / "root",
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name=trial_name,
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+    parent_context_path = root_summary.job_dir / trial_name / "agent" / "trajectory.json"
+
+    plans = plan_start_state_baselines(
+        root_config=root_config,
+        root_summary=root_summary,
+        continuation_job_prefix="claim1",
+        start_state_types=("clean",),
+        clean_context_mode="parent_summary",
+    )
+
+    assert len(plans) == 1
+    plan = plans[0]
+    assert plan.snapshot_name is None
+    assert plan.start_state_type == "clean"
+    assert plan.context_mode == "parent_summary"
+    assert plan.parent_artifacts == (str(parent_context_path),)
+    assert "--ek" not in plan.command
+    assert "snapshot_template_name=" not in " ".join(plan.command)
+    assert "context_mode=parent_summary" in plan.command
+    assert f"parent_context_path={parent_context_path}" in plan.command
 
 
 def test_write_plan_manifest_serializes_start_state_metadata(tmp_path):

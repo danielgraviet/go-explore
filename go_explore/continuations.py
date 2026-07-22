@@ -280,13 +280,19 @@ def build_clean_start_config(
     *,
     root_config: HarborRunConfig,
     job_name: str,
+    context_mode: ContextMode = "original_task_only",
+    parent_context_path: Path | None = None,
     agent: str | None = None,
     model: str | None = None,
     extra_args: Sequence[str] = (),
 ) -> HarborRunConfig:
     """Build a Harbor job that starts from the original clean task state."""
 
-    combined_extra_args = tuple(root_config.extra_args) + tuple(extra_args)
+    combined_extra_args = _with_clean_context_extra_args(
+        tuple(root_config.extra_args) + tuple(extra_args),
+        context_mode=context_mode,
+        parent_context_path=parent_context_path,
+    )
 
     return HarborRunConfig(
         agent=agent if agent is not None else root_config.agent,
@@ -331,6 +337,46 @@ def _with_context_mode_extra_args(
         index += 1
 
     cleaned.extend(["--ak", f"context_mode={context_mode}"])
+    return tuple(cleaned)
+
+
+def _with_clean_context_extra_args(
+    args: Sequence[str],
+    *,
+    context_mode: ContextMode,
+    parent_context_path: Path | None = None,
+) -> tuple[str, ...]:
+    """Return Harbor extra args for a clean child context mode.
+
+    Clean children cannot inherit `/tmp/go_explore_context.md` from a restored
+    snapshot, so parent-summary modes use an explicit host-side context path.
+    """
+
+    cleaned: list[str] = []
+    replaced_keys = {"context_mode", "parent_context", "parent_context_path"}
+    index = 0
+    while index < len(args):
+        current = args[index]
+        if current == "--ak" and index + 1 < len(args):
+            key = str(args[index + 1]).split("=", 1)[0]
+            if key in replaced_keys:
+                index += 2
+                continue
+            cleaned.extend([current, args[index + 1]])
+            index += 2
+            continue
+        if str(current).split("=", 1)[0] in replaced_keys:
+            index += 1
+            continue
+        cleaned.append(current)
+        index += 1
+
+    cleaned.extend(["--ak", f"context_mode={context_mode}"])
+    if (
+        parent_context_path is not None
+        and context_mode in {"parent_summary", "critical_parent_summary"}
+    ):
+        cleaned.extend(["--ak", f"parent_context_path={parent_context_path}"])
     return tuple(cleaned)
 
 
@@ -423,6 +469,7 @@ def plan_start_state_baselines(
     extra_args: Sequence[str] = (),
     max_snapshots: int | None = None,
     parent_trial_name: str | None = None,
+    clean_context_mode: ContextMode = "original_task_only",
     full_snapshot_context_mode: ContextMode = "parent_summary",
 ) -> list[ContinuationPlan]:
     """Plan Claim 1 child-start conditions without executing them.
@@ -433,6 +480,7 @@ def plan_start_state_baselines(
     """
 
     parent_trial = select_trial(root_summary, parent_trial_name)
+    parent_context_path = _parent_context_path(root_summary, parent_trial.trial_name)
     plans: list[ContinuationPlan] = []
 
     for start_state_type in start_state_types:
@@ -440,6 +488,8 @@ def plan_start_state_baselines(
             config = build_clean_start_config(
                 root_config=root_config,
                 job_name=f"{continuation_job_prefix}-clean",
+                context_mode=clean_context_mode,
+                parent_context_path=parent_context_path,
                 agent=agent,
                 model=model,
                 extra_args=extra_args,
@@ -452,7 +502,13 @@ def plan_start_state_baselines(
                     job_name=config.job_name or f"{continuation_job_prefix}-clean",
                     command=tuple(build_harbor_command(config)),
                     start_state_type="clean",
-                    context_mode="original_task_only",
+                    context_mode=clean_context_mode,
+                    parent_artifacts=(
+                        (str(parent_context_path),)
+                        if clean_context_mode
+                        in {"parent_summary", "critical_parent_summary"}
+                        else ()
+                    ),
                 )
             )
 
@@ -516,6 +572,13 @@ def plan_start_state_baselines(
             raise ContinuationError(f"Unsupported start_state_type: {start_state_type}")
 
     return plans
+
+
+def _parent_context_path(
+    root_summary: JobSummary,
+    parent_trial_name: str,
+) -> Path:
+    return root_summary.job_dir / parent_trial_name / "agent" / "trajectory.json"
 
 
 def write_plan_manifest(plans: Sequence[ContinuationPlan], path: Path) -> None:

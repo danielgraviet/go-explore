@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -59,6 +60,8 @@ class SnapshotAwareAgent(BaseAgent):
         hooks_debug: bool = False,
         snapshot_policy: SnapshotPolicy | None = None,
         context_mode: ContextMode = "parent_summary",
+        parent_context: str | None = None,
+        parent_context_path: str | Path | None = None,
         preinstall_tmux: bool = False,
         tmux_install_timeout_sec: float = 360.0,
         **kwargs,
@@ -69,6 +72,10 @@ class SnapshotAwareAgent(BaseAgent):
         self._hooks_debug = hooks_debug
         self._snapshot_policy = snapshot_policy or InterestingAgentStepPolicy()
         self._context_mode = self._normalize_context_mode(context_mode)
+        self._parent_context = parent_context
+        self._parent_context_path = (
+            Path(parent_context_path) if parent_context_path else None
+        )
         self._preinstall_tmux = preinstall_tmux
         self._tmux_install_timeout_sec = tmux_install_timeout_sec
         # Peek (don't pop) so logs_dir still reaches BaseAgent/**kwargs above.
@@ -371,7 +378,18 @@ class SnapshotAwareAgent(BaseAgent):
         return "\n".join([*atif_lines, current_line])
 
     async def _load_parent_context(self) -> str | None:
-        """Read the trajectory summary a parent run left on the sandbox, if any."""
+        """Read explicit, host-side, or snapshotted parent context, if any."""
+        explicit_context = (self._parent_context or "").strip()
+        if explicit_context:
+            return explicit_context
+
+        if self._parent_context_path is not None:
+            path_context = self._load_parent_context_from_path(
+                self._parent_context_path
+            )
+            if path_context:
+                return path_context
+
         if self._sandbox is None:
             return None
 
@@ -384,6 +402,27 @@ class SnapshotAwareAgent(BaseAgent):
             return None
 
         return content.decode()
+
+    @staticmethod
+    def _load_parent_context_from_path(path: Path) -> str | None:
+        if not path.exists():
+            return None
+
+        if path.name == "trajectory.json":
+            try:
+                steps = load_atif_trajectory_steps(path)
+            except (OSError, json.JSONDecodeError, ValueError):
+                return None
+            lines = SnapshotAwareAgent._atif_history_lines(steps)
+            return "\n".join(lines) if lines else None
+
+        try:
+            content = path.read_text()
+        except OSError:
+            return None
+
+        content = content.strip()
+        return content or None
 
     def _should_append_parent_context(self) -> bool:
         return self._context_mode in {"parent_summary", "critical_parent_summary"}

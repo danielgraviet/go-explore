@@ -162,6 +162,7 @@ def test_plan_start_state_baselines_command_writes_manifest(tmp_path, capsys):
             agent=None,
             model=None,
             extra_arg=[],
+            clean_context_mode="original_task_only",
         )
     )
 
@@ -180,6 +181,55 @@ def test_plan_start_state_baselines_command_writes_manifest(tmp_path, capsys):
     assert data["plans"][1]["parent_artifacts"] == [str(diff_path)]
     assert data["plans"][1]["executor_status"] == "manifest_only"
     assert data["plans"][2]["parent_snapshot"] == "snapshot-a"
+
+
+def test_plan_start_state_baselines_command_can_plan_clean_parent_summary(
+    tmp_path,
+    capsys,
+):
+    root_job_dir = tmp_path / "jobs" / "root"
+    root_job_dir.mkdir(parents=True)
+    _write_root_job(root_job_dir)
+    manifest_path = tmp_path / "plans" / "claim1.json"
+    parent_context_path = (
+        root_job_dir / "fix-git__root" / "agent" / "trajectory.json"
+    )
+
+    exit_code = plan_start_state_baselines_cmd(
+        argparse.Namespace(
+            root_job_dir=root_job_dir,
+            trial_name=None,
+            start_state_type=["clean"],
+            snapshot=[],
+            from_archive=False,
+            selector_mode="archive_priority",
+            selector_seed=None,
+            oracle_labels=None,
+            archive_path=None,
+            diff_path=None,
+            manifest_path=manifest_path,
+            job_prefix="claim1",
+            max_snapshots=None,
+            agent=None,
+            model=None,
+            extra_arg=[],
+            clean_context_mode="parent_summary",
+        )
+    )
+
+    assert exit_code == 0
+    stdout = capsys.readouterr().out
+    assert "clean\tparent_summary\tready\tclaim1-clean" in stdout
+    assert "snapshot_template_name=" not in stdout
+
+    data = json.loads(manifest_path.read_text())
+    plan = data["plans"][0]
+    assert plan["parent_snapshot"] is None
+    assert plan["start_state_type"] == "clean"
+    assert plan["context_mode"] == "parent_summary"
+    assert plan["parent_artifacts"] == [str(parent_context_path)]
+    assert "context_mode=parent_summary" in plan["command"]
+    assert f"parent_context_path={parent_context_path}" in plan["command"]
 
 
 def test_plan_fixed_budget_command_writes_manifest(tmp_path, capsys):

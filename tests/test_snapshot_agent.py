@@ -74,10 +74,13 @@ def test_snapshot_aware_terminus2_accepts_context_mode_without_wrapped_leak(
         logs_dir=tmp_path,
         model_name="model-a",
         context_mode="none",
+        parent_context_path=tmp_path / "parent.md",
     )
 
     assert agent._context_mode == "none"
+    assert agent._parent_context_path == tmp_path / "parent.md"
     assert "context_mode" not in captured["kwargs"]
+    assert "parent_context_path" not in captured["kwargs"]
 
 
 def test_snapshot_aware_agent_instantiation_without_sandbox():
@@ -460,6 +463,44 @@ async def test_load_parent_context_decodes_sandbox_file():
     agent = SnapshotAwareAgent(wrapped_agent=wrapped, sandbox=sandbox)
 
     assert await agent._load_parent_context() == "step 0: pip install -> ok"
+
+
+@pytest.mark.asyncio
+async def test_load_parent_context_uses_explicit_context_before_sandbox():
+    wrapped = MagicMock()
+    sandbox = MagicMock()
+    sandbox.fs.download_file = AsyncMock(return_value=b"step 0: sandbox note")
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        sandbox=sandbox,
+        parent_context="step 0: explicit note",
+    )
+
+    assert await agent._load_parent_context() == "step 0: explicit note"
+    sandbox.fs.download_file.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_load_parent_context_summarizes_host_trajectory_path(tmp_path):
+    trajectory_path = tmp_path / "trajectory.json"
+    _write_trajectory(
+        trajectory_path,
+        [
+            {"step_id": 0, "source": "user", "message": "Fix it."},
+            {"step_id": 1, "source": "agent", "message": "Ran pytest and saw failure."},
+            {"step_id": 2, "source": "agent", "message": "Edited parser.py."},
+        ],
+    )
+    wrapped = MagicMock()
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        parent_context_path=trajectory_path,
+    )
+
+    assert await agent._load_parent_context() == (
+        "step 1: Ran pytest and saw failure.\n"
+        "step 2: Edited parser.py."
+    )
 
 
 def test_augment_instruction_appends_parent_context():
