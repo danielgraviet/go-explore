@@ -20,6 +20,11 @@ from go_explore.continuations import (
     write_plan_manifest,
 )
 from go_explore.events import EVENT_LOG_FILENAME
+from go_explore.experiment_runner import (
+    RunExperimentConfig,
+    format_run_experiment_report,
+    run_fixed_budget_experiment,
+)
 from go_explore.fixed_budget import (
     FixedBudgetPlanConfig,
     plan_fixed_budget_runs,
@@ -358,6 +363,51 @@ def build_figure_tables_cmd(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_experiment_cmd(args: argparse.Namespace) -> int:
+    agent = args.agent
+    agent_import_path = args.agent_import_path
+    if agent is None and agent_import_path is None:
+        agent_import_path = "go_explore.agents.factory:SnapshotAwareTerminus2"
+
+    base_config = HarborRunConfig(
+        jobs_dir=args.jobs_dir,
+        agent=agent,
+        agent_import_path=agent_import_path,
+        env=args.env,
+        dataset=args.dataset,
+        path=args.path,
+        model=args.model,
+        task_name=args.task_name,
+        n_tasks=1,
+        n_attempts=1,
+        n_concurrent=1,
+        export_traces=True,
+        extra_args=tuple(args.extra_arg),
+    )
+    report = run_fixed_budget_experiment(
+        RunExperimentConfig(
+            experiment_id=args.experiment_id,
+            base_config=base_config,
+            total_token_budget=args.total_token_budget,
+            methods=tuple(
+                args.method or ("single", "retry", "random_branch", "promising_branch")
+            ),
+            seeds=tuple(args.seed or (0,)),
+            job_prefix=args.job_prefix,
+            manifest_path=args.manifest_path,
+            analysis_dir=args.analysis_dir,
+            n_retries=args.n_retries,
+            n_branch_continuations=args.n_branch_continuations,
+            branch_root_fraction=args.branch_root_fraction,
+            execute=args.execute,
+            rerun_existing=args.rerun_existing,
+            build_analysis=not args.no_analysis,
+        )
+    )
+    print(format_run_experiment_report(report))
+    return 1 if args.execute and report.has_infrastructure_failures else 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="go-explore")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -585,6 +635,70 @@ def main() -> int:
     )
     figure_parser.add_argument("--output-dir", type=Path, required=True)
     figure_parser.set_defaults(func=build_figure_tables_cmd)
+
+    run_parser = subparsers.add_parser(
+        "run-experiment",
+        help="Plan and optionally execute a fixed-budget experiment end to end.",
+    )
+    run_source = run_parser.add_mutually_exclusive_group(required=True)
+    run_source.add_argument(
+        "--dataset",
+        help="Registered Harbor dataset name, optionally with @version.",
+    )
+    run_source.add_argument(
+        "--path",
+        type=Path,
+        help="Local Harbor task or dataset path.",
+    )
+    run_parser.add_argument("--jobs-dir", type=Path, default=Path("jobs"))
+    run_parser.add_argument("--task-name")
+    run_parser.add_argument("--env", default="daytona")
+    run_parser.add_argument("--model")
+    run_agent = run_parser.add_mutually_exclusive_group()
+    run_agent.add_argument("--agent")
+    run_agent.add_argument("--agent-import-path")
+    run_parser.add_argument("--extra-arg", action="append", default=[])
+    run_parser.add_argument("--experiment-id", required=True)
+    run_parser.add_argument(
+        "--job-prefix",
+        help="Job name prefix. Defaults to --experiment-id.",
+    )
+    run_parser.add_argument("--manifest-path", type=Path)
+    run_parser.add_argument("--analysis-dir", type=Path)
+    run_parser.add_argument("--total-token-budget", type=int)
+    run_parser.add_argument(
+        "--method",
+        action="append",
+        choices=("single", "retry", "random_branch", "promising_branch"),
+        default=[],
+        help="Method to include. Repeat to include multiple methods.",
+    )
+    run_parser.add_argument(
+        "--seed",
+        action="append",
+        type=int,
+        default=[],
+        help="Experiment seed. Repeat to run multiple seeds.",
+    )
+    run_parser.add_argument("--n-retries", type=int, default=5)
+    run_parser.add_argument("--n-branch-continuations", type=int, default=2)
+    run_parser.add_argument("--branch-root-fraction", type=float, default=0.3)
+    run_parser.add_argument(
+        "--execute",
+        action="store_true",
+        help="Run Harbor jobs and continuations. Without this, only plan.",
+    )
+    run_parser.add_argument(
+        "--rerun-existing",
+        action="store_true",
+        help="Run jobs even when <jobs-dir>/<job-name>/result.json already exists.",
+    )
+    run_parser.add_argument(
+        "--no-analysis",
+        action="store_true",
+        help="Skip analysis table generation after execution.",
+    )
+    run_parser.set_defaults(func=run_experiment_cmd)
 
     args = parser.parse_args()
     return args.func(args)

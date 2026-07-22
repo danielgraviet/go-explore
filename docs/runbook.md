@@ -188,6 +188,34 @@ tail -20 jobs/phase4-smoke-regex-log-single-seed-0/events.jsonl
 For branch methods, run roots before continuations:
 
 ```bash
+uv run python -m go_explore.cli run-experiment \
+  --dataset terminal-bench@2.0 \
+  --task-name regex-log \
+  --experiment-id phase4-smoke-regex-log-001 \
+  --job-prefix phase4-smoke-regex-log \
+  --model anthropic/claude-haiku-4-5-20251001 \
+  --total-token-budget 100000 \
+  --method single \
+  --method retry \
+  --method random_branch \
+  --method promising_branch \
+  --seed 0 \
+  --n-retries 5 \
+  --n-branch-continuations 2 \
+  --manifest-path docs/experiments/main-benchmark/manifests/smoke/regex-log.json \
+  --analysis-dir docs/experiments/main-benchmark/analysis/smoke/regex-log \
+  --execute
+```
+
+The command writes the fixed-budget manifest, runs clean baselines and branch
+roots, selects archive snapshots for `random_branch` and `promising_branch`,
+runs continuations, writes `execution-report.json`, and builds analysis tables.
+It skips jobs that already have `result.json` unless `--rerun-existing` is set.
+Omit `--execute` to print the planned Harbor commands without spending credits.
+
+The lower-level manual flow is still useful for debugging individual stages:
+
+```bash
 harbor run \
   --agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2 \
   --env daytona \
