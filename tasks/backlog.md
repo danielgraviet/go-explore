@@ -6,6 +6,8 @@ Phase 2+ supersedes unfinished Phase 1 tickets. Phase 1 remains archived for his
 
 Phase 5 is inserted after the `regex-log-r3` smoke result and should be completed before treating Phase 4 benchmark outputs as paper-grade evidence. Phase 4 remains the paper/benchmark phase, but its analysis tickets should wait for the corrective context-mode and budget-labeling work below.
 
+Phase 6 pivots from paper-fill-in to viability measurement. Its goal is to collect enough controlled runs to decide whether sandbox snapshot continuation is worth pursuing for coding agents.
+
 ## Phase 1 Archive
 
 | ID | Title | Owner | Status | Depends On | Artifact |
@@ -66,6 +68,17 @@ Phase 5 is inserted after the `regex-log-r3` smoke result and should be complete
 | P5-T006 | Budget enforcement or explicit labels | TBD | review | P3-T003, P3-T006 | code/tests, docs |
 | P5-T007 | Context ablation smoke run | TBD | review | P5-T002, P5-T003, P5-T006 | smoke jobs, analysis tables, result memo |
 
+## Phase 6: Viability Benchmark Expansion
+
+| ID | Title | Owner | Status | Depends On | Artifact |
+| --- | --- | --- | --- | --- | --- |
+| P6-T001 | Measurement gap cleanup | TBD | backlog | P5-T006, P5-T007 | code/tests, analysis fields |
+| P6-T002 | Viability task set | TBD | backlog | P4-T001, P4-T004 | `docs/experiments/viability-task-set.md` |
+| P6-T003 | Viability manifest planner | TBD | backlog | P6-T001, P6-T002 | manifests, code/tests |
+| P6-T004 | Viability pilot batch | TBD | backlog | P6-T003 | pilot jobs, analysis tables, memo |
+| P6-T005 | Full viability batch | TBD | backlog | P6-T004 | expanded jobs, analysis tables |
+| P6-T006 | Viability analysis memo | TBD | backlog | P6-T005 | `docs/experiments/viability-analysis.md` |
+
 ## Near-Term Priorities
 
-Start with P5-T001 to preserve the `regex-log-r3` evidence. Then run P5-T002 and P5-T006 in parallel. After P5-T002 lands, P5-T003 and P5-T004 can proceed independently. Run P5-T007 only after context modes and budget labeling are merged.
+Start Phase 6 with P6-T001 so larger paid runs have complete restore-latency and lineage fields. Run P6-T002 in parallel if desired. Do not center `parent_summary` in the main viability manifests; use `none` as the default continuation context, `critical_parent_summary` as the main context alternate, and `parent_summary` only as a small diagnostic ablation.

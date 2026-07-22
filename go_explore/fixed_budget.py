@@ -16,6 +16,7 @@ BUDGET_ENFORCEMENT_DESCRIPTION = (
     "Token budgets are planned analysis allocations only; Harbor and the agent "
     "are not stopped when a job reaches this value."
 )
+DEFAULT_BRANCH_CONTEXT_MODE = "none"
 
 
 @dataclass(frozen=True)
@@ -84,7 +85,7 @@ class FixedBudgetPlanConfig:
     n_branch_continuations: int = 2
     branch_root_fraction: float = 0.3
     snapshots: tuple[str, ...] = ()
-    branch_context_mode: str = "parent_summary"
+    branch_context_mode: str = DEFAULT_BRANCH_CONTEXT_MODE
 
 
 @dataclass(frozen=True)
