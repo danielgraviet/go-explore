@@ -27,12 +27,16 @@ def _candidate(
     trial: str = "trial",
     step: int = 0,
     metadata: dict[str, Any] | None = None,
+    tests_passed: int | None = None,
+    tests_failed: int | None = None,
 ) -> SnapshotCandidate:
     return SnapshotCandidate(
         id=id,
         event=event,
         restore_ref=restore_ref,
         changed_files=changed_files,
+        tests_passed=tests_passed,
+        tests_failed=tests_failed,
         metadata={"trial_name": trial, "step_id": str(step)} | (metadata or {}),
     )
 
@@ -59,7 +63,14 @@ def test_add_keeps_the_higher_scoring_snapshot_for_a_cell():
     archive = SnapshotArchive()
     # A plain file edit scores lower than a file edit carrying a test signal.
     archive.add(_candidate(event=SnapshotEvent.FILE_EDIT, restore_ref="snap-low"))
-    archive.add(_candidate(event=SnapshotEvent.TEST_RUN, restore_ref="snap-high"))
+    archive.add(
+        _candidate(
+            event=SnapshotEvent.TEST_RUN,
+            restore_ref="snap-high",
+            tests_passed=1,
+            tests_failed=0,
+        )
+    )
 
     entry = archive.get(cell_key_for(_candidate()))
     assert entry is not None
@@ -68,7 +79,14 @@ def test_add_keeps_the_higher_scoring_snapshot_for_a_cell():
 
 def test_add_rejects_a_lower_scoring_snapshot_for_an_existing_cell():
     archive = SnapshotArchive()
-    archive.add(_candidate(event=SnapshotEvent.TEST_RUN, restore_ref="snap-high"))
+    archive.add(
+        _candidate(
+            event=SnapshotEvent.TEST_RUN,
+            restore_ref="snap-high",
+            tests_passed=1,
+            tests_failed=0,
+        )
+    )
     result = archive.add(_candidate(event=SnapshotEvent.FILE_EDIT, restore_ref="snap-low"))
     assert result is None
     assert archive.get(cell_key_for(_candidate())).snapshot_name == "snap-high"
@@ -83,7 +101,15 @@ def test_add_ignores_candidates_without_a_restore_ref():
 def test_select_returns_best_cells_first():
     archive = SnapshotArchive()
     archive.add(_candidate(changed_files=("a.py",), event=SnapshotEvent.FILE_EDIT, restore_ref="s-a"))
-    archive.add(_candidate(changed_files=("b.py",), event=SnapshotEvent.TEST_RUN, restore_ref="s-b"))
+    archive.add(
+        _candidate(
+            changed_files=("b.py",),
+            event=SnapshotEvent.TEST_RUN,
+            restore_ref="s-b",
+            tests_passed=1,
+            tests_failed=0,
+        )
+    )
 
     top = archive.select(k=2)
     assert [e.snapshot_name for e in top] == ["s-b", "s-a"]
@@ -98,13 +124,22 @@ def test_select_respects_k():
 
 def test_mark_selected_down_weights_a_repeatedly_forked_cell():
     archive = SnapshotArchive()
-    archive.add(_candidate(changed_files=("a.py",), event=SnapshotEvent.TEST_RUN, restore_ref="s-a"))
+    archive.add(
+        _candidate(
+            changed_files=("a.py",),
+            event=SnapshotEvent.TEST_RUN,
+            restore_ref="s-a",
+            tests_passed=1,
+            tests_failed=0,
+        )
+    )
     archive.add(_candidate(changed_files=("b.py",), event=SnapshotEvent.FILE_EDIT, restore_ref="s-b"))
 
     best = archive.select(k=1)[0]
     assert best.snapshot_name == "s-a"
 
     # After forking it enough times, the frontier should rotate to the other cell.
+    archive.mark_selected(best.cell_key)
     archive.mark_selected(best.cell_key)
     archive.mark_selected(best.cell_key)
     archive.mark_selected(best.cell_key)
@@ -125,7 +160,15 @@ def test_save_and_load_round_trip_preserves_entries(tmp_path):
     path = tmp_path / "archive.json"
     archive = SnapshotArchive(path=path)
     archive.add(_candidate(changed_files=("a.py",), restore_ref="s-a"))
-    archive.add(_candidate(changed_files=("b.py",), event=SnapshotEvent.TEST_RUN, restore_ref="s-b"))
+    archive.add(
+        _candidate(
+            changed_files=("b.py",),
+            event=SnapshotEvent.TEST_RUN,
+            restore_ref="s-b",
+            tests_passed=1,
+            tests_failed=0,
+        )
+    )
     archive.save()
 
     loaded = SnapshotArchive.load(path)
@@ -169,6 +212,8 @@ def test_archive_store_writes_snapshot_created_event(tmp_path):
                 restore_ref="s-test",
                 trial="trial",
                 step=2,
+                tests_passed=1,
+                tests_failed=0,
             ),
             description="test run",
             backend="daytona",
@@ -188,8 +233,12 @@ def test_archive_store_writes_snapshot_created_event(tmp_path):
     assert events[0]["step_id"] == 2
     assert events[0]["snapshot_name"] == "s-test"
     assert events[0]["cell_key"] == "<test_run>"
-    assert events[0]["score"] == 3.0
-    assert events[0]["selector_reasons"] == ["has validation signal"]
+    assert events[0]["score"] == 4.0
+    assert events[0]["selector_reasons"] == [
+        "1 tests passed",
+        "0 tests failed",
+        "all observed tests passed",
+    ]
     assert events[0]["backend"] == "daytona"
     assert events[0]["overhead_seconds"] is None
     assert events[0]["archive_accepted"] is True
@@ -296,6 +345,8 @@ def test_archive_store_replaces_same_cell_by_score_after_load(tmp_path):
                 event=SnapshotEvent.TEST_RUN,
                 changed_files=("main.py",),
                 restore_ref="s-high",
+                tests_passed=1,
+                tests_failed=0,
             ),
             description="test run",
             backend="daytona",
@@ -315,6 +366,8 @@ def test_archive_store_preserves_higher_score_after_load(tmp_path):
             event=SnapshotEvent.TEST_RUN,
             changed_files=("main.py",),
             restore_ref="s-high",
+            tests_passed=1,
+            tests_failed=0,
         )
     )
     existing.save()

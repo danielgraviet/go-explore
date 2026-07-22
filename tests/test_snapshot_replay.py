@@ -131,6 +131,35 @@ def test_extract_signals_detects_common_test_commands():
         assert test_events[0].tests_passed == 1
 
 
+def test_extract_signals_detects_successful_assertion_probe():
+    signals = extract_signals_from_atif_step(
+        _agent_step("python - <<'PY'\nassert parse('x') == 1\nPY\n", observation="")
+    )
+
+    test_events = [signal for signal in signals if signal.event_type == "test_run"]
+
+    assert len(test_events) == 1
+    assert test_events[0].framework == "assertion"
+    assert test_events[0].tests_passed == 1
+    assert test_events[0].tests_failed is None
+
+
+def test_extract_signals_detects_failed_assertion_probe():
+    signals = extract_signals_from_atif_step(
+        _agent_step(
+            "python - <<'PY'\nassert parse('x') == 1\nPY\n",
+            observation="Traceback\nAssertionError",
+        )
+    )
+
+    test_events = [signal for signal in signals if signal.event_type == "test_run"]
+
+    assert len(test_events) == 1
+    assert test_events[0].framework == "assertion"
+    assert test_events[0].tests_passed is None
+    assert test_events[0].tests_failed == 1
+
+
 def test_extract_signals_detects_dependency_installs():
     cases = {
         "pip install pytest requests\n": ("pip", ("pytest", "requests")),

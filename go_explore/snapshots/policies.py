@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import re
 import shlex
+from dataclasses import dataclass
 from typing import Protocol
 
 from go_explore.snapshots.models import (
@@ -47,18 +49,20 @@ class InterestingAgentStepPolicy:
             return []
 
         command_text = _joined_keystrokes(context)
-        observation = context.observation_text.lower()
+        observation_text = context.observation_text
+        observation = observation_text.lower()
         command_lower = command_text.lower()
+        probe = _probe_signal(command_text, observation_text)
 
         event: SnapshotEvent | None = None
         notes: list[str] = []
 
-        if _looks_like_test(command_lower) or "passed" in observation or "failed" in observation:
+        if probe.is_validation:
             event = SnapshotEvent.TEST_RUN
-            notes.append("validation signal")
+            notes.append(f"{probe.status} validation signal")
 
         if _looks_like_file_edit(command_lower):
-            event = SnapshotEvent.FILE_EDIT
+            event = event or SnapshotEvent.FILE_EDIT
             notes.append("file edit")
 
         if _looks_like_investigation(command_lower):
@@ -90,7 +94,12 @@ class InterestingAgentStepPolicy:
                 changed_files=_changed_files_from_commands(command_text),
                 command=command_text,
                 notes=", ".join(notes),
-                metadata=_candidate_metadata(context, policy="interesting_agent_step"),
+                tests_passed=probe.tests_passed,
+                tests_failed=probe.tests_failed,
+                metadata={
+                    **_candidate_metadata(context, policy="interesting_agent_step"),
+                    **probe.metadata,
+                },
             )
         ]
 
@@ -101,19 +110,30 @@ class HeuristicSnapshotSelector:
     def score(self, candidate: SnapshotCandidate) -> ScoredSnapshot:
         score = 0.0
         reasons: list[str] = []
+        passed = candidate.tests_passed
+        failed = candidate.tests_failed
 
-        if candidate.tests_passed is not None:
-            score += candidate.tests_passed
-            reasons.append(f"{candidate.tests_passed} tests passed")
+        if passed is not None:
+            score += passed
+            reasons.append(f"{passed} tests passed")
 
-        if candidate.tests_failed is not None:
-            penalty = min(candidate.tests_failed, 20) * 0.5
+        if failed is not None:
+            penalty = min(failed, 20) * 1.5
             score -= penalty
-            reasons.append(f"{candidate.tests_failed} tests failed")
+            reasons.append(f"{failed} tests failed")
 
         if candidate.event in {SnapshotEvent.TEST_RUN, SnapshotEvent.VERIFIER}:
-            score += 3.0
-            reasons.append("has validation signal")
+            if failed is not None and failed > 0 and not passed:
+                reasons.append("failed validation signal")
+            elif passed is not None and passed > 0 and not failed:
+                score += 3.0
+                reasons.append("all observed tests passed")
+            elif passed is not None and failed is not None:
+                score += 1.0
+                reasons.append("mixed validation signal")
+            else:
+                score += 1.0
+                reasons.append("ran validation command")
 
         if candidate.event == SnapshotEvent.AGENT_STEP:
             score += 0.25
@@ -167,7 +187,16 @@ def _joined_keystrokes(context: SnapshotContext) -> str:
 
 
 def _looks_like_test(command_text: str) -> bool:
-    return any(token in command_text for token in ("pytest", "unittest", "npm test", "cargo test", "go test"))
+    return any(
+        token in command_text
+        for token in (
+            "pytest",
+            "unittest",
+            "npm test",
+            "cargo test",
+            "go test",
+        )
+    )
 
 
 def _looks_like_file_edit(command_text: str) -> bool:
@@ -197,6 +226,118 @@ def _looks_like_investigation(command_text: str) -> bool:
             "zipfile",
         )
     )
+
+
+@dataclass(frozen=True)
+class ProbeSignal:
+    is_validation: bool
+    status: str = "none"
+    framework: str | None = None
+    tests_passed: int | None = None
+    tests_failed: int | None = None
+    metadata: dict[str, str] | None = None
+
+
+def _probe_signal(command_text: str, observation_text: str) -> ProbeSignal:
+    command_lower = command_text.lower()
+    observation_lower = observation_text.lower()
+    framework = _probe_framework(command_lower)
+    passed = _first_int_match(r"(\d+)\s+passed", observation_lower)
+    failed = _first_int_match(r"(\d+)\s+failed", observation_lower)
+    has_pass_word = "passed" in observation_lower or "success" in observation_lower
+    has_failure_evidence = _has_failure_evidence(observation_lower)
+    has_assertion_probe = "assert " in command_lower or "assert(" in command_lower
+
+    if passed is None and has_pass_word:
+        passed = 1
+    if failed is None and (
+        "failed" in observation_lower
+        or "failure" in observation_lower
+        or "assertionerror" in observation_lower
+    ):
+        failed = 1
+    if has_assertion_probe and framework is None:
+        framework = "assertion"
+    if has_assertion_probe and passed is None and failed is None:
+        if has_failure_evidence:
+            failed = 1
+        else:
+            passed = 1
+
+    is_validation = (
+        framework is not None
+        or passed is not None
+        or failed is not None
+        or has_failure_evidence
+    )
+    if not is_validation:
+        return ProbeSignal(is_validation=False, metadata={})
+
+    if failed and passed:
+        status = "mixed"
+    elif failed:
+        status = "negative"
+    elif passed:
+        status = "positive"
+    else:
+        status = "neutral"
+
+    metadata = {
+        "probe_signal": "validation",
+        "probe_status": status,
+    }
+    if framework is not None:
+        metadata["probe_framework"] = framework
+    if has_failure_evidence:
+        metadata["probe_error_signal"] = "true"
+    if passed is not None:
+        metadata["tests_passed"] = str(passed)
+    if failed is not None:
+        metadata["tests_failed"] = str(failed)
+
+    return ProbeSignal(
+        is_validation=True,
+        status=status,
+        framework=framework,
+        tests_passed=passed,
+        tests_failed=failed,
+        metadata=metadata,
+    )
+
+
+def _probe_framework(command_lower: str) -> str | None:
+    if "pytest" in command_lower:
+        return "pytest"
+    if "npm test" in command_lower:
+        return "npm"
+    if "cargo test" in command_lower:
+        return "cargo"
+    if "go test" in command_lower:
+        return "go"
+    if "unittest" in command_lower:
+        return "unittest"
+    return None
+
+
+def _has_failure_evidence(observation_lower: str) -> bool:
+    return any(
+        token in observation_lower
+        for token in (
+            "failed",
+            "failure",
+            "assertionerror",
+            "traceback",
+            "exception",
+            "error:",
+        )
+    )
+
+
+def _first_int_match(pattern: str, text: str) -> int | None:
+    match = re.search(pattern, text)
+    if match is None:
+        return None
+    return int(match.group(1))
 
 
 def _changed_files_from_commands(command_text: str) -> tuple[str, ...]:
