@@ -100,21 +100,22 @@ The current selector is a heuristic selector, not evidence that a state is actua
 
 No analyzed continuation failed because Daytona could not restore the requested snapshot. Restored jobs show `start_state_type=full_snapshot` and task execution reached the verifier.
 
-The remaining snapshot infrastructure gaps are measurement gaps:
+The remaining snapshot infrastructure gaps are mostly measurement-quality gaps:
 
-- `restore_overhead_seconds` is still `unknown` in the analyzed rows.
-- Some continuation rows lack joined `snapshot_cell_key` metadata even when the source archive has it.
-- `repeated_setup_score` is unknown in these smoke outputs.
+- `restore_overhead_seconds` is populated for regenerated restored-job rows from Harbor `environment_setup` intervals.
+- Explicit continuation rows can now recover `snapshot_cell_key` metadata from root archive or event lineage.
+- `repeated_setup_score` remains unsupported unless a repeated-work report is supplied.
 
 Implementation fixes:
 
 - Keep recording exact snapshot creation latency.
-- Add exact restore latency to continuation reports and analysis tables.
-- Improve lineage joins so explicit continuation snapshots carry their archive cell metadata.
+- Keep restore-latency provenance clear; current rows use observed Harbor setup time for restored jobs.
+- Keep lineage joins covered by tests so explicit continuation snapshots carry their archive cell metadata.
+- Supply repeated-work reports for runs where setup repetition is a headline metric.
 
 Research limitation:
 
-Current tables can compare solve rates and token/cost totals, but cannot yet make precise claims about restore latency savings.
+Current tables can compare solve rates, token/cost totals, and observed restored-job setup time. They still should not make strong restore-savings claims without repeated-work reports and a larger matched run.
 
 ### Model Failures
 

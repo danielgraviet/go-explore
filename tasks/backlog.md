@@ -72,7 +72,7 @@ Phase 6 pivots from paper-fill-in to viability measurement. Its goal is to colle
 
 | ID | Title | Owner | Status | Depends On | Artifact |
 | --- | --- | --- | --- | --- | --- |
-| P6-T001 | Measurement gap cleanup | TBD | backlog | P5-T006, P5-T007 | code/tests, analysis fields |
+| P6-T001 | Measurement gap cleanup | TBD | review | P5-T006, P5-T007 | code/tests, analysis fields |
 | P6-T002 | Viability task set | TBD | backlog | P4-T001, P4-T004 | `docs/experiments/viability-task-set.md` |
 | P6-T003 | Viability manifest planner | TBD | backlog | P6-T001, P6-T002 | manifests, code/tests |
 | P6-T004 | Viability pilot batch | TBD | backlog | P6-T003 | pilot jobs, analysis tables, memo |

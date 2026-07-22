@@ -16,6 +16,8 @@ def _write_job(
     task_name: str = "fix-git",
     reward: float | None = 0.0,
     tokens: bool = True,
+    environment_setup: bool = False,
+    snapshot_template_name: str | None = None,
 ) -> None:
     trial_dir = job_dir / trial_name
     trial_dir.mkdir(parents=True)
@@ -36,7 +38,25 @@ def _write_job(
             "n_cache_tokens": 2,
             "cost_usd": 0.25,
         }
+    if environment_setup:
+        trial["environment_setup"] = {
+            "started_at": "2026-07-06T16:01:39Z",
+            "finished_at": "2026-07-06T16:01:41.500000Z",
+        }
     (trial_dir / "result.json").write_text(json.dumps(trial))
+    if snapshot_template_name is not None:
+        (job_dir / "config.json").write_text(
+            json.dumps(
+                {
+                    "environment": {
+                        "type": "daytona",
+                        "kwargs": {
+                            "snapshot_template_name": snapshot_template_name,
+                        },
+                    },
+                }
+            )
+        )
 
 
 def _write_manifest(path: Path, jobs_dir: Path) -> None:
@@ -140,7 +160,13 @@ def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(t
     child_job = jobs_dir / "root-job-snapshot-0"
     clean_parent_child_job = jobs_dir / "clean-parent-child"
     _write_job(root_job, trial_name="root-trial", reward=0.0)
-    _write_job(child_job, trial_name="child-trial", reward=1.0)
+    _write_job(
+        child_job,
+        trial_name="child-trial",
+        reward=1.0,
+        environment_setup=True,
+        snapshot_template_name="snap-a",
+    )
     _write_job(clean_parent_child_job, trial_name="clean-child-trial", reward=0.0)
 
     manifest_path = tmp_path / "fixed-budget.json"
@@ -208,10 +234,10 @@ def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(t
                         "job_dir": str(root_job),
                         "trial_name": "root-trial",
                         "snapshot_name": "snap-a",
-                        "cell_key": "<test_run>",
-                        "selector_mode": "archive_priority",
-                        "score": 3.0,
-                        "selector_reasons": ["priority=3"],
+                        "cell_key": None,
+                        "selector_mode": "explicit",
+                        "score": None,
+                        "selector_reasons": [],
                     }
                 ),
                 json.dumps(
@@ -228,6 +254,21 @@ def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(t
                     }
                 ),
             ]
+        )
+        + "\n"
+    )
+    (root_job / "archive.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "entries": [
+                    {
+                        "snapshot_name": "snap-a",
+                        "cell_key": "<test_run>",
+                        "score": 3.0,
+                    }
+                ],
+            }
         )
         + "\n"
     )
@@ -284,8 +325,10 @@ def test_build_analysis_tables_joins_manifest_lineage_events_and_repeated_work(t
     assert child["snapshot_cell_key"] == "<test_run>"
     assert child["selector_mode"] == "archive_priority"
     assert child["selector_score"] == 3.0
-    assert child["selector_reasons"] == "priority=3"
+    assert child["selector_reasons"] == "has validation signal"
     assert child["repeated_setup_score"] == 2
+    assert child["restore_overhead_seconds"] == 2.5
+    assert child["restore_overhead_seconds_status"] == "complete"
 
     clean_parent = rows_by_run["clean-parent-child"]
     assert clean_parent["method"] == "clean_parent_summary"
@@ -361,3 +404,8 @@ def test_build_analysis_tables_cli_writes_csv_and_warnings(tmp_path, capsys):
     warnings = json.loads((output_dir / "warnings.json").read_text())["warnings"]
     assert any(warning["field"] == "total_tokens" for warning in warnings)
     assert any(warning["field"] == "budget_enforcement" for warning in warnings)
+    assert any(
+        warning["field"] == "repeated_setup_score"
+        and "no repeated-work report was provided" in warning["message"]
+        for warning in warnings
+    )

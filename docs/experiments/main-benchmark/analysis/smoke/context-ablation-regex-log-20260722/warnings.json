@@ -9,50 +9,32 @@
     },
     {
       "artifact": "jobs/phase5-context-ablation-regex-log-20260722-critical-parent-summary-snapshot-0",
-      "field": "snapshot_cell_key",
-      "message": "parent snapshot has no archive/event cell metadata",
-      "severity": "warning"
-    },
-    {
-      "artifact": "jobs/phase5-context-ablation-regex-log-20260722-critical-parent-summary-snapshot-0",
       "field": "repeated_setup_score",
-      "message": "repeated-work metric is unknown",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
       "severity": "info"
     },
     {
       "artifact": "jobs/phase5-context-ablation-regex-log-20260722-none-snapshot-0",
-      "field": "snapshot_cell_key",
-      "message": "parent snapshot has no archive/event cell metadata",
-      "severity": "warning"
-    },
-    {
-      "artifact": "jobs/phase5-context-ablation-regex-log-20260722-none-snapshot-0",
       "field": "repeated_setup_score",
-      "message": "repeated-work metric is unknown",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
       "severity": "info"
     },
     {
       "artifact": "jobs/phase5-context-ablation-regex-log-20260722-parent-summary-snapshot-0",
-      "field": "snapshot_cell_key",
-      "message": "parent snapshot has no archive/event cell metadata",
-      "severity": "warning"
-    },
-    {
-      "artifact": "jobs/phase5-context-ablation-regex-log-20260722-parent-summary-snapshot-0",
       "field": "repeated_setup_score",
-      "message": "repeated-work metric is unknown",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
       "severity": "info"
     },
     {
       "artifact": "jobs/phase5-context-ablation-regex-log-20260722-retry-seed-0-attempt-0",
       "field": "repeated_setup_score",
-      "message": "repeated-work metric is unknown",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
       "severity": "info"
     },
     {
       "artifact": "jobs/phase5-context-ablation-regex-log-20260722-root-seed-0",
       "field": "repeated_setup_score",
-      "message": "repeated-work metric is unknown",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
       "severity": "info"
     }
   ]

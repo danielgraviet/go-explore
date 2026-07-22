@@ -46,13 +46,13 @@ Selected archive entry:
 
 ## Results
 
-| Method | Context | Job | Solved | Tokens | Cost | Wall clock | Snapshot overhead |
-| --- | --- | --- | --- | ---: | ---: | ---: | ---: |
-| `retry` | `original_task_only` | `phase5-context-ablation-regex-log-20260722-retry-seed-0-attempt-0` | 0/1 | 12054 | $0.02560250 | 88.820463s | 29.590091s |
-| `branch_root` | `original_task_only` | `phase5-context-ablation-regex-log-20260722-root-seed-0` | 0/1 | 38264 | $0.03500905 | 129.514124s | 37.000421s |
-| `full_snapshot_parent_summary` | `parent_summary` | `phase5-context-ablation-regex-log-20260722-parent-summary-snapshot-0` | 0/1 | 127274 | $0.05811875 | 194.624855s | 56.117962s |
-| `full_snapshot_none` | `none` | `phase5-context-ablation-regex-log-20260722-none-snapshot-0` | 0/1 | 5254 | $0.01308200 | 78.487925s | 17.756026s |
-| `full_snapshot_critical_parent_summary` | `critical_parent_summary` | `phase5-context-ablation-regex-log-20260722-critical-parent-summary-snapshot-0` | 0/1 | 109298 | $0.04618980 | 149.202586s | 25.973959s |
+| Method | Context | Job | Solved | Tokens | Cost | Wall clock | Snapshot overhead | Restore overhead |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `retry` | `original_task_only` | `phase5-context-ablation-regex-log-20260722-retry-seed-0-attempt-0` | 0/1 | 12054 | $0.02560250 | 88.820463s | 29.590091s | |
+| `branch_root` | `original_task_only` | `phase5-context-ablation-regex-log-20260722-root-seed-0` | 0/1 | 38264 | $0.03500905 | 129.514124s | 37.000421s | |
+| `full_snapshot_parent_summary` | `parent_summary` | `phase5-context-ablation-regex-log-20260722-parent-summary-snapshot-0` | 0/1 | 127274 | $0.05811875 | 194.624855s | 56.117962s | 6.850402s |
+| `full_snapshot_none` | `none` | `phase5-context-ablation-regex-log-20260722-none-snapshot-0` | 0/1 | 5254 | $0.01308200 | 78.487925s | 17.756026s | 2.709465s |
+| `full_snapshot_critical_parent_summary` | `critical_parent_summary` | `phase5-context-ablation-regex-log-20260722-critical-parent-summary-snapshot-0` | 0/1 | 109298 | $0.04618980 | 149.202586s | 25.973959s | 2.958764s |
 
 Total smoke cost across the five rows was $0.177, using 292144 counted tokens including cache tokens.
 
@@ -74,13 +74,12 @@ The selected snapshot was an early `/app/regex.txt` edit from a failed root. Res
 
 ## Warnings And Limits
 
-The analysis warning file contains nine warnings:
+The analysis warning file contains six warnings:
 
 - Planned token budgets are `planning_only` labels, not enforced caps.
-- Continuation rows do not have archive/event metadata for `snapshot_cell_key`.
-- `repeated_setup_score` is unknown for all rows.
+- `repeated_setup_score` is unsupported for this analysis run because no repeated-work report was provided.
 
-Restore overhead remains unknown in the analysis rows. Snapshot overhead is recorded and complete.
+Snapshot cell metadata is now joined for the continuation rows, and restore overhead is populated from the restored jobs' Harbor `environment_setup` intervals. Snapshot overhead is recorded and complete.
 
 This is one task, one selected snapshot, one seed, and one model. It is a useful smoke result, not paper-grade evidence.
 

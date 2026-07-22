@@ -277,6 +277,46 @@ def test_summarize_job_includes_complete_budget_metrics(tmp_path):
     assert trial.budget.agent_execution_seconds == 7.0
 
 
+def test_summarize_job_uses_snapshot_environment_setup_as_restore_overhead(tmp_path):
+    job_dir = tmp_path / "jobs" / "restored"
+    trial_dir = job_dir / "trial-a"
+    trial_dir.mkdir(parents=True)
+    (job_dir / "result.json").write_text(
+        json.dumps({"n_total_trials": 1, "stats": {"n_errors": 0}})
+    )
+    (job_dir / "config.json").write_text(
+        json.dumps(
+            {
+                "environment": {
+                    "type": "daytona",
+                    "kwargs": {
+                        "snapshot_template_name": "go-explore-fix-git-step-0",
+                    },
+                },
+            }
+        )
+    )
+    (trial_dir / "result.json").write_text(
+        json.dumps(
+            {
+                "trial_name": "trial-a",
+                "task_name": "fix-git",
+                "verifier_result": {"reward": 1.0},
+                "environment_setup": {
+                    "started_at": "2026-07-06T16:01:38Z",
+                    "finished_at": "2026-07-06T16:01:42.250000Z",
+                },
+            }
+        )
+    )
+
+    budget = summarize_job(job_dir).trials[0].budget
+
+    assert budget.environment_setup_seconds == 4.25
+    assert budget.restore_overhead_seconds == 4.25
+    assert budget.restore_overhead_seconds_status == "complete"
+
+
 def test_summarize_job_includes_snapshot_overhead_from_events(tmp_path):
     job_dir = tmp_path / "jobs" / "root"
     trial_dir = job_dir / "trial-a"
@@ -980,9 +1020,11 @@ def test_continuation_report_includes_budget_fields():
             total_tokens=12,
             cost_usd=0.12,
             duration_seconds=3.0,
+            restore_overhead_seconds=1.5,
             total_tokens_status="partial",
             cost_usd_status="complete",
             duration_seconds_status="complete",
+            restore_overhead_seconds_status="complete",
         ),
     )
     report = ContinuationReport(
@@ -1008,6 +1050,8 @@ def test_continuation_report_includes_budget_fields():
     assert data["attempts"][0]["budget"]["total_tokens"] == 12
     assert data["attempts"][0]["budget"]["cost_usd"] == 0.12
     assert data["attempts"][0]["budget"]["duration_seconds"] == 3.0
+    assert data["attempts"][0]["budget"]["restore_overhead_seconds"] == 1.5
+    assert data["attempts"][0]["budget"]["restore_overhead_seconds_status"] == "complete"
 
 
 def test_fixed_budget_planner_allocates_single_retry_and_branch_budgets():

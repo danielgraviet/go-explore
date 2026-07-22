@@ -57,6 +57,12 @@ def _read_json(path: Path) -> dict[str, Any]:
         return json.load(file)
 
 
+def _read_optional_json(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    return _read_json(path)
+
+
 def _parse_timestamp(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -121,6 +127,26 @@ def budget_from_trial_result(trial: dict[str, Any]) -> BudgetSummary:
         cost_usd_status=cost_usd_status,
         duration_seconds_status=duration_seconds_status,
     )
+
+
+def _restore_overhead_from_job_config(
+    job_dir: Path,
+    budget: BudgetSummary,
+) -> tuple[float | None, str]:
+    config = _read_optional_json(job_dir / "config.json")
+    environment = config.get("environment") or {}
+    if not isinstance(environment, dict):
+        return None, "unknown"
+
+    kwargs = environment.get("kwargs") or {}
+    if not isinstance(kwargs, dict):
+        return None, "unknown"
+    if not kwargs.get("snapshot_template_name"):
+        return None, "unknown"
+
+    if budget.environment_setup_seconds is None:
+        return None, "unknown"
+    return budget.environment_setup_seconds, "complete"
 
 
 def _snapshot_overhead_from_events(
@@ -189,6 +215,9 @@ def summarize_job(job_dir: Path) -> JobSummary:
         rewards = verifier.get("rewards") or {}
         reward = verifier.get("reward", rewards.get("reward"))
         budget = budget_from_trial_result(trial)
+        restore_overhead_seconds, restore_overhead_status = (
+            _restore_overhead_from_job_config(job_dir, budget)
+        )
         snapshot_overhead_seconds, snapshot_overhead_status = (
             _snapshot_overhead_from_events(job_dir, trial_name=str(trial_name))
         )
@@ -196,6 +225,8 @@ def summarize_job(job_dir: Path) -> JobSummary:
             budget,
             snapshot_overhead_seconds=snapshot_overhead_seconds,
             snapshot_overhead_seconds_status=snapshot_overhead_status,
+            restore_overhead_seconds=restore_overhead_seconds,
+            restore_overhead_seconds_status=restore_overhead_status,
         )
 
         trials.append(

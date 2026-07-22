@@ -232,7 +232,11 @@ def build_analysis_tables(inputs: AnalysisInputs) -> AnalysisTables:
                 )
             )
 
-    _warn_for_partial_rows(run_rows, warnings)
+    _warn_for_partial_rows(
+        run_rows,
+        warnings,
+        repeated_work_reports_requested=bool(inputs.repeated_work_report_paths),
+    )
     task_rows = _task_rows(
         run_rows,
         model=model,
@@ -743,9 +747,8 @@ def _snapshot_selections(
         snapshot_name = event.get("snapshot_name")
         if not isinstance(snapshot_name, str):
             continue
-        if event.get("event_type") == "snapshot_created" and snapshot_name in selections:
-            continue
-        selections[snapshot_name] = SnapshotSelection(
+        existing = selections.get(snapshot_name)
+        incoming = SnapshotSelection(
             snapshot_name=snapshot_name,
             cell_key=_optional_str(event.get("cell_key")),
             selector_mode=_optional_str(event.get("selector_mode")),
@@ -754,23 +757,49 @@ def _snapshot_selections(
                 str(reason) for reason in event.get("selector_reasons") or ()
             ),
         )
+        selections[snapshot_name] = _merge_snapshot_selection(existing, incoming)
 
     for snapshot_name, entry in archive_entries.items():
-        if snapshot_name in selections:
-            continue
-        selections[snapshot_name] = SnapshotSelection(
+        existing = selections.get(snapshot_name)
+        incoming = SnapshotSelection(
             snapshot_name=snapshot_name,
             cell_key=_optional_str(entry.get("cell_key")),
             selector_mode=None,
             selector_score=_optional_float(entry.get("score")),
             selector_reasons=(),
         )
+        selections[snapshot_name] = _merge_snapshot_selection(existing, incoming)
     return selections
+
+
+def _merge_snapshot_selection(
+    existing: SnapshotSelection | None,
+    incoming: SnapshotSelection,
+) -> SnapshotSelection:
+    if existing is None:
+        return incoming
+    return SnapshotSelection(
+        snapshot_name=existing.snapshot_name,
+        cell_key=incoming.cell_key or existing.cell_key,
+        selector_mode=incoming.selector_mode or existing.selector_mode,
+        selector_score=(
+            incoming.selector_score
+            if incoming.selector_score is not None
+            else existing.selector_score
+        ),
+        selector_reasons=(
+            incoming.selector_reasons
+            if incoming.selector_reasons
+            else existing.selector_reasons
+        ),
+    )
 
 
 def _warn_for_partial_rows(
     rows: Sequence[Mapping[str, Any]],
     warnings: list[AnalysisWarning],
+    *,
+    repeated_work_reports_requested: bool,
 ) -> None:
     for row in rows:
         artifact = str(row.get("job_dir") or row.get("run_id") or "unknown")
@@ -807,11 +836,19 @@ def _warn_for_partial_rows(
                 )
             )
         if row.get("repeated_setup_score") is None:
+            message = (
+                "repeated-work report did not include this run"
+                if repeated_work_reports_requested
+                else (
+                    "repeated-work metric is unsupported for this analysis run "
+                    "because no repeated-work report was provided"
+                )
+            )
             warnings.append(
                 AnalysisWarning(
                     artifact=artifact,
                     field="repeated_setup_score",
-                    message="repeated-work metric is unknown",
+                    message=message,
                     severity="info",
                 )
             )
@@ -1052,7 +1089,7 @@ def _write_csv(
     rows: Sequence[Mapping[str, Any]],
 ) -> None:
     with path.open("w", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=list(fields))
+        writer = csv.DictWriter(file, fieldnames=list(fields), lineterminator="\n")
         writer.writeheader()
         for row in rows:
             writer.writerow({field: _csv_value(row.get(field)) for field in fields})
