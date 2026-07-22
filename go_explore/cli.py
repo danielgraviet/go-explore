@@ -258,6 +258,7 @@ def plan_start_state_baselines_cmd(args: argparse.Namespace) -> int:
         model=args.model,
         max_snapshots=args.max_snapshots,
         parent_trial_name=root_trial.trial_name,
+        clean_context_mode=args.clean_context_mode,
     )
 
     if args.manifest_path:
@@ -521,6 +522,12 @@ def main() -> int:
     start_state_parser.add_argument("--agent")
     start_state_parser.add_argument("--model")
     start_state_parser.add_argument("--extra-arg", action="append", default=[])
+    start_state_parser.add_argument(
+        "--clean-context-mode",
+        choices=("original_task_only", "parent_summary", "none"),
+        default="original_task_only",
+        help="Parent context mode for clean start-state jobs.",
+    )
     start_state_parser.set_defaults(func=plan_start_state_baselines_cmd)
 
     fixed_budget_parser = subparsers.add_parser(

@@ -104,6 +104,8 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
         hooks_debug = _as_bool(kwargs.pop("hooks_debug", False))
         snapshot_policy = _resolve_snapshot_policy(kwargs.pop("snapshot_policy", None))
         context_mode = kwargs.pop("context_mode", "parent_summary")
+        parent_context = kwargs.pop("parent_context", None)
+        parent_context_path = kwargs.pop("parent_context_path", None)
         preinstall_tmux = _as_bool(kwargs.pop("preinstall_tmux", True))
         tmux_install_timeout_sec = float(kwargs.pop("tmux_install_timeout_sec", 360.0))
         kwargs.setdefault("record_terminal_session", False)
@@ -119,6 +121,8 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
             hooks_debug=hooks_debug,
             snapshot_policy=snapshot_policy,
             context_mode=context_mode,
+            parent_context=parent_context,
+            parent_context_path=parent_context_path,
             preinstall_tmux=preinstall_tmux,
             tmux_install_timeout_sec=tmux_install_timeout_sec,
             logs_dir=logs_dir,
@@ -143,6 +147,8 @@ class SnapshotAwareOracle(SnapshotAwareAgent):
         hooks_debug = _as_bool(kwargs.pop("hooks_debug", False))
         snapshot_policy = _resolve_snapshot_policy(kwargs.pop("snapshot_policy", None))
         context_mode = kwargs.pop("context_mode", "parent_summary")
+        parent_context = kwargs.pop("parent_context", None)
+        parent_context_path = kwargs.pop("parent_context_path", None)
         wrapped = OracleAgent(
             logs_dir=logs_dir,
             model_name=model_name,
@@ -155,6 +161,8 @@ class SnapshotAwareOracle(SnapshotAwareAgent):
             hooks_debug=hooks_debug,
             snapshot_policy=snapshot_policy,
             context_mode=context_mode,
+            parent_context=parent_context,
+            parent_context_path=parent_context_path,
             logs_dir=logs_dir,
             model_name=model_name,
             logger=logger,
