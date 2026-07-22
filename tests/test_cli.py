@@ -8,6 +8,7 @@ from go_explore.cli import (
     continue_from_snapshots,
     plan_fixed_budget,
     plan_start_state_baselines_cmd,
+    run_experiment_cmd,
 )
 from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
@@ -221,3 +222,50 @@ def test_plan_fixed_budget_command_writes_manifest(tmp_path, capsys):
     assert data["seeds"] == [5]
     assert data["jobs"][-1]["parent_snapshot"] == "snapshot-a"
     assert data["jobs"][-1]["budget"]["token_budget"] == 75_000
+
+
+def test_run_experiment_command_dry_run_writes_manifest(tmp_path, capsys):
+    manifest_path = tmp_path / "plans" / "experiment.json"
+    analysis_dir = tmp_path / "analysis"
+
+    exit_code = run_experiment_cmd(
+        argparse.Namespace(
+            dataset="terminal-bench@2.0",
+            path=None,
+            jobs_dir=tmp_path / "jobs",
+            task_name="fix-git",
+            env="daytona",
+            model="model-a",
+            agent=None,
+            agent_import_path=None,
+            extra_arg=[],
+            experiment_id="exp-1",
+            job_prefix="exp",
+            manifest_path=manifest_path,
+            analysis_dir=analysis_dir,
+            total_token_budget=100_000,
+            method=["single", "promising_branch"],
+            seed=[0],
+            n_retries=2,
+            n_branch_continuations=1,
+            branch_root_fraction=0.3,
+            execute=False,
+            rerun_existing=False,
+            no_analysis=False,
+        )
+    )
+
+    assert exit_code == 0
+    stdout = capsys.readouterr().out
+    assert f"manifest: {manifest_path}" in stdout
+    assert "single\tsingle\tplanned\texp-single-seed-0" in stdout
+    assert "promising_branch\troot\tplanned\texp-promising-branch-seed-0-root" in stdout
+    assert (
+        "promising_branch\tcontinuation\tplanned_after_root_archive"
+        "\texp-promising-branch-seed-0-cont-0"
+    ) in stdout
+    assert "go_explore.agents.factory:SnapshotAwareTerminus2" in stdout
+
+    data = json.loads(manifest_path.read_text())
+    assert data["methods"] == ["single", "promising_branch"]
+    assert not (analysis_dir / "run-summary.csv").exists()
