@@ -227,6 +227,30 @@ sandbox state itself helps without paying for inherited parent reasoning. Use
 alternate when you want parent information, and reserve
 `--branch-context-mode parent_summary` for a small diagnostic ablation.
 
+Plan the Phase 6 viability manifests with one command:
+
+```bash
+.venv/bin/python -m go_explore.cli plan-viability \
+  --dataset terminal-bench@2.0 \
+  --task-name fix-git \
+  --task-name regex-log \
+  --task-name build-cython-ext \
+  --experiment-id phase6-viability-pilot \
+  --model anthropic/claude-haiku-4-5-20251001 \
+  --total-token-budget 100000 \
+  --seed 0 \
+  --n-retries 5 \
+  --n-branch-continuations 2 \
+  --output-dir docs/experiments/viability
+```
+
+This writes `docs/experiments/viability/<experiment-id>/viability-plan.json`
+plus one fixed-budget manifest per task and arm. The default arms are retry,
+`promising_branch` with `context_mode=none`, and `promising_branch` with
+`context_mode=critical_parent_summary`. Add `--include-random-control` for a
+`random_branch`/`none` control. Add
+`--include-parent-summary-diagnostic` only for an explicit diagnostic ablation.
+
 Budget fields in these manifests and analysis tables are planning labels only.
 They split a target token budget across methods for analysis, but Harbor and
 the agent are not stopped when a job reaches the planned value. Treat
