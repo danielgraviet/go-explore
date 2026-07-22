@@ -59,6 +59,7 @@ class RunExperimentConfig:
     n_retries: int = 5
     n_branch_continuations: int = 2
     branch_root_fraction: float = 0.3
+    branch_context_mode: str = "parent_summary"
     execute: bool = False
     rerun_existing: bool = False
     build_analysis: bool = True
@@ -125,6 +126,7 @@ def run_fixed_budget_experiment(
             n_retries=config.n_retries,
             n_branch_continuations=config.n_branch_continuations,
             branch_root_fraction=config.branch_root_fraction,
+            branch_context_mode=config.branch_context_mode,
         )
     )
     write_fixed_budget_manifest(manifest, manifest_path)
@@ -378,6 +380,9 @@ def _run_branch_continuations(
     root_trial = select_trial(root_summary)
     root_config = harbor_config_from_job(root_job_dir)
     event_log_path = root_job_dir / EVENT_LOG_FILENAME
+    branch_context_mode = (
+        planned_children[0].context_mode if planned_children else "parent_summary"
+    )
     plans = plan_snapshot_continuations(
         root_config=root_config,
         root_summary=root_summary,
@@ -389,6 +394,7 @@ def _run_branch_continuations(
         experiment_id=experiment_id,
         selector_mode=selector_mode,
         selection_metadata=selection_metadata,
+        context_mode=branch_context_mode,
     )
 
     records = [

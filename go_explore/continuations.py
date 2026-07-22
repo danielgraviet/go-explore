@@ -19,7 +19,7 @@ class ContinuationError(ValueError):
 
 
 StartStateType = Literal["clean", "diff_only", "full_snapshot"]
-ContextMode = Literal["original_task_only", "parent_summary"]
+ContextMode = Literal["original_task_only", "parent_summary", "none"]
 
 
 def snapshot_prefix_for_trial(
@@ -240,13 +240,17 @@ def build_snapshot_continuation_config(
     root_config: HarborRunConfig,
     snapshot_name: str,
     job_name: str,
+    context_mode: ContextMode = "parent_summary",
     agent: str | None = None,
     model: str | None = None,
     extra_args: Sequence[str] = (),
 ) -> HarborRunConfig:
     """Build a Harbor job that starts Daytona from a saved snapshot."""
 
-    combined_extra_args = tuple(root_config.extra_args) + tuple(extra_args)
+    combined_extra_args = _with_context_mode_extra_args(
+        tuple(root_config.extra_args) + tuple(extra_args),
+        context_mode=context_mode,
+    )
 
     return HarborRunConfig(
         agent=agent if agent is not None else root_config.agent,
@@ -297,6 +301,34 @@ def build_clean_start_config(
     )
 
 
+def _with_context_mode_extra_args(
+    args: Sequence[str],
+    *,
+    context_mode: ContextMode,
+) -> tuple[str, ...]:
+    """Return Harbor extra args with exactly one snapshot-agent context mode."""
+
+    cleaned: list[str] = []
+    index = 0
+    while index < len(args):
+        current = args[index]
+        if current == "--ak" and index + 1 < len(args):
+            if str(args[index + 1]).startswith("context_mode="):
+                index += 2
+                continue
+            cleaned.extend([current, args[index + 1]])
+            index += 2
+            continue
+        if str(current).startswith("context_mode="):
+            index += 1
+            continue
+        cleaned.append(current)
+        index += 1
+
+    cleaned.extend(["--ak", f"context_mode={context_mode}"])
+    return tuple(cleaned)
+
+
 def plan_snapshot_continuations(
     *,
     root_config: HarborRunConfig,
@@ -312,6 +344,7 @@ def plan_snapshot_continuations(
     experiment_id: str | None = None,
     selector_mode: str = "list_order",
     selection_metadata: Sequence[SnapshotSelectionMetadata] = (),
+    context_mode: ContextMode = "parent_summary",
 ) -> list[ContinuationPlan]:
     parent_trial = select_trial(root_summary, parent_trial_name)
     selected_snapshots = (
@@ -326,6 +359,7 @@ def plan_snapshot_continuations(
             root_config=root_config,
             snapshot_name=snapshot_name,
             job_name=f"{continuation_job_prefix}-snapshot-{index}",
+            context_mode=context_mode,
             agent=agent,
             model=model,
             extra_args=extra_args,
@@ -341,7 +375,7 @@ def plan_snapshot_continuations(
                 ),
                 command=tuple(build_harbor_command(config)),
                 start_state_type="full_snapshot",
-                context_mode="parent_summary",
+                context_mode=context_mode,
             )
         )
 
@@ -384,6 +418,7 @@ def plan_start_state_baselines(
     extra_args: Sequence[str] = (),
     max_snapshots: int | None = None,
     parent_trial_name: str | None = None,
+    full_snapshot_context_mode: ContextMode = "parent_summary",
 ) -> list[ContinuationPlan]:
     """Plan Claim 1 child-start conditions without executing them.
 
@@ -452,6 +487,7 @@ def plan_start_state_baselines(
                     root_config=root_config,
                     snapshot_name=snapshot_name,
                     job_name=f"{continuation_job_prefix}-full-snapshot-{index}",
+                    context_mode=full_snapshot_context_mode,
                     agent=agent,
                     model=model,
                     extra_args=extra_args,
@@ -467,7 +503,7 @@ def plan_start_state_baselines(
                         ),
                         command=tuple(build_harbor_command(config)),
                         start_state_type="full_snapshot",
-                        context_mode="parent_summary",
+                        context_mode=full_snapshot_context_mode,
                     )
                 )
 

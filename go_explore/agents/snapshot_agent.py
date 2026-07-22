@@ -41,6 +41,8 @@ from go_explore.snapshots.models import CONTEXT_FILE_PATH, SnapshotContext
 from go_explore.snapshots.policies import InterestingAgentStepPolicy, SnapshotPolicy
 from go_explore.snapshots.replay import load_atif_trajectory_steps, process_atif_trajectory
 
+ContextMode = str
+
 
 class SnapshotAwareAgent(BaseAgent):
     """Wraps any Harbor agent and captures snapshots during execution.
@@ -56,6 +58,7 @@ class SnapshotAwareAgent(BaseAgent):
         sandbox: Any = None,
         hooks_debug: bool = False,
         snapshot_policy: SnapshotPolicy | None = None,
+        context_mode: ContextMode = "parent_summary",
         preinstall_tmux: bool = False,
         tmux_install_timeout_sec: float = 360.0,
         **kwargs,
@@ -65,6 +68,7 @@ class SnapshotAwareAgent(BaseAgent):
         self._sandbox = sandbox
         self._hooks_debug = hooks_debug
         self._snapshot_policy = snapshot_policy or InterestingAgentStepPolicy()
+        self._context_mode = self._normalize_context_mode(context_mode)
         self._preinstall_tmux = preinstall_tmux
         self._tmux_install_timeout_sec = tmux_install_timeout_sec
         # Peek (don't pop) so logs_dir still reaches BaseAgent/**kwargs above.
@@ -108,6 +112,16 @@ class SnapshotAwareAgent(BaseAgent):
     @staticmethod
     def name() -> str:
         return "snapshot-aware"
+
+    @staticmethod
+    def _normalize_context_mode(value: Any) -> str:
+        mode = str(value or "parent_summary").strip()
+        allowed = {"parent_summary", "none", "original_task_only"}
+        if mode not in allowed:
+            raise ValueError(
+                f"Unknown context_mode: {value!r} (choices: {sorted(allowed)})"
+            )
+        return mode
 
     def _wrap_agent_method(self, method_name: str) -> Any:
         """Get a method from the wrapped agent."""
@@ -218,7 +232,7 @@ class SnapshotAwareAgent(BaseAgent):
         self._hook_agent_loop()
 
         parent_context = await self._load_parent_context()
-        if parent_context:
+        if parent_context and self._should_append_parent_context():
             instruction = self._augment_instruction(instruction, parent_context)
 
         await self._wrapped_agent.run(instruction, environment, context)
@@ -361,6 +375,9 @@ class SnapshotAwareAgent(BaseAgent):
             return None
 
         return content.decode()
+
+    def _should_append_parent_context(self) -> bool:
+        return self._context_mode == "parent_summary"
 
     @staticmethod
     def _augment_instruction(instruction: str, parent_context: str) -> str:
@@ -550,7 +567,7 @@ class SnapshotAwareAgent(BaseAgent):
         self._hook_tmux_session(session)
 
         parent_context = asyncio.run(self._load_parent_context())
-        if parent_context:
+        if parent_context and self._should_append_parent_context():
             instruction = self._augment_instruction(instruction, parent_context)
 
         # Call the wrapped agent's perform_task

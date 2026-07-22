@@ -78,6 +78,7 @@ class FixedBudgetPlanConfig:
     n_branch_continuations: int = 2
     branch_root_fraction: float = 0.3
     snapshots: tuple[str, ...] = ()
+    branch_context_mode: str = "parent_summary"
 
 
 @dataclass(frozen=True)
@@ -153,6 +154,8 @@ def _validate_config(config: FixedBudgetPlanConfig) -> None:
         raise ValueError("n_branch_continuations must be >= 1.")
     if not 0 < config.branch_root_fraction < 1:
         raise ValueError("branch_root_fraction must be between 0 and 1.")
+    if config.branch_context_mode not in {"parent_summary", "none"}:
+        raise ValueError("branch_context_mode must be 'parent_summary' or 'none'.")
 
 
 def _plan_single(
@@ -273,6 +276,7 @@ def _plan_branch(
                 config.base_config,
                 job_name=job_name,
                 snapshot_name=snapshot_name,
+                context_mode=config.branch_context_mode,
             )
             command = tuple(build_harbor_command(child_config))
             executor_status = "ready"
@@ -289,7 +293,7 @@ def _plan_branch(
                     budget_fraction=child_fraction,
                 ),
                 start_state_type="full_snapshot",
-                context_mode="parent_summary",
+                context_mode=config.branch_context_mode,
                 selector_mode=selector_mode,
                 parent_run_id=root_job_name,
                 parent_snapshot=snapshot_name,
@@ -353,6 +357,7 @@ def _snapshot_child_config(
     *,
     job_name: str,
     snapshot_name: str,
+    context_mode: str,
 ) -> HarborRunConfig:
     return HarborRunConfig(
         jobs_dir=config.jobs_dir,
@@ -369,5 +374,29 @@ def _snapshot_child_config(
         job_name=job_name,
         export_traces=config.export_traces,
         environment_kwargs=(f"snapshot_template_name={snapshot_name}",),
-        extra_args=config.extra_args,
+        extra_args=_with_context_mode_extra_args(config.extra_args, context_mode),
     )
+
+
+def _with_context_mode_extra_args(
+    args: Sequence[str],
+    context_mode: str,
+) -> tuple[str, ...]:
+    cleaned: list[str] = []
+    index = 0
+    while index < len(args):
+        current = args[index]
+        if current == "--ak" and index + 1 < len(args):
+            if str(args[index + 1]).startswith("context_mode="):
+                index += 2
+                continue
+            cleaned.extend([current, args[index + 1]])
+            index += 2
+            continue
+        if str(current).startswith("context_mode="):
+            index += 1
+            continue
+        cleaned.append(current)
+        index += 1
+    cleaned.extend(["--ak", f"context_mode={context_mode}"])
+    return tuple(cleaned)
