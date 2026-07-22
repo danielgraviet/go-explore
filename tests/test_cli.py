@@ -263,13 +263,26 @@ def test_plan_fixed_budget_command_writes_manifest(tmp_path, capsys):
     assert exit_code == 0
     stdout = capsys.readouterr().out
     assert f"manifest: {manifest_path}" in stdout
-    assert "single\tsingle\tseed=5\tbudget=100000\tready\tpilot-single-seed-5" in stdout
-    assert "retry\tretry_attempt\tseed=5\tbudget=50000\tready" in stdout
-    assert "random_branch\troot\tseed=5\tbudget=25000\tready" in stdout
+    assert "budget_enforcement: planning_only" in stdout
+    assert "not stopped when a job reaches this value" in stdout
+    assert (
+        "single\tsingle\tseed=5\tplanned_budget=100000\t"
+        "enforcement=planning_only\tready\tpilot-single-seed-5"
+    ) in stdout
+    assert (
+        "retry\tretry_attempt\tseed=5\tplanned_budget=50000\t"
+        "enforcement=planning_only\tready"
+    ) in stdout
+    assert (
+        "random_branch\troot\tseed=5\tplanned_budget=25000\t"
+        "enforcement=planning_only\tready"
+    ) in stdout
 
     data = json.loads(manifest_path.read_text())
     assert data["schema_version"] == "go-explore-fixed-budget-plan-v1"
     assert data["experiment_id"] == "pilot-1"
+    assert data["budget"]["enforcement"] == "planning_only"
+    assert "not stopped" in data["budget"]["enforcement_description"]
     assert data["methods"] == ["single", "retry", "random_branch"]
     assert data["seeds"] == [5]
     assert data["jobs"][-1]["parent_snapshot"] == "snapshot-a"
@@ -313,6 +326,8 @@ def test_run_experiment_command_dry_run_writes_manifest(tmp_path, capsys):
     assert exit_code == 0
     stdout = capsys.readouterr().out
     assert f"manifest: {manifest_path}" in stdout
+    assert "budget_enforcement: planning_only" in stdout
+    assert "not stopped when a job reaches this value" in stdout
     assert "single\tsingle\tplanned\texp-single-seed-0" in stdout
     assert "promising_branch\troot\tplanned\texp-promising-branch-seed-0-root" in stdout
     assert (

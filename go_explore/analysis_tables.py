@@ -147,6 +147,11 @@ def build_analysis_tables(inputs: AnalysisInputs) -> AnalysisTables:
     warnings: list[AnalysisWarning] = []
     manifest = _load_manifest(inputs.manifest_path, warnings)
     planned_jobs = _planned_jobs_from_manifest(manifest)
+    _warn_for_planning_only_budgets(
+        planned_jobs,
+        warnings,
+        artifact=str(inputs.manifest_path) if inputs.manifest_path else "manifest",
+    )
     planned_by_job_name = {job.job_name: job for job in planned_jobs}
     planned_by_job_dir = {
         _normalize_path(inputs.jobs_dir / job.job_name): job for job in planned_jobs
@@ -810,6 +815,28 @@ def _warn_for_partial_rows(
                     severity="info",
                 )
             )
+
+
+def _warn_for_planning_only_budgets(
+    planned_jobs: Sequence[PlannedJobMetadata],
+    warnings: list[AnalysisWarning],
+    *,
+    artifact: str,
+) -> None:
+    if not any(job.budget_enforcement == "planning_only" for job in planned_jobs):
+        return
+
+    warnings.append(
+        AnalysisWarning(
+            artifact=artifact,
+            field="budget_enforcement",
+            message=(
+                "planned token budgets are planning_only labels, not enforced "
+                "caps; compare actual total_tokens before making strict "
+                "fixed-budget claims"
+            ),
+        )
+    )
 
 
 def _run_id_for_trial(

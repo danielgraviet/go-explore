@@ -13,30 +13,36 @@ E2E tests and live Harbor runs may call Harbor, Docker, Daytona, and model APIs.
 
 ## Cheap Checks
 
-Run normal tests:
+Run normal tests through the checked-in virtualenv when it exists. This avoids
+`uv` touching the user-level cache path, which can be blocked by sandboxed
+agents:
 
 ```bash
-uv run pytest -v
+.venv/bin/python -m pytest -v
 ```
 
 Run a focused file while developing:
 
 ```bash
-uv run pytest tests/test_harbor.py -q
+.venv/bin/python -m pytest tests/test_harbor.py -q
 ```
+
+Use `uv run ...` only when you intentionally need `uv` to create or update the
+environment. If `uv` fails with a cache permission error, either use the venv
+command above or set `UV_CACHE_DIR=/private/tmp/go-explore-uv-cache`.
 
 ## E2E Checks
 
 Run e2e tests explicitly:
 
 ```bash
-uv run pytest -v -k e2e
+.venv/bin/python -m pytest -v -k e2e
 ```
 
 Or:
 
 ```bash
-uv run pytest --run-e2e -s
+.venv/bin/python -m pytest --run-e2e -s
 ```
 
 E2E tests are skipped by default unless `--run-e2e` is passed or `-k e2e` is used.
@@ -212,6 +218,12 @@ roots, selects archive snapshots for `random_branch` and `promising_branch`,
 runs continuations, writes `execution-report.json`, and builds analysis tables.
 It skips jobs that already have `result.json` unless `--rerun-existing` is set.
 Omit `--execute` to print the planned Harbor commands without spending credits.
+
+Budget fields in these manifests and analysis tables are planning labels only.
+They split a target token budget across methods for analysis, but Harbor and
+the agent are not stopped when a job reaches the planned value. Treat
+`budget_enforcement=planning_only` as a warning against strict fixed-budget
+claims unless actual `total_tokens` are comparable.
 
 The lower-level manual flow is still useful for debugging individual stages:
 

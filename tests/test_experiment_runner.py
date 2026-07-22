@@ -12,7 +12,11 @@ from go_explore.continuations import (
     ContinuationReport,
     write_continuation_report,
 )
-from go_explore.experiment_runner import RunExperimentConfig, run_fixed_budget_experiment
+from go_explore.experiment_runner import (
+    RunExperimentConfig,
+    format_run_experiment_report,
+    run_fixed_budget_experiment,
+)
 from go_explore.harbor import HarborRunConfig
 from go_explore.results import BudgetSummary, JobSummary, TrialSummary
 from go_explore.snapshots.archive import SnapshotArchive
@@ -173,6 +177,18 @@ def test_run_fixed_budget_experiment_executes_branch_and_builds_analysis(tmp_pat
     assert (tmp_path / "manifest.json").exists()
     assert (tmp_path / "analysis" / "execution-report.json").exists()
     assert (tmp_path / "analysis" / "run-summary.csv").exists()
+    assert report.budget_enforcement == "planning_only"
+    assert "not stopped" in report.budget_enforcement_description
+
+    formatted = format_run_experiment_report(report)
+    assert "budget_enforcement: planning_only" in formatted
+    assert "not stopped when a job reaches this value" in formatted
+
+    execution_report = json.loads(
+        (tmp_path / "analysis" / "execution-report.json").read_text()
+    )
+    assert execution_report["budget_enforcement"] == "planning_only"
+    assert "not stopped" in execution_report["budget_enforcement_description"]
 
     rows = list(csv.DictReader((tmp_path / "analysis" / "run-summary.csv").open()))
     rows_by_run = {row["run_id"]: row for row in rows}
