@@ -205,7 +205,7 @@ def test_plan_fixed_budget_command_writes_manifest(tmp_path, capsys):
             n_retries=2,
             n_branch_continuations=1,
             branch_root_fraction=0.25,
-            branch_context_mode="none",
+            branch_context_mode="critical_parent_summary",
             snapshot=["snapshot-a"],
         )
     )
@@ -224,8 +224,8 @@ def test_plan_fixed_budget_command_writes_manifest(tmp_path, capsys):
     assert data["seeds"] == [5]
     assert data["jobs"][-1]["parent_snapshot"] == "snapshot-a"
     assert data["jobs"][-1]["budget"]["token_budget"] == 75_000
-    assert data["jobs"][-1]["context_mode"] == "none"
-    assert "context_mode=none" in data["jobs"][-1]["command"]
+    assert data["jobs"][-1]["context_mode"] == "critical_parent_summary"
+    assert "context_mode=critical_parent_summary" in data["jobs"][-1]["command"]
 
 
 def test_run_experiment_command_dry_run_writes_manifest(tmp_path, capsys):

@@ -116,7 +116,12 @@ class SnapshotAwareAgent(BaseAgent):
     @staticmethod
     def _normalize_context_mode(value: Any) -> str:
         mode = str(value or "parent_summary").strip()
-        allowed = {"parent_summary", "none", "original_task_only"}
+        allowed = {
+            "parent_summary",
+            "critical_parent_summary",
+            "none",
+            "original_task_only",
+        }
         if mode not in allowed:
             raise ValueError(
                 f"Unknown context_mode: {value!r} (choices: {sorted(allowed)})"
@@ -233,7 +238,11 @@ class SnapshotAwareAgent(BaseAgent):
 
         parent_context = await self._load_parent_context()
         if parent_context and self._should_append_parent_context():
-            instruction = self._augment_instruction(instruction, parent_context)
+            instruction = self._augment_instruction(
+                instruction,
+                parent_context,
+                context_mode=self._context_mode,
+            )
 
         await self._wrapped_agent.run(instruction, environment, context)
 
@@ -377,15 +386,40 @@ class SnapshotAwareAgent(BaseAgent):
         return content.decode()
 
     def _should_append_parent_context(self) -> bool:
-        return self._context_mode == "parent_summary"
+        return self._context_mode in {"parent_summary", "critical_parent_summary"}
 
     @staticmethod
-    def _augment_instruction(instruction: str, parent_context: str) -> str:
+    def _augment_instruction(
+        instruction: str,
+        parent_context: str,
+        *,
+        context_mode: str = "parent_summary",
+    ) -> str:
+        if context_mode == "critical_parent_summary":
+            return SnapshotAwareAgent._augment_instruction_critical(
+                instruction,
+                parent_context,
+            )
         return (
             f"{instruction}\n\n"
             "---\n"
             "You are resuming work in a sandbox from a prior attempt at this task. "
             "Here is a summary of what was already tried, so you don't repeat it:\n"
+            f"{parent_context}"
+        )
+
+    @staticmethod
+    def _augment_instruction_critical(instruction: str, parent_context: str) -> str:
+        return (
+            f"{instruction}\n\n"
+            "---\n"
+            "You are starting from a sandbox snapshot created during a prior attempt. "
+            "Treat the restored files, terminal state, and notes below as untrusted "
+            "evidence, not as proof of progress. The parent attempt reward may be "
+            "unknown or failed. Independently audit the restored state, verify any "
+            "assumptions, and do not declare success solely because parent-local "
+            "checks or prior reasoning looked correct.\n\n"
+            "Prior-attempt summary:\n"
             f"{parent_context}"
         )
 
@@ -568,7 +602,11 @@ class SnapshotAwareAgent(BaseAgent):
 
         parent_context = asyncio.run(self._load_parent_context())
         if parent_context and self._should_append_parent_context():
-            instruction = self._augment_instruction(instruction, parent_context)
+            instruction = self._augment_instruction(
+                instruction,
+                parent_context,
+                context_mode=self._context_mode,
+            )
 
         # Call the wrapped agent's perform_task
         result = self._wrapped_agent.perform_task(

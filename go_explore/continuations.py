@@ -19,7 +19,12 @@ class ContinuationError(ValueError):
 
 
 StartStateType = Literal["clean", "diff_only", "full_snapshot"]
-ContextMode = Literal["original_task_only", "parent_summary", "none"]
+ContextMode = Literal[
+    "original_task_only",
+    "parent_summary",
+    "critical_parent_summary",
+    "none",
+]
 
 
 def snapshot_prefix_for_trial(
