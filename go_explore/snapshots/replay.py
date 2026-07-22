@@ -106,6 +106,15 @@ def extract_signals_from_atif_step(step: Mapping[str, Any]) -> list[ExtractedSig
         test_framework = _test_framework(command)
         if test_framework is not None:
             tests_passed, tests_failed = _test_counts(observation_text)
+            if (
+                test_framework == "assertion"
+                and tests_passed is None
+                and tests_failed is None
+            ):
+                if _has_failure_evidence(observation_text):
+                    tests_failed = 1
+                else:
+                    tests_passed = 1
             signals.append(
                 ExtractedSignal(
                     event_type="test_run",
@@ -197,6 +206,8 @@ def _test_framework(command: str) -> str | None:
         return "go"
     if "unittest" in lowered:
         return "unittest"
+    if "assert " in lowered or "assert(" in lowered:
+        return "assertion"
     return None
 
 
@@ -208,7 +219,24 @@ def _test_counts(observation_text: str) -> tuple[int | None, int | None]:
         passed = 1
     if failed is None and "failed" in lowered:
         failed = 1
+    if failed is None and "assertionerror" in lowered:
+        failed = 1
     return passed, failed
+
+
+def _has_failure_evidence(observation_text: str) -> bool:
+    lowered = observation_text.lower()
+    return any(
+        token in lowered
+        for token in (
+            "failed",
+            "failure",
+            "assertionerror",
+            "traceback",
+            "exception",
+            "error:",
+        )
+    )
 
 
 def _first_int_match(pattern: str, text: str) -> int | None:

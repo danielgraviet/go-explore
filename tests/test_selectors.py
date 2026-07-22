@@ -17,12 +17,16 @@ def _candidate(
     changed_files: tuple[str, ...],
     event: SnapshotEvent = SnapshotEvent.FILE_EDIT,
     restore_ref: str,
+    tests_passed: int | None = None,
+    tests_failed: int | None = None,
 ) -> SnapshotCandidate:
     return SnapshotCandidate(
         id=f"trial:{restore_ref}",
         event=event,
         restore_ref=restore_ref,
         changed_files=changed_files,
+        tests_passed=tests_passed,
+        tests_failed=tests_failed,
         metadata={"trial_name": "trial", "step_id": "0"},
     )
 
@@ -41,6 +45,8 @@ def _archive() -> SnapshotArchive:
             changed_files=("b.py",),
             event=SnapshotEvent.TEST_RUN,
             restore_ref="snap-b",
+            tests_passed=1,
+            tests_failed=0,
         )
     )
     archive.add(
@@ -85,8 +91,8 @@ def test_archive_priority_selector_uses_current_heuristic_ordering():
     assert [item.entry.snapshot_name for item in selected] == ["snap-b", "snap-a"]
     assert selected[0].selector_mode == "archive_priority"
     assert selected[0].selector_reasons == (
-        "priority=3.25",
-        "score=3.25",
+        "priority=4.25",
+        "score=4.25",
         "times_selected=0",
     )
 

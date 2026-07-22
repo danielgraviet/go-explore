@@ -30,12 +30,12 @@ def test_scores_validation_snapshot_with_test_signal_and_changed_files():
 
     scored = selector.score(candidate)
 
-    assert scored.score == pytest.approx(6.5)
+    assert scored.score == pytest.approx(2.5)
     assert scored.candidate is candidate
     assert scored.reasons == (
         "4 tests passed",
         "2 tests failed",
-        "has validation signal",
+        "mixed validation signal",
         "2 changed files",
     )
 
@@ -91,7 +91,7 @@ def test_terminal_failure_snapshot_is_penalized():
 
     scored = selector.score(candidate)
 
-    assert scored.score == pytest.approx(-2.5)
+    assert scored.score == pytest.approx(-5.5)
     assert scored.reasons == (
         "1 tests passed",
         "3 tests failed",
@@ -111,11 +111,11 @@ def test_score_caps_large_failure_and_changed_file_counts():
 
     scored = selector.score(candidate)
 
-    assert scored.score == pytest.approx(-3.75)
+    assert scored.score == pytest.approx(-25.75)
     assert scored.reasons == (
         "2 tests passed",
         "100 tests failed",
-        "has validation signal",
+        "mixed validation signal",
         "20 changed files",
     )
 
@@ -146,7 +146,55 @@ def test_select_returns_highest_scoring_snapshots_in_order():
     selected = selector.select(candidates, limit=2)
 
     assert [snapshot.candidate.id for snapshot in selected] == ["tests-good", "edit"]
-    assert [snapshot.score for snapshot in selected] == pytest.approx([7.5, 1.25])
+    assert [snapshot.score for snapshot in selected] == pytest.approx([4.5, 1.25])
+
+
+def test_selector_prefers_positive_probe_over_plain_file_edit():
+    selector = HeuristicSnapshotSelector()
+    passing_probe = SnapshotCandidate(
+        id="tests-good",
+        event=SnapshotEvent.TEST_RUN,
+        tests_passed=1,
+        tests_failed=0,
+    )
+    plain_edit = SnapshotCandidate(
+        id="edit",
+        event=SnapshotEvent.FILE_EDIT,
+        changed_files=("app.py",),
+    )
+
+    selected = selector.select([plain_edit, passing_probe], limit=2)
+
+    assert [snapshot.candidate.id for snapshot in selected] == ["tests-good", "edit"]
+    assert selector.score(passing_probe).reasons == (
+        "1 tests passed",
+        "0 tests failed",
+        "all observed tests passed",
+    )
+
+
+def test_selector_downranks_negative_probe_below_plain_file_edit():
+    selector = HeuristicSnapshotSelector()
+    failing_probe = SnapshotCandidate(
+        id="tests-bad",
+        event=SnapshotEvent.TEST_RUN,
+        tests_passed=None,
+        tests_failed=1,
+    )
+    plain_edit = SnapshotCandidate(
+        id="edit",
+        event=SnapshotEvent.FILE_EDIT,
+        changed_files=("app.py",),
+    )
+
+    selected = selector.select([failing_probe, plain_edit], limit=2)
+
+    assert [snapshot.candidate.id for snapshot in selected] == ["edit", "tests-bad"]
+    assert selector.score(failing_probe).score < selector.score(plain_edit).score
+    assert selector.score(failing_probe).reasons == (
+        "1 tests failed",
+        "failed validation signal",
+    )
 
 
 def test_select_handles_empty_candidates():
@@ -273,6 +321,66 @@ def test_interesting_policy_snapshots_investigative_commands():
     assert len(candidates) == 1
     assert candidates[0].event == SnapshotEvent.DISCOVERY
     assert "investigative command" in candidates[0].notes
+
+
+def test_interesting_policy_extracts_positive_probe_metadata():
+    policy = InterestingAgentStepPolicy()
+    context = context_from_atif_step(
+        {
+            "step_id": 9,
+            "source": "agent",
+            "tool_calls": [
+                {
+                    "function_name": "bash_command",
+                    "arguments": {"keystrokes": "pytest tests/test_regex.py -q\n"},
+                },
+            ],
+            "observation": {"results": [{"content": "3 passed in 0.12s"}]},
+        },
+        trial_name="regex-log-r3__abc123",
+    )
+
+    candidate = policy.candidates_for_step(context)[0]
+
+    assert candidate.event == SnapshotEvent.TEST_RUN
+    assert candidate.tests_passed == 3
+    assert candidate.tests_failed is None
+    assert candidate.metadata["probe_signal"] == "validation"
+    assert candidate.metadata["probe_status"] == "positive"
+    assert candidate.metadata["probe_framework"] == "pytest"
+    assert candidate.metadata["tests_passed"] == "3"
+    assert candidate.notes == "positive validation signal"
+
+
+def test_interesting_policy_extracts_negative_assertion_probe_metadata():
+    policy = InterestingAgentStepPolicy()
+    context = context_from_atif_step(
+        {
+            "step_id": 10,
+            "source": "agent",
+            "tool_calls": [
+                {
+                    "function_name": "bash_command",
+                    "arguments": {
+                        "keystrokes": (
+                            "python - <<'PY'\nassert parse('x') == 1\nPY\n"
+                        ),
+                    },
+                },
+            ],
+            "observation": {"results": [{"content": "AssertionError"}]},
+        },
+        trial_name="regex-log-r3__abc123",
+    )
+
+    candidate = policy.candidates_for_step(context)[0]
+
+    assert candidate.event == SnapshotEvent.TEST_RUN
+    assert candidate.tests_passed is None
+    assert candidate.tests_failed == 1
+    assert candidate.metadata["probe_status"] == "negative"
+    assert candidate.metadata["probe_framework"] == "assertion"
+    assert candidate.metadata["probe_error_signal"] == "true"
 
 
 def test_interesting_policy_ignores_low_signal_agent_step():
