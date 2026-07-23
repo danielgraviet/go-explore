@@ -10,7 +10,11 @@ from typing import Any, Literal, Sequence
 from daytona import AsyncDaytona
 
 from go_explore.events import EVENT_LOG_FILENAME, append_event, base_event
-from go_explore.harbor import HarborRunConfig, build_harbor_command
+from go_explore.harbor import (
+    HarborRunConfig,
+    build_harbor_command,
+    environment_with_repo_path,
+)
 from go_explore.results import BudgetSummary, JobSummary, TrialSummary, summarize_job
 
 
@@ -705,7 +709,7 @@ def run_continuation_plan(
         check=False,
         capture_output=capture_output,
         text=True,
-        env=env,
+        env=environment_with_repo_path(env),
     )
     job_dir = plan.parent_job_dir.parent / plan.job_name
     if result.returncode != 0 or not (job_dir / "result.json").exists():

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -85,4 +86,21 @@ def run_harbor(config: HarborRunConfig, *, dry_run: bool = False) -> subprocess.
     if dry_run:
         return cmd
 
-    return subprocess.run(cmd, check=False, text=True)
+    return subprocess.run(
+        cmd,
+        check=False,
+        text=True,
+        env=environment_with_repo_path(),
+    )
+
+
+def environment_with_repo_path(base: dict[str, str] | None = None) -> dict[str, str]:
+    """Make local agent imports available to Harbor's separate process."""
+
+    environment = dict(base or os.environ)
+    repo_root = str(Path(__file__).resolve().parent.parent)
+    current = environment.get("PYTHONPATH")
+    environment["PYTHONPATH"] = os.pathsep.join(
+        [repo_root] + ([current] if current else [])
+    )
+    return environment

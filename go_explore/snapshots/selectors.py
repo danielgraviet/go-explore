@@ -9,7 +9,14 @@ from typing import Literal, Mapping
 from go_explore.snapshots.archive import ArchiveEntry, SnapshotArchive
 
 
-ArchiveSelectorMode = Literal["list_order", "random", "archive_priority", "oracle"]
+ArchiveSelectorMode = Literal[
+    "list_order",
+    "random",
+    "archive_priority",
+    "validated_progress",
+    "partial_progress",
+    "oracle",
+]
 
 
 @dataclass(frozen=True)
@@ -69,6 +76,48 @@ def select_archive_entries(
                 ),
             )
             for entry in archive.select(k)
+        ]
+
+    if mode == "validated_progress":
+        eligible = [
+            entry
+            for entry in entries
+            if entry.event in {"test_run", "verifier"}
+            and (entry.tests_passed or 0) > 0
+            and (entry.tests_failed or 0) == 0
+        ]
+        eligible.sort(key=lambda entry: (entry.priority, entry.score), reverse=True)
+        return [
+            ArchiveSelection(
+                entry=entry,
+                selector_mode=mode,
+                selector_reasons=(
+                    f"{entry.tests_passed} tests passed",
+                    "0 tests failed",
+                    "validated progress",
+                ),
+            )
+            for entry in eligible[:k]
+        ]
+
+    if mode == "partial_progress":
+        eligible = [
+            entry
+            for entry in entries
+            if (
+                entry.event in {"test_run", "verifier"}
+                and (entry.tests_passed or 0) > 0
+            )
+            or entry.event == "discovery"
+        ]
+        eligible.sort(key=lambda entry: (entry.priority, entry.score), reverse=True)
+        return [
+            ArchiveSelection(
+                entry=entry,
+                selector_mode=mode,
+                selector_reasons=_partial_progress_reasons(entry),
+            )
+            for entry in eligible[:k]
         ]
 
     if mode == "list_order":
@@ -132,3 +181,13 @@ def _oracle_label_for(
     if label is None:
         return None
     return float(label)
+
+
+def _partial_progress_reasons(entry: ArchiveEntry) -> tuple[str, ...]:
+    if entry.event == "discovery":
+        return ("investigative discovery", "partial progress candidate")
+    reasons = [f"{entry.tests_passed or 0} tests passed"]
+    if entry.tests_failed is not None:
+        reasons.append(f"{entry.tests_failed} tests failed")
+    reasons.append("partial validation progress")
+    return tuple(reasons)

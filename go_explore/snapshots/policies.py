@@ -244,7 +244,7 @@ def _probe_signal(command_text: str, observation_text: str) -> ProbeSignal:
     framework = _probe_framework(command_lower)
     passed = _first_int_match(r"(\d+)\s+passed", observation_lower)
     failed = _first_int_match(r"(\d+)\s+failed", observation_lower)
-    has_pass_word = "passed" in observation_lower or "success" in observation_lower
+    has_pass_word = "passed" in observation_lower
     has_failure_evidence = _has_failure_evidence(observation_lower)
     has_assertion_probe = "assert " in command_lower or "assert(" in command_lower
 

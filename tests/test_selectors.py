@@ -97,6 +97,97 @@ def test_archive_priority_selector_uses_current_heuristic_ordering():
     )
 
 
+def test_validated_progress_selector_requires_passing_validation():
+    archive = SnapshotArchive()
+    archive.add(
+        _candidate(
+            changed_files=("bad.py",),
+            event=SnapshotEvent.TEST_RUN,
+            restore_ref="snap-bad",
+            tests_passed=2,
+            tests_failed=1,
+        )
+    )
+    archive.add(
+        _candidate(
+            changed_files=("good.py",),
+            event=SnapshotEvent.TEST_RUN,
+            restore_ref="snap-good",
+            tests_passed=2,
+            tests_failed=0,
+        )
+    )
+    archive.add(
+        _candidate(
+            changed_files=("edit.py",),
+            event=SnapshotEvent.FILE_EDIT,
+            restore_ref="snap-edit",
+        )
+    )
+
+    selected = select_archive_entries(
+        archive, mode="validated_progress", k=3
+    )
+
+    assert [item.entry.snapshot_name for item in selected] == ["snap-good"]
+    assert selected[0].selector_reasons == (
+        "2 tests passed",
+        "0 tests failed",
+        "validated progress",
+    )
+
+
+def test_validated_progress_selector_returns_empty_without_validation():
+    assert select_archive_entries(
+        SnapshotArchive(), mode="validated_progress", k=2
+    ) == []
+
+
+def test_partial_progress_selector_accepts_discovery_and_partial_tests():
+    archive = SnapshotArchive()
+    archive.add(
+        _candidate(
+            changed_files=(),
+            event=SnapshotEvent.DISCOVERY,
+            restore_ref="snap-discovery",
+        )
+    )
+    archive.add(
+        _candidate(
+            changed_files=("test.py",),
+            event=SnapshotEvent.TEST_RUN,
+            restore_ref="snap-partial",
+            tests_passed=2,
+            tests_failed=1,
+        )
+    )
+    archive.add(
+        _candidate(
+            changed_files=("edit.py",),
+            event=SnapshotEvent.FILE_EDIT,
+            restore_ref="snap-edit",
+        )
+    )
+
+    selected = select_archive_entries(
+        archive, mode="partial_progress", k=3
+    )
+
+    assert [item.entry.snapshot_name for item in selected] == [
+        "snap-partial",
+        "snap-discovery",
+    ]
+    assert selected[0].selector_reasons == (
+        "2 tests passed",
+        "1 tests failed",
+        "partial validation progress",
+    )
+    assert selected[1].selector_reasons == (
+        "investigative discovery",
+        "partial progress candidate",
+    )
+
+
 def test_oracle_selector_uses_precomputed_labels():
     selected = select_archive_entries(
         _archive(),

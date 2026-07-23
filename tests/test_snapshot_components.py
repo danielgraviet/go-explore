@@ -385,6 +385,30 @@ def test_interesting_policy_extracts_positive_probe_metadata():
     assert candidate.notes == "positive validation signal"
 
 
+def test_interesting_policy_does_not_treat_successful_install_as_test_pass():
+    policy = InterestingAgentStepPolicy()
+    context = context_from_atif_step(
+        {
+            "step_id": 0,
+            "source": "agent",
+            "tool_calls": [
+                {
+                    "function_name": "bash_command",
+                    "arguments": {
+                        "keystrokes": "pip install grpcio==1.73.0\n"
+                    },
+                }
+            ],
+            "observation": {
+                "results": [{"content": "Successfully installed grpcio-1.73.0"}]
+            },
+        },
+        trial_name="kv-store-grpc__abc123",
+    )
+
+    assert policy.candidates_for_step(context) == []
+
+
 def test_interesting_policy_extracts_negative_assertion_probe_metadata():
     policy = InterestingAgentStepPolicy()
     context = context_from_atif_step(

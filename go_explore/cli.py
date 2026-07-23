@@ -320,6 +320,9 @@ def plan_fixed_budget(args: argparse.Namespace) -> int:
             branch_root_fraction=args.branch_root_fraction,
             snapshots=tuple(args.snapshot),
             branch_context_mode=args.branch_context_mode,
+            promising_selector_mode=getattr(
+                args, "promising_selector_mode", "archive_priority"
+            ),
         )
     )
 
@@ -371,6 +374,9 @@ def plan_viability(args: argparse.Namespace) -> int:
             n_retries=args.n_retries,
             n_branch_continuations=args.n_branch_continuations,
             branch_root_fraction=args.branch_root_fraction,
+            promising_selector_mode=getattr(
+                args, "promising_selector_mode", "archive_priority"
+            ),
             include_random_control=args.include_random_control,
             include_parent_summary_diagnostic=args.include_parent_summary_diagnostic,
         )
@@ -483,6 +489,9 @@ def run_experiment_cmd(args: argparse.Namespace) -> int:
             n_branch_continuations=args.n_branch_continuations,
             branch_root_fraction=args.branch_root_fraction,
             branch_context_mode=args.branch_context_mode,
+            promising_selector_mode=getattr(
+                args, "promising_selector_mode", "archive_priority"
+            ),
             execute=args.execute,
             rerun_existing=args.rerun_existing,
             build_analysis=not args.no_analysis,
@@ -527,7 +536,7 @@ def main() -> int:
     )
     continue_parser.add_argument(
         "--selector-mode",
-        choices=("archive_priority", "list_order", "random", "oracle"),
+        choices=("archive_priority", "validated_progress", "partial_progress", "list_order", "random", "oracle"),
         default="archive_priority",
         help="Archive selector policy used with --from-archive.",
     )
@@ -588,7 +597,7 @@ def main() -> int:
     )
     start_state_parser.add_argument(
         "--selector-mode",
-        choices=("archive_priority", "list_order", "random", "oracle"),
+        choices=("archive_priority", "validated_progress", "partial_progress", "list_order", "random", "oracle"),
         default="archive_priority",
         help="Archive selector policy used with --from-archive.",
     )
@@ -627,10 +636,15 @@ def main() -> int:
     fixed_budget_parser.add_argument("--jobs-dir", type=Path, default=Path("jobs"))
     fixed_budget_parser.add_argument("--task-name")
     fixed_budget_parser.add_argument("--env", default="daytona")
-    fixed_budget_parser.add_argument("--model")
+    fixed_budget_parser.add_argument(
+        "--model", default="anthropic/claude-haiku-4-5-20251001"
+    )
     fixed_agent = fixed_budget_parser.add_mutually_exclusive_group()
     fixed_agent.add_argument("--agent")
-    fixed_agent.add_argument("--agent-import-path")
+    fixed_agent.add_argument(
+        "--agent-import-path",
+        default="go_explore.agents.factory:SnapshotAwareTerminus2",
+    )
     fixed_budget_parser.add_argument("--extra-arg", action="append", default=[])
     fixed_budget_parser.add_argument("--experiment-id", required=True)
     fixed_budget_parser.add_argument("--job-prefix", required=True)
@@ -651,7 +665,7 @@ def main() -> int:
         help="Experiment seed. Repeat to plan multiple seeds.",
     )
     fixed_budget_parser.add_argument("--n-retries", type=int, default=5)
-    fixed_budget_parser.add_argument("--n-branch-continuations", type=int, default=2)
+    fixed_budget_parser.add_argument("--n-branch-continuations", type=int, default=3)
     fixed_budget_parser.add_argument("--branch-root-fraction", type=float, default=0.3)
     fixed_budget_parser.add_argument(
         "--branch-context-mode",
@@ -662,6 +676,12 @@ def main() -> int:
             "Defaults to none for viability runs; use parent_summary only "
             "as an explicit diagnostic arm."
         ),
+    )
+    fixed_budget_parser.add_argument(
+        "--promising-selector-mode",
+        choices=("archive_priority", "validated_progress", "partial_progress"),
+        default="archive_priority",
+        help="Selector used for promising_branch continuations.",
     )
     fixed_budget_parser.add_argument(
         "--snapshot",
@@ -696,10 +716,15 @@ def main() -> int:
         help="Task to include. Repeat to plan multiple tasks.",
     )
     viability_parser.add_argument("--env", default="daytona")
-    viability_parser.add_argument("--model")
+    viability_parser.add_argument(
+        "--model", default="anthropic/claude-haiku-4-5-20251001"
+    )
     viability_agent = viability_parser.add_mutually_exclusive_group()
     viability_agent.add_argument("--agent")
-    viability_agent.add_argument("--agent-import-path")
+    viability_agent.add_argument(
+        "--agent-import-path",
+        default="go_explore.agents.factory:SnapshotAwareTerminus2",
+    )
     viability_parser.add_argument("--extra-arg", action="append", default=[])
     viability_parser.add_argument("--experiment-id", required=True)
     viability_parser.add_argument(
@@ -717,8 +742,14 @@ def main() -> int:
         help="Experiment seed. Repeat to plan multiple seeds.",
     )
     viability_parser.add_argument("--n-retries", type=int, default=5)
-    viability_parser.add_argument("--n-branch-continuations", type=int, default=2)
+    viability_parser.add_argument("--n-branch-continuations", type=int, default=3)
     viability_parser.add_argument("--branch-root-fraction", type=float, default=0.3)
+    viability_parser.add_argument(
+        "--promising-selector-mode",
+        choices=("archive_priority", "validated_progress", "partial_progress"),
+        default="archive_priority",
+        help="Selector used for promising_branch continuations.",
+    )
     viability_parser.add_argument(
         "--include-random-control",
         action="store_true",
@@ -862,10 +893,15 @@ def main() -> int:
     run_parser.add_argument("--jobs-dir", type=Path, default=Path("jobs"))
     run_parser.add_argument("--task-name")
     run_parser.add_argument("--env", default="daytona")
-    run_parser.add_argument("--model")
+    run_parser.add_argument(
+        "--model", default="anthropic/claude-haiku-4-5-20251001"
+    )
     run_agent = run_parser.add_mutually_exclusive_group()
     run_agent.add_argument("--agent")
-    run_agent.add_argument("--agent-import-path")
+    run_agent.add_argument(
+        "--agent-import-path",
+        default="go_explore.agents.factory:SnapshotAwareTerminus2",
+    )
     run_parser.add_argument("--extra-arg", action="append", default=[])
     run_parser.add_argument("--experiment-id", required=True)
     run_parser.add_argument(
@@ -890,7 +926,7 @@ def main() -> int:
         help="Experiment seed. Repeat to run multiple seeds.",
     )
     run_parser.add_argument("--n-retries", type=int, default=5)
-    run_parser.add_argument("--n-branch-continuations", type=int, default=2)
+    run_parser.add_argument("--n-branch-continuations", type=int, default=3)
     run_parser.add_argument("--branch-root-fraction", type=float, default=0.3)
     run_parser.add_argument(
         "--branch-context-mode",
@@ -902,6 +938,12 @@ def main() -> int:
             "minimal-context alternate and parent_summary as an explicit "
             "diagnostic arm."
         ),
+    )
+    run_parser.add_argument(
+        "--promising-selector-mode",
+        choices=("archive_priority", "validated_progress", "partial_progress"),
+        default="archive_priority",
+        help="Selector used for promising_branch continuations.",
     )
     run_parser.add_argument(
         "--execute",
