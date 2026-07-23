@@ -251,6 +251,37 @@ plus one fixed-budget manifest per task and arm. The default arms are retry,
 `random_branch`/`none` control. Add
 `--include-parent-summary-diagnostic` only for an explicit diagnostic ablation.
 
+Dry-run the full pilot index before spending credits:
+
+```bash
+.venv/bin/python -m go_explore.cli run-viability-pilot \
+  --plan docs/experiments/viability/phase6-viability-pilot/viability-plan.json \
+  --analysis-dir docs/experiments/viability/phase6-viability-pilot/analysis \
+  --memo-path docs/experiments/viability-pilot.md
+```
+
+This prints every planned Harbor command, writes per-arm execution reports,
+writes `analysis/pilot-combined-manifest.json`, builds combined
+`run-summary.csv` and `task-summary.csv`, and refreshes
+`docs/experiments/viability-pilot.md`. In dry-run mode, the analysis rows are
+expected to be `missing_result` coverage rows.
+
+Run the paid pilot in tmux only after the dry-run command has the expected
+arms and job names:
+
+```bash
+tmux new-session -d -s phase6-viability-pilot \
+  'set -a; source .env; set +a; \
+    export PATH="$HOME/.local/bin:$PATH"; \
+    export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"; \
+    .venv/bin/python -m go_explore.cli run-viability-pilot \
+    --plan docs/experiments/viability/phase6-viability-pilot/viability-plan.json \
+    --analysis-dir docs/experiments/viability/phase6-viability-pilot/analysis \
+    --memo-path docs/experiments/viability-pilot.md \
+    --execute'
+tmux attach -t phase6-viability-pilot
+```
+
 Budget fields in these manifests and analysis tables are planning labels only.
 They split a target token budget across methods for analysis, but Harbor and
 the agent are not stopped when a job reaches the planned value. Treat

@@ -10,6 +10,7 @@ from go_explore.cli import (
     plan_start_state_baselines_cmd,
     plan_viability,
     run_experiment_cmd,
+    run_viability_pilot_cmd,
 )
 from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
@@ -513,3 +514,76 @@ def test_plan_viability_parent_summary_requires_diagnostic_flag(tmp_path):
         job for job in diagnostic_manifest["jobs"] if job["role"] == "continuation"
     ][0]
     assert continuation["context_mode"] == "parent_summary"
+
+
+def test_run_viability_pilot_dry_run_writes_combined_analysis_and_memo(
+    tmp_path,
+    capsys,
+):
+    output_dir = tmp_path / "viability"
+    plan_viability(
+        argparse.Namespace(
+            dataset="terminal-bench@2.0",
+            path=None,
+            jobs_dir=tmp_path / "jobs",
+            task_name=["fix-git"],
+            env="daytona",
+            model="model-a",
+            agent=None,
+            agent_import_path=None,
+            extra_arg=[],
+            experiment_id="phase6-pilot",
+            output_dir=output_dir,
+            total_token_budget=100_000,
+            seed=[0],
+            n_retries=2,
+            n_branch_continuations=1,
+            branch_root_fraction=0.3,
+            include_random_control=True,
+            include_parent_summary_diagnostic=False,
+        )
+    )
+    capsys.readouterr()
+
+    plan_path = output_dir / "phase6-pilot" / "viability-plan.json"
+    analysis_dir = tmp_path / "analysis"
+    memo_path = tmp_path / "viability-pilot.md"
+    exit_code = run_viability_pilot_cmd(
+        argparse.Namespace(
+            plan=plan_path,
+            jobs_dir=tmp_path / "jobs",
+            analysis_dir=analysis_dir,
+            memo_path=memo_path,
+            execute=False,
+            rerun_existing=False,
+            no_analysis=False,
+            tmux_session="phase6-pilot",
+        )
+    )
+
+    assert exit_code == 0
+    stdout = capsys.readouterr().out
+    assert f"combined_manifest: {analysis_dir / 'pilot-combined-manifest.json'}" in stdout
+    assert f"memo: {memo_path}" in stdout
+    assert "manifest_count: 4" in stdout
+    assert "execute: False" in stdout
+    assert (analysis_dir / "execution-report.json").exists()
+    assert (analysis_dir / "run-summary.csv").exists()
+    assert memo_path.exists()
+
+    combined = json.loads((analysis_dir / "pilot-combined-manifest.json").read_text())
+    assert len(combined["jobs"]) == 8
+    assert {
+        (job["task_id"], job["viability_arm"])
+        for job in combined["jobs"]
+        if job["role"] == "root"
+    } == {
+        ("fix-git", "promising-branch-none"),
+        ("fix-git", "promising-branch-critical-parent-summary"),
+        ("fix-git", "random-branch-none"),
+    }
+    assert all(job["experiment_id"].startswith("phase6-pilot-fix-git") for job in combined["jobs"])
+
+    memo = memo_path.read_text()
+    assert "Dry-run/planning pass" in memo
+    assert "tmux attach -t phase6-pilot" in memo

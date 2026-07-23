@@ -151,6 +151,71 @@ def write_fixed_budget_manifest(
     path.write_text(json.dumps(manifest.to_json_dict(), indent=2) + "\n")
 
 
+def load_fixed_budget_manifest(path: Path) -> FixedBudgetManifest:
+    with path.open() as file:
+        data = json.load(file)
+
+    jobs: list[PlannedExperimentJob] = []
+    for raw in data.get("jobs") or ():
+        budget = raw.get("budget") or {}
+        jobs.append(
+            PlannedExperimentJob(
+                method=raw.get("method"),
+                role=raw.get("role"),
+                seed=int(raw.get("seed", 0)),
+                job_name=str(raw.get("job_name") or ""),
+                command=tuple(str(part) for part in raw.get("command") or ()),
+                budget=BudgetAllocation(
+                    token_budget=(
+                        budget.get("token_budget")
+                        if isinstance(budget.get("token_budget"), int)
+                        else None
+                    ),
+                    budget_fraction=float(budget.get("budget_fraction", 0.0)),
+                    enforcement=str(
+                        budget.get("enforcement") or BUDGET_ENFORCEMENT_PLANNING_ONLY
+                    ),
+                ),
+                start_state_type=str(raw.get("start_state_type") or "unknown"),
+                context_mode=str(raw.get("context_mode") or "unknown"),
+                selector_mode=(
+                    str(raw["selector_mode"])
+                    if raw.get("selector_mode") is not None
+                    else None
+                ),
+                parent_run_id=(
+                    str(raw["parent_run_id"])
+                    if raw.get("parent_run_id") is not None
+                    else None
+                ),
+                parent_snapshot=(
+                    str(raw["parent_snapshot"])
+                    if raw.get("parent_snapshot") is not None
+                    else None
+                ),
+                executor_status=str(raw.get("executor_status") or "ready"),
+            )
+        )
+
+    return FixedBudgetManifest(
+        experiment_id=str(data.get("experiment_id") or ""),
+        task_id=(
+            str(data["task_id"]) if data.get("task_id") is not None else None
+        ),
+        model=str(data["model"]) if data.get("model") is not None else None,
+        total_token_budget=(
+            data.get("budget", {}).get("total_token_budget")
+            if isinstance(data.get("budget", {}).get("total_token_budget"), int)
+            else None
+        ),
+        methods=tuple(str(method) for method in data.get("methods") or ()),
+        seeds=tuple(
+            seed for seed in data.get("seeds") or () if isinstance(seed, int)
+        ),
+        jobs=tuple(job for job in jobs if job.job_name),
+    )
+
+
 def _validate_config(config: FixedBudgetPlanConfig) -> None:
     if config.total_token_budget is not None and config.total_token_budget < 1:
         raise ValueError("total_token_budget must be positive when set.")

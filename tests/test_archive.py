@@ -388,3 +388,109 @@ def test_archive_store_preserves_higher_score_after_load(tmp_path):
     entry = SnapshotArchive.load(path).get(cell_key_for(_candidate()))
     assert entry is not None
     assert entry.snapshot_name == "s-high"
+
+
+def test_archive_store_prunes_rejected_duplicate_remote_snapshot(tmp_path):
+    path = tmp_path / "archive.json"
+    store = ArchiveStore(path=path)
+    store.put(
+        SnapshotRecord(
+            candidate=_candidate(
+                event=SnapshotEvent.TEST_RUN,
+                changed_files=("main.py",),
+                restore_ref="s-high",
+                tests_passed=1,
+                tests_failed=0,
+            ),
+            description="test run",
+            backend="daytona",
+        )
+    )
+    store.consume_remote_prunes()
+
+    store.put(
+        SnapshotRecord(
+            candidate=_candidate(
+                event=SnapshotEvent.FILE_EDIT,
+                changed_files=("main.py",),
+                restore_ref="s-low",
+            ),
+            description="file edit",
+            backend="daytona",
+        )
+    )
+
+    assert store.consume_remote_prunes() == ("s-low",)
+    entry = SnapshotArchive.load(path).get(cell_key_for(_candidate()))
+    assert entry is not None
+    assert entry.snapshot_name == "s-high"
+
+
+def test_archive_store_prunes_replaced_remote_snapshot(tmp_path):
+    path = tmp_path / "archive.json"
+    store = ArchiveStore(path=path)
+    store.put(
+        SnapshotRecord(
+            candidate=_candidate(
+                event=SnapshotEvent.FILE_EDIT,
+                changed_files=("main.py",),
+                restore_ref="s-low",
+            ),
+            description="file edit",
+            backend="daytona",
+        )
+    )
+    store.consume_remote_prunes()
+
+    store.put(
+        SnapshotRecord(
+            candidate=_candidate(
+                event=SnapshotEvent.TEST_RUN,
+                changed_files=("main.py",),
+                restore_ref="s-high",
+                tests_passed=1,
+                tests_failed=0,
+            ),
+            description="test run",
+            backend="daytona",
+        )
+    )
+
+    assert store.consume_remote_prunes() == ("s-low",)
+    entry = SnapshotArchive.load(path).get(cell_key_for(_candidate()))
+    assert entry is not None
+    assert entry.snapshot_name == "s-high"
+
+
+def test_archive_store_remote_retention_limit_keeps_only_top_remote_snapshots(
+    tmp_path,
+):
+    path = tmp_path / "archive.json"
+    store = ArchiveStore(path=path, remote_retention_limit=2)
+    for name, event, changed_files, passed in (
+        ("s-a", SnapshotEvent.FILE_EDIT, ("a.py",), None),
+        ("s-b", SnapshotEvent.FILE_EDIT, ("b.py",), None),
+        ("s-c", SnapshotEvent.TEST_RUN, ("c.py",), 1),
+    ):
+        store.put(
+            SnapshotRecord(
+                candidate=_candidate(
+                    event=event,
+                    changed_files=changed_files,
+                    restore_ref=name,
+                    tests_passed=passed,
+                    tests_failed=0 if passed is not None else None,
+                ),
+                description="snapshot",
+                backend="daytona",
+            )
+        )
+
+    assert store.consume_remote_prunes() == ("s-b",)
+    archive = SnapshotArchive.load(path)
+    assert {entry.snapshot_name for entry in archive.entries()} == {
+        "s-a",
+        "s-b",
+        "s-c",
+    }
+    assert [entry.snapshot_name for entry in archive.select(k=3)] == ["s-c", "s-a"]

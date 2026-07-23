@@ -81,8 +81,9 @@ def _fake_harbor_run(
     *,
     check: bool,
     text: bool,
+    capture_output: bool,
 ) -> subprocess.CompletedProcess[str]:
-    del check, text
+    del check, text, capture_output
     jobs_dir = Path(cmd[cmd.index("--jobs-dir") + 1])
     job_name = cmd[cmd.index("--job-name") + 1]
     task_name = cmd[cmd.index("--include-task-name") + 1]

@@ -44,8 +44,11 @@ from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
 from go_explore.snapshots.selectors import load_oracle_labels, select_archive_entries
 from go_explore.task_inventory import load_cached_tasks
 from go_explore.viability import (
+    ViabilityPilotRunConfig,
     ViabilityPlanConfig,
+    format_viability_pilot_report,
     plan_viability_manifests,
+    run_viability_pilot,
     write_viability_plan,
 )
 
@@ -385,6 +388,23 @@ def plan_viability(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_viability_pilot_cmd(args: argparse.Namespace) -> int:
+    report = run_viability_pilot(
+        ViabilityPilotRunConfig(
+            plan_path=args.plan,
+            jobs_dir=args.jobs_dir,
+            analysis_dir=args.analysis_dir,
+            memo_path=args.memo_path,
+            execute=args.execute,
+            rerun_existing=args.rerun_existing,
+            build_analysis=not args.no_analysis,
+            tmux_session=args.tmux_session,
+        )
+    )
+    print(format_viability_pilot_report(report))
+    return 1 if args.execute and report.has_infrastructure_failures else 0
+
+
 def build_analysis_tables_cmd(args: argparse.Namespace) -> int:
     tables = build_analysis_tables(
         AnalysisInputs(
@@ -713,6 +733,49 @@ def main() -> int:
         ),
     )
     viability_parser.set_defaults(func=plan_viability)
+
+    viability_run_parser = subparsers.add_parser(
+        "run-viability-pilot",
+        help="Execute a viability plan index and build combined pilot analysis tables.",
+    )
+    viability_run_parser.add_argument(
+        "--plan",
+        type=Path,
+        required=True,
+        help="Path to viability-plan.json.",
+    )
+    viability_run_parser.add_argument("--jobs-dir", type=Path, default=Path("jobs"))
+    viability_run_parser.add_argument(
+        "--analysis-dir",
+        type=Path,
+        help="Combined analysis output directory. Defaults to <plan-output>/analysis.",
+    )
+    viability_run_parser.add_argument(
+        "--memo-path",
+        type=Path,
+        default=Path("docs/experiments/viability-pilot.md"),
+    )
+    viability_run_parser.add_argument(
+        "--execute",
+        action="store_true",
+        help="Run Harbor jobs and continuations. Without this, only plan.",
+    )
+    viability_run_parser.add_argument(
+        "--rerun-existing",
+        action="store_true",
+        help="Run jobs even when <jobs-dir>/<job-name>/result.json already exists.",
+    )
+    viability_run_parser.add_argument(
+        "--no-analysis",
+        action="store_true",
+        help="Skip combined analysis table generation.",
+    )
+    viability_run_parser.add_argument(
+        "--tmux-session",
+        default="phase6-viability-pilot",
+        help="Tmux session name recorded in the generated pilot memo.",
+    )
+    viability_run_parser.set_defaults(func=run_viability_pilot_cmd)
 
     analysis_parser = subparsers.add_parser(
         "build-analysis-tables",

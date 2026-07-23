@@ -3,6 +3,7 @@ import dataclasses
 
 from go_explore.snapshots import (
     AsyncSnapshotManager,
+    ArchiveStore,
     DaytonaSnapshotBackend,
     EveryAgentStepPolicy,
     InterestingAgentStepPolicy,
@@ -136,6 +137,68 @@ def test_snapshot_manager_accepts_replaceable_backend():
         assert records[0].candidate.restore_ref == "restore-trial:step-4"
         assert records[0].candidate.metadata["snapshot_backend"] == "recording"
         assert records[0].candidate.metadata["backend_note"] == "captured"
+
+    asyncio.run(run_test())
+
+
+def test_snapshot_manager_deletes_pruned_remote_snapshots(tmp_path):
+    class TwoSnapshotsSameCellPolicy:
+        def candidates_for_step(self, context):
+            return [
+                SnapshotCandidate(
+                    id=f"{context.trial_name}:step-{context.step_id}-low",
+                    event=SnapshotEvent.FILE_EDIT,
+                    restore_ref="s-low",
+                    changed_files=("main.py",),
+                    metadata={
+                        "trial_name": context.trial_name,
+                        "step_id": str(context.step_id),
+                    },
+                ),
+                SnapshotCandidate(
+                    id=f"{context.trial_name}:step-{context.step_id}-high",
+                    event=SnapshotEvent.TEST_RUN,
+                    restore_ref="s-high",
+                    changed_files=("main.py",),
+                    tests_passed=1,
+                    tests_failed=0,
+                    metadata={
+                        "trial_name": context.trial_name,
+                        "step_id": str(context.step_id),
+                    },
+                ),
+            ]
+
+    class RecordingBackend:
+        def __init__(self):
+            self.deleted: list[str] = []
+
+        async def create_snapshot(self, candidate, context):
+            from go_explore.snapshots import SnapshotHandle
+
+            return SnapshotHandle(
+                backend="recording",
+                restore_ref=candidate.restore_ref,
+            )
+
+        async def delete_snapshot(self, snapshot_name: str) -> None:
+            self.deleted.append(snapshot_name)
+
+    async def run_test():
+        backend = RecordingBackend()
+        manager = AsyncSnapshotManager(
+            policy=TwoSnapshotsSameCellPolicy(),
+            store=ArchiveStore(path=tmp_path / "archive.json"),
+            backend=backend,
+        )
+        context = context_from_atif_step(
+            {"step_id": 4, "source": "agent"},
+            trial_name="trial",
+        )
+
+        await manager.process_step(context)
+
+        assert backend.deleted == ["s-low"]
 
     asyncio.run(run_test())
 

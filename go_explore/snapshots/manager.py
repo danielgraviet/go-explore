@@ -74,6 +74,7 @@ class AsyncSnapshotManager:
             )
             store_started_at = clock()
             self._store.put(record)
+            await _delete_pruned_remote_snapshots(self._store, self._backend)
             store_finished_at = clock()
             backend_seconds += backend_elapsed
             store_seconds += store_finished_at - store_started_at
@@ -137,3 +138,16 @@ def _describe_candidate(
     if candidate.notes:
         parts.append(candidate.notes)
     return " | ".join(parts)
+
+
+async def _delete_pruned_remote_snapshots(store, backend: AsyncSnapshotBackend) -> None:
+    consume_prunes = getattr(store, "consume_remote_prunes", None)
+    delete_snapshot = getattr(backend, "delete_snapshot", None)
+    if not callable(consume_prunes) or not callable(delete_snapshot):
+        return
+
+    for snapshot_name in consume_prunes():
+        try:
+            await delete_snapshot(snapshot_name)
+        except Exception as error:
+            print(f"Warning: failed to delete pruned snapshot {snapshot_name}: {error}")

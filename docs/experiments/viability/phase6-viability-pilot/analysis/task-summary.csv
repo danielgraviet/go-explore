@@ -1,0 +1,10 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+phase6-viability-pilot-build-cython-ext-promising-branch-critical-parent-summary,build-cython-ext,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,0,0,,,,,,false
+phase6-viability-pilot-build-cython-ext-promising-branch-none,build-cython-ext,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,0,0,,,,,,false
+phase6-viability-pilot-build-cython-ext-retry,build-cython-ext,,,retry,anthropic/claude-haiku-4-5-20251001,false,5,5,0,0,,,,,,false
+phase6-viability-pilot-fix-git-promising-branch-critical-parent-summary,fix-git,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,0,0,,,,,,false
+phase6-viability-pilot-fix-git-promising-branch-none,fix-git,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,0,0,,,,,,false
+phase6-viability-pilot-fix-git-retry,fix-git,,,retry,anthropic/claude-haiku-4-5-20251001,false,5,5,0,0,,,,,,false
+phase6-viability-pilot-regex-log-promising-branch-critical-parent-summary,regex-log,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,0,0,,,,,,false
+phase6-viability-pilot-regex-log-promising-branch-none,regex-log,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,0,0,,,,,,false
+phase6-viability-pilot-regex-log-retry,regex-log,,,retry,anthropic/claude-haiku-4-5-20251001,false,5,5,0,0,,,,,,false
