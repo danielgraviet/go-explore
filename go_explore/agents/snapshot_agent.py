@@ -495,7 +495,7 @@ class SnapshotAwareAgent(BaseAgent):
             "You are starting from a sandbox snapshot created during a prior "
             "attempt at this task. That attempt's own commands are deliberately "
             "not shown to you, so you are free to take a different approach. "
-            "Below is only the observed outcome of that attempt - what failed, "
+            "Below is only the observed outcome of that attempt - what happened, "
             "not how it was attempted:\n\n"
             f"{parent_context}"
         )
