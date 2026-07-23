@@ -57,6 +57,7 @@ class ArchiveEntry:
     depth: int = 0
     times_selected: int = 0
     created_at: str = ""
+    remote_retained: bool = True
 
     @property
     def priority(self) -> float:
@@ -110,15 +111,34 @@ class SnapshotArchive:
         Returns the stored entry, or None when an existing entry scored higher
         (the archive keeps at most one snapshot per cell).
         """
+        return self.add_with_result(
+            candidate,
+            snapshot_name,
+            parent_snapshot=parent_snapshot,
+            depth=depth,
+        ).entry
+
+    def add_with_result(
+        self,
+        candidate: SnapshotCandidate,
+        snapshot_name: str | None = None,
+        *,
+        parent_snapshot: str | None = None,
+        depth: int = 0,
+    ) -> "ArchiveAddResult":
         restore_ref = snapshot_name or candidate.restore_ref
         if not restore_ref:
-            return None
+            return ArchiveAddResult(entry=None, accepted=False)
 
         key = cell_key_for(candidate)
         score = self.score(candidate).score
         incumbent = self._entries.get(key)
         if incumbent is not None and incumbent.score >= score:
-            return None
+            return ArchiveAddResult(
+                entry=None,
+                accepted=False,
+                rejected_snapshot_name=restore_ref,
+            )
 
         entry = ArchiveEntry(
             cell_key=key,
@@ -139,15 +159,43 @@ class SnapshotArchive:
             created_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         )
         self._entries[key] = entry
-        return entry
+        return ArchiveAddResult(
+            entry=entry,
+            accepted=True,
+            replaced_snapshot_name=incumbent.snapshot_name if incumbent else None,
+        )
 
     def select(self, k: int = 3) -> list[ArchiveEntry]:
         """Return the top-k cells to fork from, best first."""
         return sorted(
-            self._entries.values(),
+            (entry for entry in self._entries.values() if entry.remote_retained),
             key=lambda e: (e.priority, e.score),
             reverse=True,
         )[:k]
+
+    def apply_remote_retention_limit(self, limit: int | None) -> tuple[str, ...]:
+        if limit is None:
+            return ()
+        if limit < 1:
+            raise ValueError("remote retention limit must be >= 1 when set.")
+
+        ranked = sorted(
+            self._entries.values(),
+            key=lambda e: (e.priority, e.score),
+            reverse=True,
+        )
+        keep_names = {entry.snapshot_name for entry in ranked[:limit]}
+        pruned: list[str] = []
+        for entry in ranked:
+            should_retain = entry.snapshot_name in keep_names
+            if entry.remote_retained and not should_retain:
+                pruned.append(entry.snapshot_name)
+            if entry.remote_retained != should_retain:
+                self._entries[entry.cell_key] = replace(
+                    entry,
+                    remote_retained=should_retain,
+                )
+        return tuple(pruned)
 
     def mark_selected(self, cell_key: str) -> None:
         """Record that we forked this cell, so select() rotates onward."""
@@ -174,10 +222,15 @@ class SnapshotArchive:
     # ---- persistence -----------------------------------------------------
 
     def to_json_dict(self) -> dict:
+        entries = sorted(
+            self._entries.values(),
+            key=lambda e: (e.remote_retained, e.priority, e.score),
+            reverse=True,
+        )
         return {
             "version": 1,
             "n_cells": len(self._entries),
-            "entries": [asdict(e) for e in self.select(len(self._entries))],
+            "entries": [asdict(e) for e in entries],
         }
 
     def save(self, path: Path | None = None) -> Path | None:
@@ -198,9 +251,18 @@ class SnapshotArchive:
         for raw in data.get("entries", []):
             raw = dict(raw)
             raw["changed_files"] = tuple(raw.get("changed_files") or ())
+            raw.setdefault("remote_retained", True)
             entry = ArchiveEntry(**raw)
             archive._entries[entry.cell_key] = entry
         return archive
+
+
+@dataclass(frozen=True)
+class ArchiveAddResult:
+    entry: ArchiveEntry | None
+    accepted: bool
+    rejected_snapshot_name: str | None = None
+    replaced_snapshot_name: str | None = None
 
 
 class ArchiveStore:
@@ -211,7 +273,13 @@ class ArchiveStore:
     and writing `archive.json` after every accepted snapshot.
     """
 
-    def __init__(self, archive: SnapshotArchive | None = None, path: Path | None = None):
+    def __init__(
+        self,
+        archive: SnapshotArchive | None = None,
+        path: Path | None = None,
+        *,
+        remote_retention_limit: int | None = None,
+    ):
         if archive is not None:
             self._archive = archive
         elif path is not None:
@@ -221,6 +289,8 @@ class ArchiveStore:
         else:
             self._archive = SnapshotArchive()
         self._records: dict[str, SnapshotRecord] = {}
+        self._remote_retention_limit = remote_retention_limit
+        self._pending_remote_prunes: list[str] = []
 
     @property
     def archive(self) -> SnapshotArchive:
@@ -229,15 +299,30 @@ class ArchiveStore:
     def put(self, record: SnapshotRecord) -> None:
         self._records[record.id] = record
         scored = self._archive.score(record.candidate)
-        entry = self._archive.add(record.candidate)
-        self._write_snapshot_created_event(record, scored, entry is not None)
+        result = self._archive.add_with_result(record.candidate)
+        self._record_remote_prunes(result)
+        self._write_snapshot_created_event(record, scored, result.accepted)
         self._archive.save()
+
+    def consume_remote_prunes(self) -> tuple[str, ...]:
+        prunes = tuple(dict.fromkeys(self._pending_remote_prunes))
+        self._pending_remote_prunes.clear()
+        return prunes
 
     def get(self, snapshot_id: str) -> SnapshotRecord | None:
         return self._records.get(snapshot_id)
 
     def list(self) -> list[SnapshotRecord]:
         return list(self._records.values())
+
+    def _record_remote_prunes(self, result: ArchiveAddResult) -> None:
+        if result.rejected_snapshot_name:
+            self._pending_remote_prunes.append(result.rejected_snapshot_name)
+        if result.replaced_snapshot_name:
+            self._pending_remote_prunes.append(result.replaced_snapshot_name)
+        self._pending_remote_prunes.extend(
+            self._archive.apply_remote_retention_limit(self._remote_retention_limit)
+        )
 
     def _write_snapshot_created_event(
         self,

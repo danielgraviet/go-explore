@@ -44,7 +44,6 @@ from go_explore.snapshots.replay import load_atif_trajectory_steps, process_atif
 
 ContextMode = str
 
-
 class SnapshotAwareAgent(BaseAgent):
     """Wraps any Harbor agent and captures snapshots during execution.
 
@@ -64,6 +63,7 @@ class SnapshotAwareAgent(BaseAgent):
         parent_context_path: str | Path | None = None,
         preinstall_tmux: bool = False,
         tmux_install_timeout_sec: float = 360.0,
+        snapshot_retention_limit: int | str | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -78,6 +78,16 @@ class SnapshotAwareAgent(BaseAgent):
         )
         self._preinstall_tmux = preinstall_tmux
         self._tmux_install_timeout_sec = tmux_install_timeout_sec
+        snapshot_retention_limit = (
+            snapshot_retention_limit
+            if snapshot_retention_limit is not None
+            else os.getenv("GO_EXPLORE_SNAPSHOT_REMOTE_LIMIT")
+        )
+        self._snapshot_retention_limit = (
+            int(snapshot_retention_limit)
+            if snapshot_retention_limit is not None
+            else None
+        )
         # Peek (don't pop) so logs_dir still reaches BaseAgent/**kwargs above.
         self._logs_dir: Path | None = kwargs.get("logs_dir")
         self._agent_execute_hooked = False
@@ -107,7 +117,10 @@ class SnapshotAwareAgent(BaseAgent):
         self._sandbox = sandbox
         manager = AsyncSnapshotManager(
             policy=self._snapshot_policy,
-            store=ArchiveStore(path=self._archive_path()),
+            store=ArchiveStore(
+                path=self._archive_path(),
+                remote_retention_limit=self._snapshot_retention_limit,
+            ),
             backend=DaytonaSnapshotBackend(
                 sandbox=sandbox,
                 name_prefix="go-explore",

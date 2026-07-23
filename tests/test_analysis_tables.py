@@ -409,3 +409,95 @@ def test_build_analysis_tables_cli_writes_csv_and_warnings(tmp_path, capsys):
         and "no repeated-work report was provided" in warning["message"]
         for warning in warnings
     )
+
+
+def test_build_analysis_tables_uses_per_job_task_and_experiment_metadata(tmp_path):
+    jobs_dir = tmp_path / "jobs"
+    manifest_path = tmp_path / "combined.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "go-explore-fixed-budget-plan-v1",
+                "experiment_id": "phase6-pilot",
+                "task_id": None,
+                "model": None,
+                "budget": {"enforcement": "planning_only"},
+                "methods": ["retry"],
+                "seeds": [0],
+                "jobs": [
+                    {
+                        "experiment_id": "phase6-pilot-fix-git-retry",
+                        "task_id": "fix-git",
+                        "model": "model-a",
+                        "method": "retry",
+                        "role": "retry_attempt",
+                        "seed": 0,
+                        "job_name": "fix-git-retry-0",
+                        "command": [],
+                        "budget": {
+                            "token_budget": 10,
+                            "budget_fraction": 1.0,
+                            "enforcement": "planning_only",
+                        },
+                        "start_state_type": "clean",
+                        "context_mode": "original_task_only",
+                        "selector_mode": None,
+                        "parent_run_id": None,
+                        "parent_snapshot": None,
+                        "executor_status": "ready",
+                    },
+                    {
+                        "experiment_id": "phase6-pilot-regex-log-retry",
+                        "task_id": "regex-log",
+                        "model": "model-b",
+                        "method": "retry",
+                        "role": "retry_attempt",
+                        "seed": 0,
+                        "job_name": "regex-log-retry-0",
+                        "command": [],
+                        "budget": {
+                            "token_budget": 10,
+                            "budget_fraction": 1.0,
+                            "enforcement": "planning_only",
+                        },
+                        "start_state_type": "clean",
+                        "context_mode": "original_task_only",
+                        "selector_mode": None,
+                        "parent_run_id": None,
+                        "parent_snapshot": None,
+                        "executor_status": "ready",
+                    },
+                ],
+            }
+        )
+        + "\n"
+    )
+
+    tables = build_analysis_tables(
+        AnalysisInputs(manifest_path=manifest_path, jobs_dir=jobs_dir)
+    )
+
+    rows_by_run = {row["run_id"]: row for row in tables.run_rows}
+    assert rows_by_run["fix-git-retry-0"]["experiment_id"] == (
+        "phase6-pilot-fix-git-retry"
+    )
+    assert rows_by_run["fix-git-retry-0"]["task_id"] == "fix-git"
+    assert rows_by_run["regex-log-retry-0"]["experiment_id"] == (
+        "phase6-pilot-regex-log-retry"
+    )
+    assert rows_by_run["regex-log-retry-0"]["task_id"] == "regex-log"
+
+    task_keys = {
+        (row["experiment_id"], row["task_id"], row["model_class"])
+        for row in tables.task_rows
+    }
+    assert (
+        "phase6-pilot-fix-git-retry",
+        "fix-git",
+        "model-a",
+    ) in task_keys
+    assert (
+        "phase6-pilot-regex-log-retry",
+        "regex-log",
+        "model-b",
+    ) in task_keys

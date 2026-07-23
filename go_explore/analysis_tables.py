@@ -502,14 +502,17 @@ def _planned_jobs_from_manifest(
     manifest: Mapping[str, Any],
 ) -> tuple[PlannedJobMetadata, ...]:
     experiment_id = str(manifest.get("experiment_id") or UNKNOWN_EXPERIMENT_ID)
-    task_id = manifest.get("task_id")
-    model = manifest.get("model")
+    manifest_task_id = manifest.get("task_id")
+    manifest_model = manifest.get("model")
     jobs: list[PlannedJobMetadata] = []
     for raw in manifest.get("jobs") or ():
         budget = raw.get("budget") or {}
+        job_experiment_id = raw.get("experiment_id", experiment_id)
+        task_id = raw.get("task_id", manifest_task_id)
+        model = raw.get("model", manifest_model)
         jobs.append(
             PlannedJobMetadata(
-                experiment_id=experiment_id,
+                experiment_id=str(job_experiment_id or UNKNOWN_EXPERIMENT_ID),
                 task_id=str(task_id) if task_id is not None else None,
                 model=str(model) if model is not None else None,
                 method=str(raw.get("method") or "unknown"),

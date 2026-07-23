@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shlex
 import subprocess
+from collections import deque
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -118,7 +119,6 @@ def run_fixed_budget_experiment(
     analysis_dir = config.analysis_dir or (
         Path("docs/experiments/main-benchmark/analysis") / config.experiment_id
     )
-    execution_report_path = analysis_dir / "execution-report.json"
 
     manifest = plan_fixed_budget_runs(
         FixedBudgetPlanConfig(
@@ -136,13 +136,39 @@ def run_fixed_budget_experiment(
     )
     write_fixed_budget_manifest(manifest, manifest_path)
 
+    return run_fixed_budget_manifest(
+        manifest,
+        manifest_path=manifest_path,
+        jobs_dir=config.base_config.jobs_dir,
+        analysis_dir=analysis_dir,
+        execute=config.execute,
+        rerun_existing=config.rerun_existing,
+        build_analysis=config.build_analysis,
+        command_runner=command_runner,
+        continuation_runner=continuation_runner,
+    )
+
+
+def run_fixed_budget_manifest(
+    manifest: FixedBudgetManifest,
+    *,
+    manifest_path: Path,
+    jobs_dir: Path,
+    analysis_dir: Path,
+    execute: bool = False,
+    rerun_existing: bool = False,
+    build_analysis: bool = True,
+    command_runner: CommandRunner = subprocess.run,
+    continuation_runner: ContinuationRunner = run_continuation_plans,
+) -> RunExperimentReport:
+    execution_report_path = analysis_dir / "execution-report.json"
     records: list[ExperimentExecutionRecord] = []
     observed_job_dirs: list[Path] = []
     continuation_report_paths: list[Path] = []
     event_log_paths: list[Path] = []
 
-    for seed in config.seeds:
-        for method in config.methods:
+    for seed in manifest.seeds:
+        for method in manifest.methods:
             method_jobs = [
                 job
                 for job in manifest.jobs
@@ -153,13 +179,13 @@ def run_fixed_budget_experiment(
             for job in method_jobs:
                 record = _run_planned_job(
                     job,
-                    jobs_dir=config.base_config.jobs_dir,
-                    execute=config.execute,
-                    rerun_existing=config.rerun_existing,
+                    jobs_dir=jobs_dir,
+                    execute=execute,
+                    rerun_existing=rerun_existing,
                     command_runner=command_runner,
                 )
                 records.append(record)
-                job_dir = config.base_config.jobs_dir / job.job_name
+                job_dir = jobs_dir / job.job_name
                 if (job_dir / "result.json").exists():
                     observed_job_dirs.append(job_dir)
                     event_log_paths.append(job_dir / EVENT_LOG_FILENAME)
@@ -169,10 +195,10 @@ def run_fixed_budget_experiment(
                         _run_branch_continuations(
                             job,
                             manifest=manifest,
-                            jobs_dir=config.base_config.jobs_dir,
-                            execute=config.execute,
-                            rerun_existing=config.rerun_existing,
-                            experiment_id=config.experiment_id,
+                            jobs_dir=jobs_dir,
+                            execute=execute,
+                            rerun_existing=rerun_existing,
+                            experiment_id=manifest.experiment_id,
                             continuation_runner=continuation_runner,
                         )
                     )
@@ -182,22 +208,22 @@ def run_fixed_budget_experiment(
                     event_log_paths.extend(branch_events)
 
     analysis_tables = None
-    if config.build_analysis and config.execute:
+    if build_analysis and execute:
         analysis_tables = build_analysis_tables(
             AnalysisInputs(
                 manifest_path=manifest_path,
                 job_dirs=tuple(_dedupe_paths(observed_job_dirs)),
                 continuation_report_paths=tuple(_dedupe_paths(continuation_report_paths)),
                 event_log_paths=tuple(_dedupe_paths(event_log_paths)),
-                jobs_dir=config.base_config.jobs_dir,
+                jobs_dir=jobs_dir,
             )
         )
         write_analysis_tables(analysis_tables, analysis_dir)
 
     report = RunExperimentReport(
-        experiment_id=config.experiment_id,
+        experiment_id=manifest.experiment_id,
         manifest_path=manifest_path,
-        analysis_dir=analysis_dir if config.build_analysis else None,
+        analysis_dir=analysis_dir if build_analysis else None,
         execution_report_path=execution_report_path,
         budget_enforcement=BUDGET_ENFORCEMENT_PLANNING_ONLY,
         budget_enforcement_description=BUDGET_ENFORCEMENT_DESCRIPTION,
@@ -257,13 +283,22 @@ def _run_planned_job(
     if not execute:
         return _record(job, "planned", job_dir=job_dir)
 
-    result = command_runner(list(job.command), check=False, text=True)
+    if command_runner is subprocess.run:
+        result = _run_command_streaming(list(job.command))
+    else:
+        result = command_runner(
+            list(job.command),
+            check=False,
+            text=True,
+            capture_output=True,
+        )
     status = "succeeded" if result.returncode == 0 else "failed"
     return _record(
         job,
         status,
         job_dir=job_dir,
         returncode=result.returncode,
+        details=_completed_process_details(result) if status == "failed" else None,
     )
 
 
@@ -499,6 +534,37 @@ def _record(
         returncode=returncode,
         details=details,
     )
+
+
+def _run_command_streaming(command: list[str]) -> subprocess.CompletedProcess[str]:
+    output_tail: deque[str] = deque(maxlen=400)
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+        output_tail.append(line)
+    returncode = process.wait()
+    return subprocess.CompletedProcess(
+        command,
+        returncode,
+        stdout="".join(output_tail),
+        stderr=None,
+    )
+
+
+def _completed_process_details(result: subprocess.CompletedProcess[str]) -> str | None:
+    output = "\n".join(
+        part.strip()
+        for part in (result.stdout, result.stderr)
+        if isinstance(part, str) and part.strip()
+    )
+    return output or None
 
 
 def _write_execution_report(report: RunExperimentReport) -> None:

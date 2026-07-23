@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import Protocol
 
@@ -21,6 +22,9 @@ class AsyncSnapshotBackend(Protocol):
     ) -> SnapshotHandle:
         ...
 
+    async def delete_snapshot(self, snapshot_name: str) -> None:
+        ...
+
 
 class AsyncNoopSnapshotBackend:
     """Async no-op backend for tests and dry runs."""
@@ -35,6 +39,9 @@ class AsyncNoopSnapshotBackend:
             restore_ref=candidate.restore_ref,
             environment_id=candidate.environment_id or context.environment_id,
         )
+
+    async def delete_snapshot(self, snapshot_name: str) -> None:
+        return None
 
 
 class DaytonaSnapshotBackend:
@@ -66,7 +73,10 @@ class DaytonaSnapshotBackend:
             except Exception as e:
                 print(f"Warning: Failed to write trajectory context to sandbox: {e}")
 
-        await self._sandbox._experimental_create_snapshot(name=snapshot_name, timeout=self._timeout)
+        await self._sandbox._experimental_create_snapshot(
+            name=snapshot_name,
+            timeout=self._timeout,
+        )
 
         return SnapshotHandle(
             backend="daytona",
@@ -75,8 +85,18 @@ class DaytonaSnapshotBackend:
             metadata={"daytona_snapshot_name": snapshot_name},
         )
 
+    async def delete_snapshot(self, snapshot_name: str) -> None:
+        await asyncio.to_thread(_delete_daytona_snapshot_sync, snapshot_name)
+
 
 def daytona_snapshot_name(snapshot_id: str, *, prefix: str = "go-explore") -> str:
     raw_name = f"{prefix}-{snapshot_id}"
     normalized = re.sub(r"[^A-Za-z0-9_.-]+", "-", raw_name).strip("-")
     return normalized[:120] or prefix
+
+
+def _delete_daytona_snapshot_sync(snapshot_name: str) -> None:
+    from daytona import Daytona
+
+    daytona = Daytona()
+    daytona.snapshot.delete(daytona.snapshot.get(snapshot_name))
