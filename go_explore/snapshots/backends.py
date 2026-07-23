@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import inspect
+import asyncio
 import re
 from typing import Protocol
 
@@ -86,13 +86,7 @@ class DaytonaSnapshotBackend:
         )
 
     async def delete_snapshot(self, snapshot_name: str) -> None:
-        from daytona import AsyncDaytona
-
-        async with AsyncDaytona() as daytona:
-            snapshot = daytona.snapshot.get(snapshot_name)
-            snapshot = await _maybe_await(snapshot)
-            result = daytona.snapshot.delete(snapshot)
-            await _maybe_await(result)
+        await asyncio.to_thread(_delete_daytona_snapshot_sync, snapshot_name)
 
 
 def daytona_snapshot_name(snapshot_id: str, *, prefix: str = "go-explore") -> str:
@@ -101,7 +95,8 @@ def daytona_snapshot_name(snapshot_id: str, *, prefix: str = "go-explore") -> st
     return normalized[:120] or prefix
 
 
-async def _maybe_await(value):
-    if inspect.isawaitable(value):
-        return await value
-    return value
+def _delete_daytona_snapshot_sync(snapshot_name: str) -> None:
+    from daytona import Daytona
+
+    daytona = Daytona()
+    daytona.snapshot.delete(daytona.snapshot.get(snapshot_name))

@@ -63,6 +63,7 @@ class SnapshotAwareAgent(BaseAgent):
         parent_context_path: str | Path | None = None,
         preinstall_tmux: bool = False,
         tmux_install_timeout_sec: float = 360.0,
+        snapshot_retention_limit: int | str | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -77,7 +78,16 @@ class SnapshotAwareAgent(BaseAgent):
         )
         self._preinstall_tmux = preinstall_tmux
         self._tmux_install_timeout_sec = tmux_install_timeout_sec
-        self._snapshot_retention_limit = int(os.environ["GO_EXPLORE_SNAPSHOT_REMOTE_LIMIT"])
+        snapshot_retention_limit = (
+            snapshot_retention_limit
+            if snapshot_retention_limit is not None
+            else os.getenv("GO_EXPLORE_SNAPSHOT_REMOTE_LIMIT")
+        )
+        self._snapshot_retention_limit = (
+            int(snapshot_retention_limit)
+            if snapshot_retention_limit is not None
+            else None
+        )
         # Peek (don't pop) so logs_dir still reaches BaseAgent/**kwargs above.
         self._logs_dir: Path | None = kwargs.get("logs_dir")
         self._agent_execute_hooked = False

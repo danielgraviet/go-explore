@@ -1,4 +1,6 @@
 import asyncio
+import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -16,6 +18,7 @@ from go_explore.snapshots import (
     context_from_atif_step,
     daytona_snapshot_name,
 )
+from go_explore.snapshots.backends import _delete_daytona_snapshot_sync
 
 
 def test_scores_validation_snapshot_with_test_signal_and_changed_files():
@@ -63,6 +66,36 @@ def test_file_edit_snapshot_gets_edit_bonus_and_preserves_metadata():
     assert scored.candidate.trace_path == Path("jobs/run-1/trial/trace.jsonl")
     assert scored.candidate.metadata["agent"] == "codex"
     assert scored.reasons == ("captures a file edit", "1 changed files")
+
+
+def test_daytona_delete_snapshot_uses_sync_get_then_delete(monkeypatch):
+    calls = []
+
+    class FakeSnapshotService:
+        def get(self, name):
+            calls.append(("get", name))
+            return {"name": name}
+
+        def delete(self, snapshot):
+            calls.append(("delete", snapshot))
+            return None
+
+    class FakeDaytona:
+        def __init__(self):
+            self.snapshot = FakeSnapshotService()
+
+    monkeypatch.setitem(
+        sys.modules,
+        "daytona",
+        types.SimpleNamespace(Daytona=FakeDaytona),
+    )
+
+    _delete_daytona_snapshot_sync("snapshot-a")
+
+    assert calls == [
+        ("get", "snapshot-a"),
+        ("delete", {"name": "snapshot-a"}),
+    ]
 
 
 def test_discovery_snapshot_gets_investigation_bonus():
