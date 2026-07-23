@@ -356,6 +356,56 @@ def test_interesting_policy_snapshots_investigative_commands():
     assert "investigative command" in candidates[0].notes
 
 
+def test_interesting_policy_snapshots_git_history_inspection_as_discovery():
+    policy = InterestingAgentStepPolicy()
+    context = context_from_atif_step(
+        {
+            "step_id": 4,
+            "source": "agent",
+            "tool_calls": [
+                {
+                    "function_name": "bash_command",
+                    "arguments": {"keystrokes": "git reflog\n"},
+                },
+            ],
+            "observation": {
+                "results": [{"content": "HEAD@{1}: commit: leaked secret"}]
+            },
+        },
+        trial_name="git-leak-recovery__abc123",
+    )
+
+    candidates = policy.candidates_for_step(context)
+
+    assert len(candidates) == 1
+    assert candidates[0].event == SnapshotEvent.DISCOVERY
+    assert "investigative command" in candidates[0].notes
+
+
+def test_interesting_policy_still_treats_git_merge_as_state_transition():
+    policy = InterestingAgentStepPolicy()
+    context = context_from_atif_step(
+        {
+            "step_id": 5,
+            "source": "agent",
+            "tool_calls": [
+                {
+                    "function_name": "bash_command",
+                    "arguments": {"keystrokes": "git merge feature-branch\n"},
+                },
+            ],
+            "observation": {"results": [{"content": "Fast-forward"}]},
+        },
+        trial_name="git-leak-recovery__abc123",
+    )
+
+    candidates = policy.candidates_for_step(context)
+
+    assert len(candidates) == 1
+    assert candidates[0].event == SnapshotEvent.COMMAND
+    assert "git state transition" in candidates[0].notes
+
+
 def test_interesting_policy_extracts_positive_probe_metadata():
     policy = InterestingAgentStepPolicy()
     context = context_from_atif_step(
@@ -404,6 +454,31 @@ def test_interesting_policy_does_not_treat_successful_install_as_test_pass():
             },
         },
         trial_name="kv-store-grpc__abc123",
+    )
+
+    assert policy.candidates_for_step(context) == []
+
+
+def test_interesting_policy_ignores_bare_passed_word_from_non_test_command():
+    """A generic success message containing the word "passed" must not be
+    mistaken for test evidence unless the command that produced it was a
+    recognized test invocation."""
+    policy = InterestingAgentStepPolicy()
+    context = context_from_atif_step(
+        {
+            "step_id": 0,
+            "source": "agent",
+            "tool_calls": [
+                {
+                    "function_name": "bash_command",
+                    "arguments": {"keystrokes": "./build.sh --verify\n"},
+                }
+            ],
+            "observation": {
+                "results": [{"content": "All checks passed"}]
+            },
+        },
+        trial_name="build-cython__abc123",
     )
 
     assert policy.candidates_for_step(context) == []

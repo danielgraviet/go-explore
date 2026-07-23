@@ -109,6 +109,7 @@ def select_archive_entries(
                 and (entry.tests_passed or 0) > 0
             )
             or entry.event == "discovery"
+            or (entry.event == "file_edit" and entry.changed_files)
         ]
         eligible.sort(key=lambda entry: (entry.priority, entry.score), reverse=True)
         return [
@@ -186,6 +187,12 @@ def _oracle_label_for(
 def _partial_progress_reasons(entry: ArchiveEntry) -> tuple[str, ...]:
     if entry.event == "discovery":
         return ("investigative discovery", "partial progress candidate")
+    if entry.event == "file_edit":
+        return (
+            f"{len(entry.changed_files)} changed files",
+            "file edit without validation signal",
+            "partial progress candidate",
+        )
     reasons = [f"{entry.tests_passed or 0} tests passed"]
     if entry.tests_failed is not None:
         reasons.append(f"{entry.tests_failed} tests failed")

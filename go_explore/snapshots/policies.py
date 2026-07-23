@@ -73,7 +73,7 @@ class InterestingAgentStepPolicy:
             event = event or SnapshotEvent.COMMAND
             notes.append("error or conflict signal")
 
-        if any(token in command_lower for token in ("git reflog", "git merge", "git commit", "git branch")):
+        if any(token in command_lower for token in ("git merge", "git commit", "git branch")):
             event = event or SnapshotEvent.COMMAND
             notes.append("git state transition")
 
@@ -206,7 +206,8 @@ def _looks_like_file_edit(command_text: str) -> bool:
 def _looks_like_investigation(command_text: str) -> bool:
     """Forensic/recovery/data-extraction tools: the discovery moments in tasks
     like file recovery or reverse engineering, which don't fit the file-edit
-    or test-run heuristics above."""
+    or test-run heuristics above. Read-only git history inspection belongs
+    here too, since it is agent knowledge but not a state transition."""
     return any(
         token in command_text
         for token in (
@@ -224,6 +225,11 @@ def _looks_like_investigation(command_text: str) -> bool:
             "unzip",
             "tar -x",
             "zipfile",
+            "git log",
+            "git reflog",
+            "git show",
+            "git grep",
+            "git diff",
         )
     )
 
@@ -247,10 +253,15 @@ def _probe_signal(command_text: str, observation_text: str) -> ProbeSignal:
     has_pass_word = "passed" in observation_lower
     has_failure_evidence = _has_failure_evidence(observation_lower)
     has_assertion_probe = "assert " in command_lower or "assert(" in command_lower
+    # A bare "passed"/"failed" word with no digit count is only trustworthy
+    # when the command itself was a recognized test invocation; otherwise
+    # unrelated success text (e.g. "Successfully installed ...") can be
+    # mistaken for a test result.
+    is_test_command = framework is not None or _looks_like_test(command_lower)
 
-    if passed is None and has_pass_word:
+    if passed is None and has_pass_word and is_test_command:
         passed = 1
-    if failed is None and (
+    if failed is None and is_test_command and (
         "failed" in observation_lower
         or "failure" in observation_lower
         or "assertionerror" in observation_lower
