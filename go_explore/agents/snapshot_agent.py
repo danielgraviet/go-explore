@@ -44,17 +44,6 @@ from go_explore.snapshots.replay import load_atif_trajectory_steps, process_atif
 
 ContextMode = str
 
-
-def _optional_int(value: int | str | None, *, env_name: str) -> int | None:
-    raw_value = value if value is not None else os.environ.get(env_name)
-    if raw_value in (None, ""):
-        return None
-    parsed = int(raw_value)
-    if parsed < 1:
-        raise ValueError(f"{env_name} must be >= 1 when set.")
-    return parsed
-
-
 class SnapshotAwareAgent(BaseAgent):
     """Wraps any Harbor agent and captures snapshots during execution.
 
@@ -74,7 +63,6 @@ class SnapshotAwareAgent(BaseAgent):
         parent_context_path: str | Path | None = None,
         preinstall_tmux: bool = False,
         tmux_install_timeout_sec: float = 360.0,
-        snapshot_retention_limit: int | str | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -89,10 +77,7 @@ class SnapshotAwareAgent(BaseAgent):
         )
         self._preinstall_tmux = preinstall_tmux
         self._tmux_install_timeout_sec = tmux_install_timeout_sec
-        self._snapshot_retention_limit = _optional_int(
-            snapshot_retention_limit,
-            env_name="GO_EXPLORE_SNAPSHOT_REMOTE_LIMIT",
-        )
+        self._snapshot_retention_limit = int(os.environ["GO_EXPLORE_SNAPSHOT_REMOTE_LIMIT"])
         # Peek (don't pop) so logs_dir still reaches BaseAgent/**kwargs above.
         self._logs_dir: Path | None = kwargs.get("logs_dir")
         self._agent_execute_hooked = False
