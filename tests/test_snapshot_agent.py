@@ -510,6 +510,42 @@ def test_augment_instruction_appends_parent_context():
     assert "step 0: pip install -> ok" in result
 
 
+def test_snapshot_aware_agent_failure_symptom_uses_diverge_prompt():
+    class FakeWrapped:
+        def __init__(self):
+            self.instruction = None
+
+        def perform_task(self, *, instruction, session, logging_dir=None, time_limit_seconds=None):
+            self.instruction = instruction
+            return MagicMock()
+
+        def to_agent_info(self):
+            return {}
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        context_mode="failure_symptom",
+    )
+    agent._load_parent_context = AsyncMock(  # type: ignore[method-assign]
+        return_value=(
+            "The prior attempt from this sandbox state did not solve the task "
+            "(reward: 0.0).\n\nLast observed test/verifier output:\n"
+            "2 passed, 1 failed\nFAILED test_parser.py::test_toml_config"
+        )
+    )
+
+    agent.perform_task("solve task", MagicMock(session_name="trial-a"))
+
+    assert wrapped.instruction is not None
+    assert "solve task" in wrapped.instruction
+    assert "did not solve the task" in wrapped.instruction
+    assert "test_toml_config" in wrapped.instruction
+    assert "commands are deliberately not shown to you" in wrapped.instruction
+    assert "so you don't repeat it" not in wrapped.instruction
+    assert "untrusted evidence" not in wrapped.instruction
+
+
 def _write_trajectory(path: Path, steps: list[dict]) -> None:
     path.write_text(json.dumps({"steps": steps}))
 

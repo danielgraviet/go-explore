@@ -139,6 +139,7 @@ class SnapshotAwareAgent(BaseAgent):
         allowed = {
             "parent_summary",
             "critical_parent_summary",
+            "failure_symptom",
             "none",
             "original_task_only",
         }
@@ -438,7 +439,11 @@ class SnapshotAwareAgent(BaseAgent):
         return content or None
 
     def _should_append_parent_context(self) -> bool:
-        return self._context_mode in {"parent_summary", "critical_parent_summary"}
+        return self._context_mode in {
+            "parent_summary",
+            "critical_parent_summary",
+            "failure_symptom",
+        }
 
     @staticmethod
     def _augment_instruction(
@@ -449,6 +454,11 @@ class SnapshotAwareAgent(BaseAgent):
     ) -> str:
         if context_mode == "critical_parent_summary":
             return SnapshotAwareAgent._augment_instruction_critical(
+                instruction,
+                parent_context,
+            )
+        if context_mode == "failure_symptom":
+            return SnapshotAwareAgent._augment_instruction_failure_symptom(
                 instruction,
                 parent_context,
             )
@@ -472,6 +482,21 @@ class SnapshotAwareAgent(BaseAgent):
             "assumptions, and do not declare success solely because parent-local "
             "checks or prior reasoning looked correct.\n\n"
             "Prior-attempt summary:\n"
+            f"{parent_context}"
+        )
+
+    @staticmethod
+    def _augment_instruction_failure_symptom(
+        instruction: str, parent_context: str
+    ) -> str:
+        return (
+            f"{instruction}\n\n"
+            "---\n"
+            "You are starting from a sandbox snapshot created during a prior "
+            "attempt at this task. That attempt's own commands are deliberately "
+            "not shown to you, so you are free to take a different approach. "
+            "Below is only the observed outcome of that attempt - what happened, "
+            "not how it was attempted:\n\n"
             f"{parent_context}"
         )
 
