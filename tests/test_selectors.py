@@ -163,7 +163,7 @@ def test_partial_progress_selector_accepts_discovery_and_partial_tests():
     )
     archive.add(
         _candidate(
-            changed_files=("edit.py",),
+            changed_files=(),
             event=SnapshotEvent.FILE_EDIT,
             restore_ref="snap-edit",
         )
@@ -184,6 +184,33 @@ def test_partial_progress_selector_accepts_discovery_and_partial_tests():
     )
     assert selected[1].selector_reasons == (
         "investigative discovery",
+        "partial progress candidate",
+    )
+
+
+def test_partial_progress_selector_accepts_file_edits_without_validation_signal():
+    archive = SnapshotArchive()
+    archive.add(
+        _candidate(
+            changed_files=("kv-store.proto", "server.py"),
+            event=SnapshotEvent.FILE_EDIT,
+            restore_ref="snap-edit",
+        )
+    )
+    archive.add(
+        _candidate(
+            changed_files=(),
+            event=SnapshotEvent.FILE_EDIT,
+            restore_ref="snap-edit-no-files",
+        )
+    )
+
+    selected = select_archive_entries(archive, mode="partial_progress", k=3)
+
+    assert [item.entry.snapshot_name for item in selected] == ["snap-edit"]
+    assert selected[0].selector_reasons == (
+        "2 changed files",
+        "file edit without validation signal",
         "partial progress candidate",
     )
 
