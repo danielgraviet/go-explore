@@ -53,6 +53,8 @@ class ArchiveEntry:
     event: str = ""
     changed_files: tuple[str, ...] = ()
     reward_signal: float | None = None
+    tests_passed: int | None = None
+    tests_failed: int | None = None
     parent_snapshot: str | None = None
     depth: int = 0
     times_selected: int = 0
@@ -153,6 +155,8 @@ class SnapshotArchive:
                 if candidate.tests_passed is not None
                 else None
             ),
+            tests_passed=candidate.tests_passed,
+            tests_failed=candidate.tests_failed,
             parent_snapshot=parent_snapshot,
             depth=depth,
             times_selected=incumbent.times_selected if incumbent else 0,

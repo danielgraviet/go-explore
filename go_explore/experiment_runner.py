@@ -36,6 +36,7 @@ from go_explore.fixed_budget import (
     write_fixed_budget_manifest,
 )
 from go_explore.harbor import HarborRunConfig
+from go_explore.harbor import environment_with_repo_path
 from go_explore.results import summarize_job
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
 from go_explore.snapshots.selectors import select_archive_entries
@@ -61,9 +62,10 @@ class RunExperimentConfig:
     manifest_path: Path | None = None
     analysis_dir: Path | None = None
     n_retries: int = 5
-    n_branch_continuations: int = 2
+    n_branch_continuations: int = 3
     branch_root_fraction: float = 0.3
     branch_context_mode: str = DEFAULT_BRANCH_CONTEXT_MODE
+    promising_selector_mode: str = "archive_priority"
     execute: bool = False
     rerun_existing: bool = False
     build_analysis: bool = True
@@ -132,6 +134,7 @@ def run_fixed_budget_experiment(
             n_branch_continuations=config.n_branch_continuations,
             branch_root_fraction=config.branch_root_fraction,
             branch_context_mode=config.branch_context_mode,
+            promising_selector_mode=config.promising_selector_mode,
         )
     )
     write_fixed_budget_manifest(manifest, manifest_path)
@@ -318,7 +321,9 @@ def _run_branch_continuations(
     tuple[Path, ...],
 ]:
     root_job_dir = jobs_dir / root_job.job_name
-    selector_mode = "random" if root_job.method == "random_branch" else "archive_priority"
+    selector_mode = root_job.selector_mode or (
+        "random" if root_job.method == "random_branch" else "archive_priority"
+    )
     planned_children = [
         job
         for job in manifest.jobs
@@ -544,6 +549,7 @@ def _run_command_streaming(command: list[str]) -> subprocess.CompletedProcess[st
         stderr=subprocess.STDOUT,
         text=True,
         bufsize=1,
+        env=environment_with_repo_path(),
     )
     assert process.stdout is not None
     for line in process.stdout:

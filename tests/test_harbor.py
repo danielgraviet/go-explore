@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from go_explore.harbor import HarborRunConfig, build_harbor_command
+from go_explore.harbor import (
+    HarborRunConfig,
+    build_harbor_command,
+    environment_with_repo_path,
+)
 
 
 def test_harbor_config_rejects_agent_and_import_path_together():
@@ -55,3 +59,10 @@ def test_build_harbor_command_accepts_agent_import_path():
         "snapshot-test",
         "--export-traces",
     ]
+
+
+def test_environment_with_repo_path_precedes_existing_pythonpath():
+    environment = environment_with_repo_path({"PYTHONPATH": "/tmp/other"})
+
+    assert environment["PYTHONPATH"].split(":")[0].endswith("/go-explore")
+    assert environment["PYTHONPATH"].endswith("/tmp/other")

@@ -82,10 +82,11 @@ class FixedBudgetPlanConfig:
     )
     seeds: tuple[int, ...] = (0,)
     n_retries: int = 5
-    n_branch_continuations: int = 2
+    n_branch_continuations: int = 3
     branch_root_fraction: float = 0.3
     snapshots: tuple[str, ...] = ()
     branch_context_mode: str = DEFAULT_BRANCH_CONTEXT_MODE
+    promising_selector_mode: str = "archive_priority"
 
 
 @dataclass(frozen=True)
@@ -236,6 +237,15 @@ def _validate_config(config: FixedBudgetPlanConfig) -> None:
             "branch_context_mode must be 'parent_summary', "
             "'critical_parent_summary', or 'none'."
         )
+    if config.promising_selector_mode not in {
+        "archive_priority",
+        "validated_progress",
+        "partial_progress",
+    }:
+        raise ValueError(
+            "promising_selector_mode must be 'archive_priority', "
+            "'validated_progress', or 'partial_progress'."
+        )
 
 
 def _plan_single(
@@ -310,7 +320,9 @@ def _plan_branch(
         child_total_budget,
         config.n_branch_continuations,
     )
-    selector_mode = "random" if method == "random_branch" else "archive_priority"
+    selector_mode = (
+        "random" if method == "random_branch" else config.promising_selector_mode
+    )
     selected_snapshots = _select_branch_snapshots(
         snapshots=config.snapshots,
         method=method,
