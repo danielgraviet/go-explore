@@ -15,6 +15,7 @@ from go_explore.continuations import (
     plan_start_state_baselines,
     plan_snapshot_continuations,
     snapshot_prefix_for_trial,
+    write_failure_symptom_context,
     write_plan_manifest,
 )
 from go_explore.events import EVENT_LOG_FILENAME
@@ -646,6 +647,164 @@ def test_plan_snapshot_continuations_records_critical_parent_summary_mode():
 
     assert plans[0].context_mode == "critical_parent_summary"
     assert "context_mode=critical_parent_summary" in plans[0].command
+
+
+def _write_atif_trajectory(path: Path, steps: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"steps": steps}))
+
+
+def test_write_failure_symptom_context_excludes_commands_but_keeps_last_test_output(
+    tmp_path,
+):
+    job_dir = tmp_path / "jobs" / "root"
+    trial_name = "fix-git__root"
+    trajectory_path = job_dir / trial_name / "agent" / "trajectory.json"
+    _write_atif_trajectory(
+        trajectory_path,
+        [
+            {
+                "step_id": 1,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "sed -i 's/toml/json/' config.py\n"},
+                    }
+                ],
+                "observation": {"results": [{"content": "edited"}]},
+            },
+            {
+                "step_id": 2,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "pytest tests -q\n"},
+                    }
+                ],
+                "observation": {
+                    "results": [
+                        {
+                            "content": (
+                                "2 passed, 1 failed\n"
+                                "FAILED test_parser.py::test_toml_config"
+                            )
+                        }
+                    ]
+                },
+            },
+        ],
+    )
+    root_summary = JobSummary(
+        job_dir=job_dir,
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name=trial_name,
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+
+    output_path = write_failure_symptom_context(root_summary, root_summary.trials[0])
+    text = output_path.read_text()
+
+    assert "did not solve the task" in text
+    assert "reward: 0.0" in text
+    assert "2 passed, 1 failed" in text
+    assert "FAILED test_parser.py::test_toml_config" in text
+    assert "sed -i" not in text
+    assert "config.py" not in text
+
+
+def test_write_failure_symptom_context_handles_missing_trajectory(tmp_path):
+    job_dir = tmp_path / "jobs" / "root"
+    root_summary = JobSummary(
+        job_dir=job_dir,
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name="fix-git__root",
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+
+    output_path = write_failure_symptom_context(root_summary, root_summary.trials[0])
+
+    assert "did not solve the task" in output_path.read_text()
+
+
+def test_plan_snapshot_continuations_records_failure_symptom_mode(tmp_path):
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    job_dir = tmp_path / "jobs" / "root"
+    trial_name = "fix-git__root"
+    _write_atif_trajectory(
+        job_dir / trial_name / "agent" / "trajectory.json",
+        [
+            {
+                "step_id": 1,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "pytest tests -q\n"},
+                    }
+                ],
+                "observation": {"results": [{"content": "1 passed, 1 failed"}]},
+            },
+        ],
+    )
+    root_summary = JobSummary(
+        job_dir=job_dir,
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name=trial_name,
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+
+    plans = plan_snapshot_continuations(
+        root_config=root_config,
+        root_summary=root_summary,
+        snapshots=("snapshot-a",),
+        continuation_job_prefix="cont",
+        context_mode="failure_symptom",
+    )
+
+    assert plans[0].context_mode == "failure_symptom"
+    assert "context_mode=failure_symptom" in plans[0].command
+    parent_context_path = job_dir / trial_name / "agent" / "failure-symptom.md"
+    assert f"parent_context_path={parent_context_path}" in plans[0].command
+    assert "1 passed, 1 failed" in parent_context_path.read_text()
 
 
 def test_plan_snapshot_continuations_logs_selected_snapshots(tmp_path):

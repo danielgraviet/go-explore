@@ -16,6 +16,11 @@ from go_explore.harbor import (
     environment_with_repo_path,
 )
 from go_explore.results import BudgetSummary, JobSummary, TrialSummary, summarize_job
+from go_explore.snapshots.models import context_from_atif_step
+from go_explore.snapshots.replay import (
+    extract_signals_from_atif_step,
+    load_atif_trajectory_steps,
+)
 
 
 class ContinuationError(ValueError):
@@ -27,8 +32,11 @@ ContextMode = Literal[
     "original_task_only",
     "parent_summary",
     "critical_parent_summary",
+    "failure_symptom",
     "none",
 ]
+
+FAILURE_SYMPTOM_MAX_CHARS = 800
 
 
 def snapshot_prefix_for_trial(
@@ -250,6 +258,7 @@ def build_snapshot_continuation_config(
     snapshot_name: str,
     job_name: str,
     context_mode: ContextMode = "parent_summary",
+    parent_context_path: Path | None = None,
     agent: str | None = None,
     model: str | None = None,
     extra_args: Sequence[str] = (),
@@ -259,6 +268,7 @@ def build_snapshot_continuation_config(
     combined_extra_args = _with_context_mode_extra_args(
         tuple(root_config.extra_args) + tuple(extra_args),
         context_mode=context_mode,
+        parent_context_path=parent_context_path,
     )
 
     return HarborRunConfig(
@@ -320,27 +330,39 @@ def _with_context_mode_extra_args(
     args: Sequence[str],
     *,
     context_mode: ContextMode,
+    parent_context_path: Path | None = None,
 ) -> tuple[str, ...]:
-    """Return Harbor extra args with exactly one snapshot-agent context mode."""
+    """Return Harbor extra args with exactly one snapshot-agent context mode.
+
+    A restored snapshot already carries its own baked-in `/tmp/go_explore_context.md`
+    written mid-trajectory, before the parent's final outcome was known. When
+    `parent_context_path` is given (e.g. a post-hoc failure-symptom file), it
+    takes precedence over that baked-in file - see
+    `SnapshotAwareAgent._load_parent_context`.
+    """
 
     cleaned: list[str] = []
+    replaced_keys = {"context_mode", "parent_context_path"}
     index = 0
     while index < len(args):
         current = args[index]
         if current == "--ak" and index + 1 < len(args):
-            if str(args[index + 1]).startswith("context_mode="):
+            key = str(args[index + 1]).split("=", 1)[0]
+            if key in replaced_keys:
                 index += 2
                 continue
             cleaned.extend([current, args[index + 1]])
             index += 2
             continue
-        if str(current).startswith("context_mode="):
+        if str(current).split("=", 1)[0] in replaced_keys:
             index += 1
             continue
         cleaned.append(current)
         index += 1
 
     cleaned.extend(["--ak", f"context_mode={context_mode}"])
+    if parent_context_path is not None:
+        cleaned.extend(["--ak", f"parent_context_path={parent_context_path}"])
     return tuple(cleaned)
 
 
@@ -409,12 +431,19 @@ def plan_snapshot_continuations(
     )
     plans: list[ContinuationPlan] = []
 
+    failure_symptom_path = (
+        write_failure_symptom_context(root_summary, parent_trial)
+        if context_mode == "failure_symptom"
+        else None
+    )
+
     for index, snapshot_name in enumerate(selected_snapshots):
         config = build_snapshot_continuation_config(
             root_config=root_config,
             snapshot_name=snapshot_name,
             job_name=f"{continuation_job_prefix}-snapshot-{index}",
             context_mode=context_mode,
+            parent_context_path=failure_symptom_path,
             agent=agent,
             model=model,
             extra_args=extra_args,
@@ -583,6 +612,87 @@ def _parent_context_path(
     parent_trial_name: str,
 ) -> Path:
     return root_summary.job_dir / parent_trial_name / "agent" / "trajectory.json"
+
+
+def _last_test_observation(trajectory_path: Path, *, trial_name: str) -> str | None:
+    """The raw observation text of the last test/verifier-classified step.
+
+    Rule-based extraction only: no inference about the true cause of failure
+    is attempted, since that would require either the fix (oracle leakage) or
+    a guess that could mislead a child down a worse path than no signal at
+    all. This surfaces what the parent actually observed, nothing more.
+    """
+    try:
+        steps = load_atif_trajectory_steps(trajectory_path)
+    except (OSError, ValueError):
+        return None
+
+    last_signal = None
+    last_observation = None
+    for step in steps:
+        if step.get("source") != "agent":
+            continue
+        test_signals = [
+            signal
+            for signal in extract_signals_from_atif_step(step)
+            if signal.event_type == "test_run"
+        ]
+        if not test_signals:
+            continue
+        last_signal = test_signals[-1]
+        last_observation = context_from_atif_step(
+            step, trial_name=trial_name
+        ).observation_text
+
+    if last_signal is None or not last_observation:
+        return None
+
+    counts = (
+        f"{last_signal.tests_passed or 0} passed, "
+        f"{last_signal.tests_failed or 0} failed"
+    )
+    return f"{counts}\n{last_observation.strip()[:FAILURE_SYMPTOM_MAX_CHARS]}"
+
+
+def _failure_symptom_text(
+    root_trial: TrialSummary,
+    trajectory_path: Path,
+) -> str:
+    if root_trial.succeeded:
+        status_line = "The prior attempt from this sandbox state solved the task."
+    else:
+        status_line = (
+            f"The prior attempt from this sandbox state did not solve the task "
+            f"(reward: {root_trial.reward})."
+        )
+
+    observation = _last_test_observation(trajectory_path, trial_name=root_trial.trial_name)
+    if observation is None:
+        return status_line
+
+    return f"{status_line}\n\nLast observed test/verifier output:\n{observation}"
+
+
+def write_failure_symptom_context(
+    root_summary: JobSummary,
+    root_trial: TrialSummary,
+) -> Path:
+    """Write the parent's observed (not inferred) failure symptom to a host file.
+
+    Distinct from `_parent_context_path`'s full trajectory.json: this captures
+    only the final test/verifier evidence, deliberately excluding the command
+    sequence that produced it, so a child cannot anchor on the parent's
+    specific approach.
+    """
+    trajectory_path = _parent_context_path(root_summary, root_trial.trial_name)
+    text = _failure_symptom_text(root_trial, trajectory_path)
+
+    output_path = (
+        root_summary.job_dir / root_trial.trial_name / "agent" / "failure-symptom.md"
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(text)
+    return output_path
 
 
 def write_plan_manifest(plans: Sequence[ContinuationPlan], path: Path) -> None:

@@ -565,7 +565,7 @@ def main() -> int:
     continue_parser.add_argument("--extra-arg", action="append", default=[])
     continue_parser.add_argument(
         "--context-mode",
-        choices=("parent_summary", "critical_parent_summary", "none"),
+        choices=("parent_summary", "critical_parent_summary", "failure_symptom", "none"),
         default="parent_summary",
         help="Parent context mode for full-snapshot continuation jobs.",
     )
@@ -674,7 +674,9 @@ def main() -> int:
         help=(
             "Parent context mode for planned branch continuation jobs. "
             "Defaults to none for viability runs; use parent_summary only "
-            "as an explicit diagnostic arm."
+            "as an explicit diagnostic arm. failure_symptom is not supported "
+            "here: this planner runs before the root job executes and has no "
+            "completed trajectory or reward to build a failure symptom from."
         ),
     )
     fixed_budget_parser.add_argument(
@@ -930,7 +932,7 @@ def main() -> int:
     run_parser.add_argument("--branch-root-fraction", type=float, default=0.3)
     run_parser.add_argument(
         "--branch-context-mode",
-        choices=("parent_summary", "critical_parent_summary", "none"),
+        choices=("parent_summary", "critical_parent_summary", "failure_symptom", "none"),
         default=DEFAULT_BRANCH_CONTEXT_MODE,
         help=(
             "Parent context mode for branch continuation jobs. Defaults to "
