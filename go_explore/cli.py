@@ -43,6 +43,11 @@ from go_explore.results import format_job_summary, summarize_job
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
 from go_explore.snapshots.selectors import load_oracle_labels, select_archive_entries
 from go_explore.task_inventory import load_cached_tasks
+from go_explore.viability import (
+    ViabilityPlanConfig,
+    plan_viability_manifests,
+    write_viability_plan,
+)
 
 
 def _add_harbor_args(parser: argparse.ArgumentParser) -> None:
@@ -331,6 +336,55 @@ def plan_fixed_budget(args: argparse.Namespace) -> int:
     return 0
 
 
+def plan_viability(args: argparse.Namespace) -> int:
+    agent = args.agent
+    agent_import_path = args.agent_import_path
+    if agent is None and agent_import_path is None:
+        agent_import_path = "go_explore.agents.factory:SnapshotAwareTerminus2"
+
+    base_config = HarborRunConfig(
+        jobs_dir=args.jobs_dir,
+        agent=agent,
+        agent_import_path=agent_import_path,
+        env=args.env,
+        dataset=args.dataset,
+        path=args.path,
+        model=args.model,
+        task_name=None,
+        n_tasks=1,
+        n_attempts=1,
+        n_concurrent=1,
+        export_traces=True,
+        extra_args=tuple(args.extra_arg),
+    )
+    plan = plan_viability_manifests(
+        ViabilityPlanConfig(
+            experiment_id=args.experiment_id,
+            base_config=base_config,
+            task_names=tuple(args.task_name),
+            output_dir=args.output_dir,
+            total_token_budget=args.total_token_budget,
+            seeds=tuple(args.seed or (0,)),
+            n_retries=args.n_retries,
+            n_branch_continuations=args.n_branch_continuations,
+            branch_root_fraction=args.branch_root_fraction,
+            include_random_control=args.include_random_control,
+            include_parent_summary_diagnostic=args.include_parent_summary_diagnostic,
+        )
+    )
+    write_viability_plan(plan)
+
+    print(f"plan_index: {plan.index_path}")
+    print(f"manifest_count: {len(plan.records)}")
+    print("parent_summary: diagnostic_only")
+    for record in plan.records:
+        print(
+            f"{record.task_id}\t{record.arm}\t{record.context_mode}\t"
+            f"{record.manifest_path}"
+        )
+    return 0
+
+
 def build_analysis_tables_cmd(args: argparse.Namespace) -> int:
     tables = build_analysis_tables(
         AnalysisInputs(
@@ -599,6 +653,66 @@ def main() -> int:
         ),
     )
     fixed_budget_parser.set_defaults(func=plan_fixed_budget)
+
+    viability_parser = subparsers.add_parser(
+        "plan-viability",
+        help="Write viability experiment manifests for one or more tasks.",
+    )
+    viability_source = viability_parser.add_mutually_exclusive_group(required=True)
+    viability_source.add_argument(
+        "--dataset",
+        help="Registered Harbor dataset name, optionally with @version.",
+    )
+    viability_source.add_argument(
+        "--path",
+        type=Path,
+        help="Local Harbor task or dataset path.",
+    )
+    viability_parser.add_argument("--jobs-dir", type=Path, default=Path("jobs"))
+    viability_parser.add_argument(
+        "--task-name",
+        action="append",
+        required=True,
+        help="Task to include. Repeat to plan multiple tasks.",
+    )
+    viability_parser.add_argument("--env", default="daytona")
+    viability_parser.add_argument("--model")
+    viability_agent = viability_parser.add_mutually_exclusive_group()
+    viability_agent.add_argument("--agent")
+    viability_agent.add_argument("--agent-import-path")
+    viability_parser.add_argument("--extra-arg", action="append", default=[])
+    viability_parser.add_argument("--experiment-id", required=True)
+    viability_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("docs/experiments/viability"),
+        help="Directory under which the experiment plan and manifests are written.",
+    )
+    viability_parser.add_argument("--total-token-budget", type=int)
+    viability_parser.add_argument(
+        "--seed",
+        action="append",
+        type=int,
+        default=[],
+        help="Experiment seed. Repeat to plan multiple seeds.",
+    )
+    viability_parser.add_argument("--n-retries", type=int, default=5)
+    viability_parser.add_argument("--n-branch-continuations", type=int, default=2)
+    viability_parser.add_argument("--branch-root-fraction", type=float, default=0.3)
+    viability_parser.add_argument(
+        "--include-random-control",
+        action="store_true",
+        help="Also plan random_branch continuations with context_mode=none.",
+    )
+    viability_parser.add_argument(
+        "--include-parent-summary-diagnostic",
+        action="store_true",
+        help=(
+            "Also plan a parent_summary promising_branch diagnostic arm. "
+            "Omitted by default."
+        ),
+    )
+    viability_parser.set_defaults(func=plan_viability)
 
     analysis_parser = subparsers.add_parser(
         "build-analysis-tables",

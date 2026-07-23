@@ -8,6 +8,7 @@ from go_explore.cli import (
     continue_from_snapshots,
     plan_fixed_budget,
     plan_start_state_baselines_cmd,
+    plan_viability,
     run_experiment_cmd,
 )
 from go_explore.events import EVENT_LOG_FILENAME
@@ -375,3 +376,140 @@ def test_plan_fixed_budget_uses_none_for_viability_branch_context(tmp_path):
     assert child["role"] == "continuation"
     assert child["context_mode"] == "none"
     assert "context_mode=none" in child["command"]
+
+
+def test_plan_viability_writes_default_context_manifests(tmp_path, capsys):
+    output_dir = tmp_path / "viability"
+
+    exit_code = plan_viability(
+        argparse.Namespace(
+            dataset="terminal-bench@2.0",
+            path=None,
+            jobs_dir=Path("jobs"),
+            task_name=["fix-git", "regex-log"],
+            env="daytona",
+            model="model-a",
+            agent=None,
+            agent_import_path=None,
+            extra_arg=[],
+            experiment_id="phase6-pilot",
+            output_dir=output_dir,
+            total_token_budget=100_000,
+            seed=[0],
+            n_retries=2,
+            n_branch_continuations=1,
+            branch_root_fraction=0.3,
+            include_random_control=False,
+            include_parent_summary_diagnostic=False,
+        )
+    )
+
+    assert exit_code == 0
+    stdout = capsys.readouterr().out
+    assert (
+        f"plan_index: {output_dir / 'phase6-pilot' / 'viability-plan.json'}"
+        in stdout
+    )
+    assert "manifest_count: 6" in stdout
+    assert "parent_summary: diagnostic_only" in stdout
+
+    index = json.loads(
+        (output_dir / "phase6-pilot" / "viability-plan.json").read_text()
+    )
+    records = index["records"]
+    assert len(records) == 6
+    assert {record["task_id"] for record in records} == {"fix-git", "regex-log"}
+    assert {
+        (record["arm"], record["context_mode"]) for record in records
+    } == {
+        ("retry", "original_task_only"),
+        ("promising-branch-none", "none"),
+        (
+            "promising-branch-critical-parent-summary",
+            "critical_parent_summary",
+        ),
+    }
+    assert all(record["context_mode"] != "parent_summary" for record in records)
+
+    branch_manifest_path = (
+        output_dir
+        / "phase6-pilot"
+        / "manifests"
+        / "regex-log-promising-branch-none.json"
+    )
+    branch_manifest = json.loads(branch_manifest_path.read_text())
+    assert branch_manifest["methods"] == ["promising_branch"]
+    continuation = [
+        job for job in branch_manifest["jobs"] if job["role"] == "continuation"
+    ][0]
+    assert continuation["context_mode"] == "none"
+    assert continuation["executor_status"] == "pending_root_archive"
+
+    retry_manifest = json.loads(
+        (
+            output_dir
+            / "phase6-pilot"
+            / "manifests"
+            / "fix-git-retry.json"
+        ).read_text()
+    )
+    assert retry_manifest["methods"] == ["retry"]
+    assert all(
+        job["context_mode"] == "original_task_only"
+        for job in retry_manifest["jobs"]
+    )
+
+
+def test_plan_viability_parent_summary_requires_diagnostic_flag(tmp_path):
+    output_dir = tmp_path / "viability"
+
+    exit_code = plan_viability(
+        argparse.Namespace(
+            dataset="terminal-bench@2.0",
+            path=None,
+            jobs_dir=Path("jobs"),
+            task_name=["fix-git"],
+            env="daytona",
+            model="model-a",
+            agent=None,
+            agent_import_path=None,
+            extra_arg=[],
+            experiment_id="phase6-diagnostic",
+            output_dir=output_dir,
+            total_token_budget=100_000,
+            seed=[0],
+            n_retries=2,
+            n_branch_continuations=1,
+            branch_root_fraction=0.3,
+            include_random_control=True,
+            include_parent_summary_diagnostic=True,
+        )
+    )
+
+    assert exit_code == 0
+    index = json.loads(
+        (output_dir / "phase6-diagnostic" / "viability-plan.json").read_text()
+    )
+    arms = {
+        (record["arm"], record["context_mode"], tuple(record["methods"]))
+        for record in index["records"]
+    }
+    assert (
+        "promising-branch-parent-summary-diagnostic",
+        "parent_summary",
+        ("promising_branch",),
+    ) in arms
+    assert ("random-branch-none", "none", ("random_branch",)) in arms
+
+    diagnostic_manifest = json.loads(
+        (
+            output_dir
+            / "phase6-diagnostic"
+            / "manifests"
+            / "fix-git-promising-branch-parent-summary-diagnostic.json"
+        ).read_text()
+    )
+    continuation = [
+        job for job in diagnostic_manifest["jobs"] if job["role"] == "continuation"
+    ][0]
+    assert continuation["context_mode"] == "parent_summary"

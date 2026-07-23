@@ -1,0 +1,114 @@
+{
+  "schema_version": "go-explore-viability-plan-v1",
+  "experiment_id": "phase6-viability-pilot",
+  "output_dir": "docs/experiments/viability/phase6-viability-pilot",
+  "records": [
+    {
+      "task_id": "fix-git",
+      "arm": "retry",
+      "context_mode": "original_task_only",
+      "manifest_path": "docs/experiments/viability/phase6-viability-pilot/manifests/fix-git-retry.json",
+      "experiment_id": "phase6-viability-pilot-fix-git-retry",
+      "methods": [
+        "retry"
+      ],
+      "n_jobs": 5
+    },
+    {
+      "task_id": "fix-git",
+      "arm": "promising-branch-none",
+      "context_mode": "none",
+      "manifest_path": "docs/experiments/viability/phase6-viability-pilot/manifests/fix-git-promising-branch-none.json",
+      "experiment_id": "phase6-viability-pilot-fix-git-promising-branch-none",
+      "methods": [
+        "promising_branch"
+      ],
+      "n_jobs": 3
+    },
+    {
+      "task_id": "fix-git",
+      "arm": "promising-branch-critical-parent-summary",
+      "context_mode": "critical_parent_summary",
+      "manifest_path": "docs/experiments/viability/phase6-viability-pilot/manifests/fix-git-promising-branch-critical-parent-summary.json",
+      "experiment_id": "phase6-viability-pilot-fix-git-promising-branch-critical-parent-summary",
+      "methods": [
+        "promising_branch"
+      ],
+      "n_jobs": 3
+    },
+    {
+      "task_id": "regex-log",
+      "arm": "retry",
+      "context_mode": "original_task_only",
+      "manifest_path": "docs/experiments/viability/phase6-viability-pilot/manifests/regex-log-retry.json",
+      "experiment_id": "phase6-viability-pilot-regex-log-retry",
+      "methods": [
+        "retry"
+      ],
+      "n_jobs": 5
+    },
+    {
+      "task_id": "regex-log",
+      "arm": "promising-branch-none",
+      "context_mode": "none",
+      "manifest_path": "docs/experiments/viability/phase6-viability-pilot/manifests/regex-log-promising-branch-none.json",
+      "experiment_id": "phase6-viability-pilot-regex-log-promising-branch-none",
+      "methods": [
+        "promising_branch"
+      ],
+      "n_jobs": 3
+    },
+    {
+      "task_id": "regex-log",
+      "arm": "promising-branch-critical-parent-summary",
+      "context_mode": "critical_parent_summary",
+      "manifest_path": "docs/experiments/viability/phase6-viability-pilot/manifests/regex-log-promising-branch-critical-parent-summary.json",
+      "experiment_id": "phase6-viability-pilot-regex-log-promising-branch-critical-parent-summary",
+      "methods": [
+        "promising_branch"
+      ],
+      "n_jobs": 3
+    },
+    {
+      "task_id": "build-cython-ext",
+      "arm": "retry",
+      "context_mode": "original_task_only",
+      "manifest_path": "docs/experiments/viability/phase6-viability-pilot/manifests/build-cython-ext-retry.json",
+      "experiment_id": "phase6-viability-pilot-build-cython-ext-retry",
+      "methods": [
+        "retry"
+      ],
+      "n_jobs": 5
+    },
+    {
+      "task_id": "build-cython-ext",
+      "arm": "promising-branch-none",
+      "context_mode": "none",
+      "manifest_path": "docs/experiments/viability/phase6-viability-pilot/manifests/build-cython-ext-promising-branch-none.json",
+      "experiment_id": "phase6-viability-pilot-build-cython-ext-promising-branch-none",
+      "methods": [
+        "promising_branch"
+      ],
+      "n_jobs": 3
+    },
+    {
+      "task_id": "build-cython-ext",
+      "arm": "promising-branch-critical-parent-summary",
+      "context_mode": "critical_parent_summary",
+      "manifest_path": "docs/experiments/viability/phase6-viability-pilot/manifests/build-cython-ext-promising-branch-critical-parent-summary.json",
+      "experiment_id": "phase6-viability-pilot-build-cython-ext-promising-branch-critical-parent-summary",
+      "methods": [
+        "promising_branch"
+      ],
+      "n_jobs": 3
+    }
+  ],
+  "notes": {
+    "default_branch_context_mode": "none",
+    "main_promising_contexts": [
+      "none",
+      "critical_parent_summary"
+    ],
+    "parent_summary": "diagnostic only; omitted unless explicitly requested"
+  }
+}
