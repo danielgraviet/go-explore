@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t004-regex-log-fs,regex-log,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,5,1,140401,0.07871675,517.573627,50.69152637500065,6.226988,false

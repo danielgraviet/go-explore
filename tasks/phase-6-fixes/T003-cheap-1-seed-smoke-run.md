@@ -39,4 +39,24 @@ One Daytona root job, haiku model — cheap. Do not run continuations here;
 that's covered in T004.
 
 ## Status
-Blocked on T001, T002.
+Done. Ran `jobs/t003-regex-log-root-smoke` (single Daytona root, haiku,
+regex-log). Trial completed (reward 0.0 — task not solved this attempt,
+expected variance on a single run, not what this ticket tests).
+
+Archive produced 2 cells from 3 candidates (steps 5, 7, 9). The
+`<discovery>` cell got two candidates: step 5 (score 1.0) then step 9
+(score 1.0) — a tie. Post-T001, the archive holds **step 9**
+(`events.jsonl` confirms `archive_accepted: true` for both, and
+`archive.json` only has the later one). Pre-fix, step 9 would have been
+rejected (`incumbent.score >= score` was true). This confirms the tie-break
+fix works end-to-end through the real Daytona snapshot pipeline, not just
+in replay (T002).
+
+The `{/app/regex.txt, /tmp/write_regex.sh}` cell only had one candidate
+(step 7) in this particular run — no repeat edits to that exact file pair,
+so it doesn't exercise the fix, consistent with the ticket's own
+inconclusive-is-not-a-fail condition.
+
+Next: T004 (comparative pilot) — or, given cost, consider whether T002 +
+this live confirmation is sufficient evidence to skip straight to T004
+rather than running more solo smoke jobs.
