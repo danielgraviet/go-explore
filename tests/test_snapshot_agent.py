@@ -546,6 +546,43 @@ def test_snapshot_aware_agent_failure_symptom_uses_diverge_prompt():
     assert "untrusted evidence" not in wrapped.instruction
 
 
+def test_snapshot_aware_agent_resume_notice_appends_static_orientation():
+    class FakeWrapped:
+        def __init__(self):
+            self.instruction = None
+
+        def perform_task(self, *, instruction, session, logging_dir=None, time_limit_seconds=None):
+            self.instruction = instruction
+            return MagicMock()
+
+        def to_agent_info(self):
+            return {}
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, context_mode="resume_notice")
+    # resume_notice must not depend on parent context being loadable - it's a
+    # static structural notice, not narrative content.
+    agent._load_parent_context = AsyncMock(return_value=None)  # type: ignore[method-assign]
+
+    agent.perform_task("solve task", MagicMock(session_name="trial-a"))
+
+    assert wrapped.instruction is not None
+    assert "solve task" in wrapped.instruction
+    assert "already contains state from a prior attempt" in wrapped.instruction
+    assert "Do not assume the sandbox is empty" in wrapped.instruction
+    agent._load_parent_context.assert_not_awaited()
+
+
+def test_augment_instruction_resume_notice_carries_no_parent_narrative():
+    result = SnapshotAwareAgent._augment_instruction_resume_notice("Fix the bug.")
+
+    assert result.startswith("Fix the bug.\n\n")
+    assert "success criteria" in result
+    # It's a fixed template, not a summary of what the parent did - there is
+    # no parent-supplied content to leak here.
+    assert "prior attempt" in result
+
+
 def _write_trajectory(path: Path, steps: list[dict]) -> None:
     path.write_text(json.dumps({"steps": steps}))
 

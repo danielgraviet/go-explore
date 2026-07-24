@@ -140,6 +140,7 @@ class SnapshotAwareAgent(BaseAgent):
             "parent_summary",
             "critical_parent_summary",
             "failure_symptom",
+            "resume_notice",
             "none",
             "original_task_only",
         }
@@ -257,13 +258,7 @@ class SnapshotAwareAgent(BaseAgent):
         self._ensure_snapshot_session(getattr(environment, "_sandbox", None))
         self._hook_agent_loop()
 
-        parent_context = await self._load_parent_context()
-        if parent_context and self._should_append_parent_context():
-            instruction = self._augment_instruction(
-                instruction,
-                parent_context,
-                context_mode=self._context_mode,
-            )
+        instruction = await self._apply_context_mode(instruction)
 
         await self._wrapped_agent.run(instruction, environment, context)
 
@@ -445,6 +440,21 @@ class SnapshotAwareAgent(BaseAgent):
             "failure_symptom",
         }
 
+    async def _apply_context_mode(self, instruction: str) -> str:
+        """Single gate for both `run` and `perform_task`, so the two entry
+        points can't drift on how context_mode affects the instruction."""
+        if self._context_mode == "resume_notice":
+            return self._augment_instruction_resume_notice(instruction)
+
+        parent_context = await self._load_parent_context()
+        if parent_context and self._should_append_parent_context():
+            return self._augment_instruction(
+                instruction,
+                parent_context,
+                context_mode=self._context_mode,
+            )
+        return instruction
+
     @staticmethod
     def _augment_instruction(
         instruction: str,
@@ -498,6 +508,27 @@ class SnapshotAwareAgent(BaseAgent):
             "Below is only the observed outcome of that attempt - what happened, "
             "not how it was attempted:\n\n"
             f"{parent_context}"
+        )
+
+    @staticmethod
+    def _augment_instruction_resume_notice(instruction: str) -> str:
+        """No narrative, no parent reasoning - just the structural fact that
+        this sandbox isn't empty. Every child observed in the T004 pilot
+        overwrote the restored target file on its first action without ever
+        reading it first, including when the restored state was already a
+        validated, passing solution. This costs a fixed, small number of
+        tokens and carries no information about what the parent tried, so it
+        stays comparable to context_mode=none while testing whether that
+        specific blind-overwrite behavior is the fixable part."""
+        return (
+            f"{instruction}\n\n"
+            "---\n"
+            "You are resuming in a sandbox that already contains state from "
+            "a prior attempt at this task (files, installed dependencies, "
+            "etc. may already be present). Before making changes, inspect "
+            "what is already there and check it against the task's success "
+            "criteria - it may already be complete or partially complete. "
+            "Do not assume the sandbox is empty."
         )
 
     def _hook_tmux_session(self, session: Any) -> None:
@@ -677,13 +708,7 @@ class SnapshotAwareAgent(BaseAgent):
         self._hook_agent_loop()
         self._hook_tmux_session(session)
 
-        parent_context = asyncio.run(self._load_parent_context())
-        if parent_context and self._should_append_parent_context():
-            instruction = self._augment_instruction(
-                instruction,
-                parent_context,
-                context_mode=self._context_mode,
-            )
+        instruction = asyncio.run(self._apply_context_mode(instruction))
 
         # Call the wrapped agent's perform_task
         result = self._wrapped_agent.perform_task(

@@ -379,6 +379,42 @@ def test_plan_fixed_budget_uses_none_for_viability_branch_context(tmp_path):
     assert "context_mode=none" in child["command"]
 
 
+def test_plan_fixed_budget_accepts_resume_notice_branch_context(tmp_path):
+    manifest_path = tmp_path / "plans" / "experiment.json"
+
+    exit_code = plan_fixed_budget(
+        argparse.Namespace(
+            dataset="terminal-bench@2.0",
+            path=None,
+            jobs_dir=Path("jobs"),
+            task_name="fix-git",
+            env="daytona",
+            model="model-a",
+            agent=None,
+            agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
+            extra_arg=[],
+            experiment_id="pilot-1",
+            job_prefix="pilot",
+            manifest_path=manifest_path,
+            total_token_budget=100_000,
+            method=["promising_branch"],
+            seed=[0],
+            n_retries=2,
+            n_branch_continuations=1,
+            branch_root_fraction=0.3,
+            branch_context_mode="resume_notice",
+            snapshot=["snapshot-a"],
+        )
+    )
+
+    assert exit_code == 0
+    data = json.loads(manifest_path.read_text())
+    child = data["jobs"][1]
+    assert child["role"] == "continuation"
+    assert child["context_mode"] == "resume_notice"
+    assert "context_mode=resume_notice" in child["command"]
+
+
 def test_plan_viability_writes_default_context_manifests(tmp_path, capsys):
     output_dir = tmp_path / "viability"
 

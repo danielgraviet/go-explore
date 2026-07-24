@@ -231,11 +231,12 @@ def _validate_config(config: FixedBudgetPlanConfig) -> None:
     if config.branch_context_mode not in {
         "parent_summary",
         "critical_parent_summary",
+        "resume_notice",
         "none",
     }:
         raise ValueError(
             "branch_context_mode must be 'parent_summary', "
-            "'critical_parent_summary', or 'none'."
+            "'critical_parent_summary', 'resume_notice', or 'none'."
         )
     if config.promising_selector_mode not in {
         "archive_priority",
