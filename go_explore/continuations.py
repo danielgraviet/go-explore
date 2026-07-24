@@ -33,6 +33,7 @@ ContextMode = Literal[
     "parent_summary",
     "critical_parent_summary",
     "failure_symptom",
+    "resume_notice",
     "none",
 ]
 
