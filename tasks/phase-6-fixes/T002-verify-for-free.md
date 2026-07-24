@@ -28,4 +28,20 @@ advanced edit instead of freezing on the first one.
 - New scratchpad script only (e.g. `/private/tmp/.../scratchpad/replay_regex_log.py`), not part of the repo.
 
 ## Status
-Blocked on T001.
+Done. Ran an offline replay script (scratchpad, not committed) against the
+real trajectory at
+`jobs/phase6-viability-pilot-regex-log-promising-branch-none-promising-branch-seed-0-root/regex-log__agZndfb/agent/trajectory.json`,
+using `load_atif_trajectory_steps` + `context_from_atif_step` +
+`InterestingAgentStepPolicy` + `SnapshotArchive` in step order, no Daytona.
+
+Result: `{/app/regex.txt}` had candidates at steps 3, 6, 8, 10. With the
+T001 fix, the archive retains **step 10** (the last, most-refined edit)
+instead of freezing on step 3. Confirms the fix works on real trajectory
+data, not just the synthetic unit test.
+
+(Note: step numbering here doesn't match the step 0/3/5/7 seen in the
+live job's `events.jsonl` in T001 — that run used the async snapshot
+manager with different step bookkeeping. The mechanism and outcome are
+the same: later ties now win.)
+
+Next: T003 (live 1-seed smoke run).
