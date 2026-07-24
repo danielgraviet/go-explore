@@ -135,7 +135,12 @@ class SnapshotArchive:
         key = cell_key_for(candidate)
         score = self.score(candidate).score
         incumbent = self._entries.get(key)
-        if incumbent is not None and incumbent.score >= score:
+        # A later candidate that only *ties* the incumbent still replaces it:
+        # repeated edits to the same file usually score identically under the
+        # current heuristic, and the later edit is the more-refined one. Ties
+        # were previously kept on the incumbent, which froze the archive on
+        # an agent's first (often weakest) attempt at a file. See T001.
+        if incumbent is not None and incumbent.score > score:
             return ArchiveAddResult(
                 entry=None,
                 accepted=False,
