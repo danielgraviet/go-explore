@@ -1,0 +1,29 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "docs/experiments/main-benchmark/manifests/t004/sqlite-fs.json",
+      "field": "budget_enforcement",
+      "message": "planned token budgets are planning_only labels, not enforced caps; compare actual total_tokens before making strict fixed-budget claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t004-sqlite-fs-promising-branch-seed-0-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t004-sqlite-fs-promising-branch-seed-0-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t004-sqlite-fs-promising-branch-seed-0-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

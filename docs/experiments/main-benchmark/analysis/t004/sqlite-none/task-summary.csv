@@ -1,0 +1,3 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t004-sqlite-none,sqlite-db-truncate,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,13,2,809747,0.22986345000000002,442.096311,118.7625115410001,24.124029999999998,false
+t004-sqlite-none,sqlite-db-truncate,,,retry,anthropic/claude-haiku-4-5-20251001,false,3,3,13,0,598340,0.19216540000000001,464.248565,128.91742100000192,,false

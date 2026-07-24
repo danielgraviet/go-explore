@@ -41,4 +41,14 @@ Do not modify `policies.py` for this task shape unless this re-run
 reproduces a real classification gap (it currently doesn't look like one).
 
 ## Status
-Not started. Independent of T001-T004; can run any time.
+Done. `jobs/t005-build-cython-ext-root-retry`: `n_completed_trials: 1`
+(not stuck pending like the earlier failure), reward 0.0 (task not solved
+— hard task for haiku, expected, irrelevant to this check).
+
+Archive produced 4 cells with real signal, including two `test_run`
+candidates scoring 21.25 and 16.5 (well above the flat file-edit baseline
+of ~1.25), plus a `file_edit` and a `command` cell. This confirms the
+policy handles this task shape correctly and the earlier `n_snapshots_created: 0`
+in the phase6 pilot was transient Harbor/Daytona infra failure, as
+suspected — not a classification gap. No `policies.py` changes needed for
+this task type.
