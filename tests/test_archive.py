@@ -92,6 +92,20 @@ def test_add_rejects_a_lower_scoring_snapshot_for_an_existing_cell():
     assert archive.get(cell_key_for(_candidate())).snapshot_name == "snap-high"
 
 
+def test_add_replaces_a_tied_incumbent_with_the_later_candidate():
+    # Repeated file_edit candidates to the same cell tie under the flat
+    # heuristic score; the later (more-refined) edit must win, not freeze
+    # on the first attempt. Regression test for T001.
+    archive = SnapshotArchive()
+    archive.add(_candidate(event=SnapshotEvent.FILE_EDIT, restore_ref="snap-first", step=0))
+    result = archive.add(
+        _candidate(event=SnapshotEvent.FILE_EDIT, restore_ref="snap-later", step=3)
+    )
+    assert result is not None
+    assert result.snapshot_name == "snap-later"
+    assert archive.get(cell_key_for(_candidate())).snapshot_name == "snap-later"
+
+
 def test_add_ignores_candidates_without_a_restore_ref():
     archive = SnapshotArchive()
     assert archive.add(_candidate(restore_ref="")) is None
