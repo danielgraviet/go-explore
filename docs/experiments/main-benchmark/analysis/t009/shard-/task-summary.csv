@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t009-regex-log-preflight-verification,regex-log,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,2,2,11,1,550725,0.29431490000000005,602.4681949999999,188.69379191900043,6.384534,true

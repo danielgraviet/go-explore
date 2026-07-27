@@ -611,6 +611,44 @@ def test_plan_snapshot_continuations_records_none_context_mode():
     assert "context_mode=none" in plans[0].command
 
 
+def test_plan_snapshot_continuations_records_preflight_verification_mode():
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    root_summary = JobSummary(
+        job_dir=Path("jobs/root"),
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name="fix-git__root",
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+
+    plans = plan_snapshot_continuations(
+        root_config=root_config,
+        root_summary=root_summary,
+        snapshots=("snapshot-a",),
+        continuation_job_prefix="cont",
+        context_mode="preflight_verification",
+    )
+
+    assert plans[0].context_mode == "preflight_verification"
+    assert "context_mode=preflight_verification" in plans[0].command
+
+
 def test_plan_snapshot_continuations_records_critical_parent_summary_mode():
     root_config = HarborRunConfig(
         agent="terminus-2",

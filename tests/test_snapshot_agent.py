@@ -751,3 +751,142 @@ def test_perform_task_passes_augmented_instruction_to_wrapped_agent():
     received_instruction = wrapped.perform_task.call_args.kwargs["instruction"]
     assert received_instruction.startswith("Fix the failing test.")
     assert "step 0: pip install -> ok" in received_instruction
+
+
+def test_snapshot_aware_agent_accepts_preflight_verification_context_mode():
+    SnapshotAwareAgent(wrapped_agent=MagicMock(), context_mode="preflight_verification")
+
+
+def _preflight_environment(tmp_path, *, exit_code, ctrf_summary=None):
+    """Build a MagicMock environment good enough for run_preflight_verification:
+    a real tests dir on disk, and exec/upload_dir/download_file async mocks."""
+    tests_dir = tmp_path / "task" / "tests"
+    tests_dir.mkdir(parents=True)
+    (tests_dir / "test.sh").write_text("#!/bin/bash\nexit 0\n")
+
+    environment = MagicMock()
+    environment.environment_dir = tmp_path / "task" / "environment"
+    environment.os = "linux"
+    environment.upload_dir = AsyncMock()
+    environment.exec = AsyncMock(return_value=MagicMock(return_code=exit_code))
+
+    async def fake_download_file(remote_path, local_path):
+        if ctrf_summary is None:
+            raise FileNotFoundError(remote_path)
+        Path(local_path).write_text(json.dumps(ctrf_summary))
+
+    environment.download_file = AsyncMock(side_effect=fake_download_file)
+    return environment
+
+
+@pytest.mark.asyncio
+async def test_run_preflight_verification_reports_passing_snapshot(tmp_path):
+    wrapped = MagicMock()
+    wrapped.run = AsyncMock()
+
+    sandbox = MagicMock()
+    environment = _preflight_environment(
+        tmp_path,
+        exit_code=0,
+        ctrf_summary={
+            "results": {
+                "summary": {"passed": 9, "failed": 0, "tests": 9},
+                "tests": [{"name": f"test_{i}", "status": "passed"} for i in range(9)],
+            }
+        },
+    )
+    environment._sandbox = sandbox
+    environment.trial_paths = None
+    environment.session_id = "trial-1"
+
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped, sandbox=sandbox, context_mode="preflight_verification"
+    )
+
+    await agent.run("Fix the failing test.", environment, context=None)
+
+    received_instruction = wrapped.run.await_args.args[0]
+    assert "9 of 9 tests passed" in received_instruction
+    assert "All checks currently pass" in received_instruction
+    assert "don't break anything" in received_instruction
+
+
+@pytest.mark.asyncio
+async def test_run_preflight_verification_reports_failing_tests(tmp_path):
+    wrapped = MagicMock()
+    wrapped.run = AsyncMock()
+
+    sandbox = MagicMock()
+    environment = _preflight_environment(
+        tmp_path,
+        exit_code=1,
+        ctrf_summary={
+            "results": {
+                "summary": {"passed": 9, "failed": 2, "tests": 11},
+                "tests": [
+                    {"name": "test_numpy_version", "status": "failed"},
+                    {"name": "test_pyknotid_repository_tests", "status": "failed"},
+                    {"name": "test_other", "status": "passed"},
+                ],
+            }
+        },
+    )
+    environment._sandbox = sandbox
+    environment.trial_paths = None
+    environment.session_id = "trial-1"
+
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped, sandbox=sandbox, context_mode="preflight_verification"
+    )
+
+    await agent.run("Fix the failing test.", environment, context=None)
+
+    received_instruction = wrapped.run.await_args.args[0]
+    assert "9 of 11 tests passed" in received_instruction
+    assert "test_numpy_version" in received_instruction
+    assert "test_pyknotid_repository_tests" in received_instruction
+    assert "without breaking the ones that already pass" in received_instruction
+
+
+@pytest.mark.asyncio
+async def test_run_preflight_verification_falls_back_when_unavailable():
+    wrapped = MagicMock()
+    wrapped.run = AsyncMock()
+
+    sandbox = MagicMock()
+    environment = MagicMock(spec=["_sandbox", "trial_paths", "session_id"])
+    environment._sandbox = sandbox
+    environment.trial_paths = None
+    environment.session_id = "trial-1"
+    # No environment_dir attribute at all (spec restricts it) -> unavailable.
+
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped, sandbox=sandbox, context_mode="preflight_verification"
+    )
+
+    await agent.run("Fix the failing test.", environment, context=None)
+
+    wrapped.run.assert_awaited_once()
+    received_instruction = wrapped.run.await_args.args[0]
+    assert "could not produce a result" in received_instruction
+    assert "inspect it and run the tests yourself" in received_instruction
+
+
+def test_perform_task_preflight_verification_degrades_gracefully_without_environment():
+    """perform_task has no async BaseEnvironment to verify against - must not
+    raise, and must fall back to the unavailable framing."""
+    wrapped = MagicMock()
+
+    sandbox = MagicMock()
+    session = MagicMock()
+    session.session_name = "test-trial"
+
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped, sandbox=sandbox, context_mode="preflight_verification"
+    )
+
+    agent.perform_task(instruction="Fix the failing test.", session=session)
+
+    wrapped.perform_task.assert_called_once()
+    received_instruction = wrapped.perform_task.call_args.kwargs["instruction"]
+    assert "could not produce a result" in received_instruction

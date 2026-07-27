@@ -34,6 +34,7 @@ ContextMode = Literal[
     "critical_parent_summary",
     "failure_symptom",
     "resume_notice",
+    "preflight_verification",
     "none",
 ]
 

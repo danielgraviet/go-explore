@@ -63,6 +63,7 @@ class SnapshotAwareAgent(BaseAgent):
         parent_context_path: str | Path | None = None,
         preinstall_tmux: bool = False,
         tmux_install_timeout_sec: float = 360.0,
+        preflight_verification_timeout_sec: float = 180.0,
         snapshot_retention_limit: int | str | None = None,
         **kwargs,
     ):
@@ -78,6 +79,7 @@ class SnapshotAwareAgent(BaseAgent):
         )
         self._preinstall_tmux = preinstall_tmux
         self._tmux_install_timeout_sec = tmux_install_timeout_sec
+        self._preflight_verification_timeout_sec = preflight_verification_timeout_sec
         snapshot_retention_limit = (
             snapshot_retention_limit
             if snapshot_retention_limit is not None
@@ -141,6 +143,7 @@ class SnapshotAwareAgent(BaseAgent):
             "critical_parent_summary",
             "failure_symptom",
             "resume_notice",
+            "preflight_verification",
             "none",
             "original_task_only",
         }
@@ -258,7 +261,7 @@ class SnapshotAwareAgent(BaseAgent):
         self._ensure_snapshot_session(getattr(environment, "_sandbox", None))
         self._hook_agent_loop()
 
-        instruction = await self._apply_context_mode(instruction)
+        instruction = await self._apply_context_mode(instruction, environment)
 
         await self._wrapped_agent.run(instruction, environment, context)
 
@@ -440,9 +443,20 @@ class SnapshotAwareAgent(BaseAgent):
             "failure_symptom",
         }
 
-    async def _apply_context_mode(self, instruction: str) -> str:
+    async def _apply_context_mode(
+        self, instruction: str, environment: Any = None
+    ) -> str:
         """Single gate for both `run` and `perform_task`, so the two entry
-        points can't drift on how context_mode affects the instruction."""
+        points can't drift on how context_mode affects the instruction.
+
+        `environment` is only available from the async `run()` call site -
+        `perform_task` (the legacy sync/TmuxSession path) has no async
+        BaseEnvironment to verify against, so preflight_verification always
+        degrades to its unavailable framing there."""
+        if self._context_mode == "preflight_verification":
+            return await self._augment_instruction_preflight_verification(
+                instruction, environment
+            )
         if self._context_mode == "resume_notice":
             return self._augment_instruction_resume_notice(instruction)
 
@@ -530,6 +544,70 @@ class SnapshotAwareAgent(BaseAgent):
             "criteria - it may already be complete or partially complete. "
             "Do not assume the sandbox is empty."
         )
+
+    async def _augment_instruction_preflight_verification(
+        self, instruction: str, environment: Any
+    ) -> str:
+        """Ground-truth version of resume_notice: instead of asking the agent
+        to go look, actually run the task's own verifier against the restored
+        sandbox first and hand back the real pass/fail result. Never raises -
+        run_preflight_verification always resolves to a usable result."""
+        from go_explore.snapshots.preflight import run_preflight_verification
+
+        result = await run_preflight_verification(
+            environment, timeout_sec=self._preflight_verification_timeout_sec
+        )
+        return self._format_preflight_instruction(instruction, result)
+
+    @staticmethod
+    def _format_preflight_instruction(instruction: str, result: Any) -> str:
+        if result.status == "unavailable":
+            body = (
+                "You are resuming in a sandbox that already contains state "
+                "from a prior attempt at this task. An automatic check tried "
+                "to run the task's own test suite against this sandbox "
+                "before you started, but it could not produce a result"
+                + (f" ({result.error})" if result.error else "")
+                + ". Do not assume the sandbox is empty or that it is "
+                "complete - inspect it and run the tests yourself before "
+                "making changes."
+            )
+            return f"{instruction}\n\n---\n{body}"
+
+        if result.tests_total is not None:
+            count_line = f"{result.tests_passed} of {result.tests_total} tests passed."
+        else:
+            count_line = (
+                "The verifier "
+                + ("passed" if result.status == "passed" else "failed")
+                + f" (exit code {result.exit_code})."
+            )
+
+        lines = [
+            "You are resuming in a sandbox that already contains state from "
+            "a prior attempt at this task. Before making any changes, here "
+            "is the ground-truth result of running this task's own test "
+            "suite against the sandbox exactly as it is right now (not the "
+            "prior attempt's self-report):",
+            "",
+            count_line,
+        ]
+        if result.failing_tests:
+            shown = result.failing_tests[:10]
+            suffix = "..." if len(result.failing_tests) > 10 else ""
+            lines.append("Failing: " + ", ".join(shown) + suffix)
+        if result.status == "passed":
+            lines.append(
+                "All checks currently pass. Be careful not to regress this "
+                "state - verify your own changes don't break anything that "
+                "is already working."
+            )
+        else:
+            lines.append(
+                "Focus on making the failing checks pass without breaking "
+                "the ones that already pass."
+            )
+        return f"{instruction}\n\n---\n" + "\n".join(lines)
 
     def _hook_tmux_session(self, session: Any) -> None:
         """Hook the tmux session command path when available."""
