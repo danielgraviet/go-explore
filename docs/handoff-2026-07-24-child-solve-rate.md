@@ -104,14 +104,27 @@ Running an n=8 `regex-log` `promising_branch` pilot with
 (`docs/experiments/main-benchmark/analysis/t004b/branch/run-summary.csv`).**
 Raw solve-rate did not improve in this sample.
 
-But the fix did demonstrably work as designed. Checked all 4 available
-child trajectories (seeds 0-3) plus seed-1's in detail: every single
-child's first action in this run was `ls -la` (inspect first), and
-seed-1's child went on to `cat /app/regex.txt` (read the restored file)
-before deciding to rewrite it. In the `none` baseline, **zero** of 8
-children ever read the restored file before overwriting it - it was
-always the first action, no exceptions. So the notice changed behavior
-exactly as intended, 8/8.
+The fix mostly worked as designed, but not universally. Checked all 8
+child trajectories directly against `agent/trajectory.json`: seeds 0, 1,
+2, 3, 6, and 7 all opened with `ls -la` (inspect first), and several
+(seed-1, seed-6, seed-7) went on to `cat /app/regex.txt` (read the
+restored file) before deciding whether to rewrite it. Seed-5 shows the
+same inspect-then-read pattern in its raw message text, logged in an
+older embedded-tool-call format rather than structured `tool_calls`. In
+the `none` baseline, **zero** of 8 children ever read the restored file
+before overwriting it - it was always the first action, no exceptions.
+
+**One exception: seed-4's child never ran a single shell command.** It
+received the resume_notice, then immediately called `mark_task_complete`
+twice based purely on its own narrative ("the regex has been thoroughly
+tested...") without inspecting anything - a hallucinated completion,
+correctly scored as a failure by the verifier. So the honest count is
+7/8 (or 6/8 counting only trials with structured tool-call logs) showed
+the intended inspect-before-write behavior, not 8/8. The notice is a soft
+nudge the model can still skip; it does not guarantee inspection. This
+is a point in favor of fix #3 (automatic pre-flight verification, which
+doesn't depend on the agent choosing to look) over relying on fix #2
+(a stronger tiered nudge) alone.
 
 **Why the aggregate number didn't move**: in this particular n=8 draw,
 *every root failed* - none reached a validated, passing state. The
