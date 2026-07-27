@@ -1,0 +1,5 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+phase4-smoke-openssl-selfsigned-cert-001,openssl-selfsigned-cert,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,3,3,5,1,98821,0.06550715000000001,244.11172299999998,50.89602008399925,5.5397,false
+phase4-smoke-openssl-selfsigned-cert-001,openssl-selfsigned-cert,,,random_branch,anthropic/claude-haiku-4-5-20251001,true,3,3,3,1,104133,0.07235195000000001,218.835664,30.390440040999238,6.445822,false
+phase4-smoke-openssl-selfsigned-cert-001,openssl-selfsigned-cert,,,retry,anthropic/claude-haiku-4-5-20251001,true,5,5,12,0,271872,0.1712763,574.147432,147.16432470699874,,false
+phase4-smoke-openssl-selfsigned-cert-001,openssl-selfsigned-cert,,,single,anthropic/claude-haiku-4-5-20251001,true,1,1,7,0,310794,0.1010499,163.914932,40.41248533399994,,false

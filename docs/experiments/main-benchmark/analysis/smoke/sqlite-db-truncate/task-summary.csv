@@ -1,0 +1,5 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+phase4-smoke-sqlite-db-truncate-001,sqlite-db-truncate,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,10,2,710910,0.1951175,410.868636,82.64578929099662,21.699285,false
+phase4-smoke-sqlite-db-truncate-001,sqlite-db-truncate,,,random_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,4,1,309230,0.101508,302.27799500000003,54.30776279099882,6.087622,false
+phase4-smoke-sqlite-db-truncate-001,sqlite-db-truncate,,,retry,anthropic/claude-haiku-4-5-20251001,false,5,5,19,0,1557569,0.41894465000000003,787.733898,171.0965890369971,,false
+phase4-smoke-sqlite-db-truncate-001,sqlite-db-truncate,,,single,anthropic/claude-haiku-4-5-20251001,false,1,1,0,0,11957,0.020061000000000002,114.806816,,,false

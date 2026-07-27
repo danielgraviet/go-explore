@@ -1,0 +1,5 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+phase4-smoke-git-leak-recovery-001,git-leak-recovery,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,3,3,5,1,41653,0.04857285,152.160163,41.43875449900224,6.392502,false
+phase4-smoke-git-leak-recovery-001,git-leak-recovery,,,random_branch,anthropic/claude-haiku-4-5-20251001,true,3,3,7,1,32743,0.04854100000000001,256.160302,92.37061704300322,5.7433,false
+phase4-smoke-git-leak-recovery-001,git-leak-recovery,,,retry,anthropic/claude-haiku-4-5-20251001,true,5,5,19,0,131890,0.14986875,441.262545,130.65057424999577,,false
+phase4-smoke-git-leak-recovery-001,git-leak-recovery,,,single,anthropic/claude-haiku-4-5-20251001,true,1,1,6,0,31835,0.03354195,131.773975,69.65998737600239,,false

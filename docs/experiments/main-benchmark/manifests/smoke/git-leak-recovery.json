@@ -5,7 +5,8 @@
   "model": "anthropic/claude-haiku-4-5-20251001",
   "budget": {
     "total_token_budget": 100000,
-    "enforcement": "planning_only"
+    "enforcement": "planning_only",
+    "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
   },
   "methods": [
     "single",
@@ -50,7 +51,8 @@
       "budget": {
         "token_budget": 100000,
         "budget_fraction": 1.0,
-        "enforcement": "planning_only"
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
       },
       "start_state_type": "clean",
       "context_mode": "original_task_only",
@@ -92,7 +94,8 @@
       "budget": {
         "token_budget": 20000,
         "budget_fraction": 0.2,
-        "enforcement": "planning_only"
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
       },
       "start_state_type": "clean",
       "context_mode": "original_task_only",
@@ -134,7 +137,8 @@
       "budget": {
         "token_budget": 20000,
         "budget_fraction": 0.2,
-        "enforcement": "planning_only"
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
       },
       "start_state_type": "clean",
       "context_mode": "original_task_only",
@@ -176,7 +180,8 @@
       "budget": {
         "token_budget": 20000,
         "budget_fraction": 0.2,
-        "enforcement": "planning_only"
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
       },
       "start_state_type": "clean",
       "context_mode": "original_task_only",
@@ -218,7 +223,8 @@
       "budget": {
         "token_budget": 20000,
         "budget_fraction": 0.2,
-        "enforcement": "planning_only"
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
       },
       "start_state_type": "clean",
       "context_mode": "original_task_only",
@@ -260,7 +266,8 @@
       "budget": {
         "token_budget": 20000,
         "budget_fraction": 0.2,
-        "enforcement": "planning_only"
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
       },
       "start_state_type": "clean",
       "context_mode": "original_task_only",
@@ -302,7 +309,8 @@
       "budget": {
         "token_budget": 30000,
         "budget_fraction": 0.3,
-        "enforcement": "planning_only"
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
       },
       "start_state_type": "clean",
       "context_mode": "original_task_only",
@@ -320,7 +328,8 @@
       "budget": {
         "token_budget": 35000,
         "budget_fraction": 0.35,
-        "enforcement": "planning_only"
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
       },
       "start_state_type": "full_snapshot",
       "context_mode": "parent_summary",
@@ -338,7 +347,8 @@
       "budget": {
         "token_budget": 35000,
         "budget_fraction": 0.35,
-        "enforcement": "planning_only"
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
       },
       "start_state_type": "full_snapshot",
       "context_mode": "parent_summary",
@@ -380,7 +390,8 @@
       "budget": {
         "token_budget": 30000,
         "budget_fraction": 0.3,
-        "enforcement": "planning_only"
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
       },
       "start_state_type": "clean",
       "context_mode": "original_task_only",
@@ -398,7 +409,8 @@
       "budget": {
         "token_budget": 35000,
         "budget_fraction": 0.35,
-        "enforcement": "planning_only"
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
       },
       "start_state_type": "full_snapshot",
       "context_mode": "parent_summary",
@@ -416,7 +428,8 @@
       "budget": {
         "token_budget": 35000,
         "budget_fraction": 0.35,
-        "enforcement": "planning_only"
+        "enforcement": "planning_only",
+        "enforcement_description": "Token budgets are planned analysis allocations only; Harbor and the agent are not stopped when a job reaches this value."
       },
       "start_state_type": "full_snapshot",
       "context_mode": "parent_summary",
