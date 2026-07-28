@@ -778,6 +778,85 @@ def test_build_trajectory_summary_combines_atif_history_with_correctly_numbered_
 
 
 @pytest.mark.asyncio
+async def test_diff_only_applies_to_filesystem_not_agent_context(tmp_path):
+    """diff_only must be a filesystem operation, not a context-injection one:
+    the diff is `git apply`-ed to the sandbox during setup(), and the agent's
+    instruction must stay byte-for-byte unmodified (original_task_only) -
+    the diff's content should never appear in the prompt or cost a token."""
+    diff_path = tmp_path / "parent.diff"
+    diff_text = "diff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -1 +1 @@\n-old\n+new\n"
+    diff_path.write_text(diff_text)
+
+    wrapped = MagicMock()
+    wrapped.setup = AsyncMock()
+    wrapped.run = AsyncMock()
+
+    environment = MagicMock()
+    environment.upload_file = AsyncMock()
+    environment.exec = AsyncMock(return_value=MagicMock(return_code=0))
+    environment.task_env_config = MagicMock(workdir="/app")
+    environment.trial_paths = None
+    environment.session_id = "trial-1"
+
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        context_mode="original_task_only",
+        diff_path=diff_path,
+    )
+
+    await agent.setup(environment)
+    await agent.run("Fix the failing test.", environment, context=None)
+
+    # Applied to the sandbox filesystem via exec/upload, before the agent ran.
+    environment.upload_file.assert_awaited_once()
+    environment.exec.assert_awaited_once()
+    assert "git apply" in environment.exec.await_args.kwargs["command"]
+    wrapped.setup.assert_awaited_once_with(environment)
+
+    # Never surfaced to the agent: instruction is untouched, no diff bytes in it.
+    wrapped.run.assert_awaited_once()
+    received_instruction = wrapped.run.await_args.args[0]
+    assert received_instruction == "Fix the failing test."
+    assert "diff --git" not in received_instruction
+    assert "-old" not in received_instruction
+    assert "+new" not in received_instruction
+
+
+@pytest.mark.asyncio
+async def test_diff_only_apply_failure_blocks_agent_run(tmp_path):
+    """If the diff doesn't apply cleanly, the agent must never run - the
+    wrapper raises before delegating to wrapped.run(), so a broken diff can't
+    silently masquerade as a normal (if unlucky) task attempt."""
+    diff_path = tmp_path / "parent.diff"
+    diff_path.write_text("diff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -1 +1 @@\n-old\n+new\n")
+
+    wrapped = MagicMock()
+    wrapped.setup = AsyncMock()
+    wrapped.run = AsyncMock()
+
+    environment = MagicMock()
+    environment.upload_file = AsyncMock()
+    environment.exec = AsyncMock(
+        return_value=MagicMock(return_code=1, stderr="patch does not apply")
+    )
+    environment.task_env_config = MagicMock(workdir="/app")
+
+    from go_explore.snapshots.diff_only import DiffApplyFailed
+
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        context_mode="original_task_only",
+        diff_path=diff_path,
+    )
+
+    with pytest.raises(DiffApplyFailed):
+        await agent.setup(environment)
+
+    wrapped.setup.assert_not_awaited()
+    wrapped.run.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_run_passes_augmented_instruction_to_wrapped_agent():
     """The wrapped agent's run() must actually receive the parent's context,
     not just have it available somewhere on the wrapper."""
