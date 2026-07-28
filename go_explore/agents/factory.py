@@ -5,6 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 from go_explore.agents.snapshot_agent import SnapshotAwareAgent
+from go_explore.snapshots.command_replay import (
+    DEFAULT_COMMAND_TIMEOUT_SEC,
+    DEFAULT_TOTAL_BUDGET_SEC,
+)
 from go_explore.snapshots.policies import (
     EveryAgentStepPolicy,
     InterestingAgentStepPolicy,
@@ -113,6 +117,13 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
         )
         diff_path = kwargs.pop("diff_path", None)
         diff_apply_timeout_sec = float(kwargs.pop("diff_apply_timeout_sec", 60.0))
+        replay_manifest_path = kwargs.pop("replay_manifest_path", None)
+        replay_command_timeout_sec = float(
+            kwargs.pop("replay_command_timeout_sec", DEFAULT_COMMAND_TIMEOUT_SEC)
+        )
+        replay_total_budget_sec = float(
+            kwargs.pop("replay_total_budget_sec", DEFAULT_TOTAL_BUDGET_SEC)
+        )
         kwargs.setdefault("record_terminal_session", False)
         wrapped = Terminus2(
             logs_dir=logs_dir,
@@ -133,6 +144,9 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
             preflight_verification_timeout_sec=preflight_verification_timeout_sec,
             diff_path=diff_path,
             diff_apply_timeout_sec=diff_apply_timeout_sec,
+            replay_manifest_path=replay_manifest_path,
+            replay_command_timeout_sec=replay_command_timeout_sec,
+            replay_total_budget_sec=replay_total_budget_sec,
             logs_dir=logs_dir,
             model_name=model_name,
             logger=logger,
@@ -162,6 +176,13 @@ class SnapshotAwareOracle(SnapshotAwareAgent):
         )
         diff_path = kwargs.pop("diff_path", None)
         diff_apply_timeout_sec = float(kwargs.pop("diff_apply_timeout_sec", 60.0))
+        replay_manifest_path = kwargs.pop("replay_manifest_path", None)
+        replay_command_timeout_sec = float(
+            kwargs.pop("replay_command_timeout_sec", DEFAULT_COMMAND_TIMEOUT_SEC)
+        )
+        replay_total_budget_sec = float(
+            kwargs.pop("replay_total_budget_sec", DEFAULT_TOTAL_BUDGET_SEC)
+        )
         wrapped = OracleAgent(
             logs_dir=logs_dir,
             model_name=model_name,
@@ -179,6 +200,9 @@ class SnapshotAwareOracle(SnapshotAwareAgent):
             preflight_verification_timeout_sec=preflight_verification_timeout_sec,
             diff_path=diff_path,
             diff_apply_timeout_sec=diff_apply_timeout_sec,
+            replay_manifest_path=replay_manifest_path,
+            replay_command_timeout_sec=replay_command_timeout_sec,
+            replay_total_budget_sec=replay_total_budget_sec,
             logs_dir=logs_dir,
             model_name=model_name,
             logger=logger,

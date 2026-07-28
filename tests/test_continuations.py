@@ -18,6 +18,7 @@ from go_explore.continuations import (
     write_command_log_context,
     write_failure_symptom_context,
     write_plan_manifest,
+    write_replay_manifest_context,
     write_transcript_summary_context,
 )
 from go_explore.events import EVENT_LOG_FILENAME
@@ -904,6 +905,63 @@ def test_write_command_log_context_writes_deterministic_log(tmp_path):
     assert "outcome: failed" in text
 
 
+def test_write_replay_manifest_context_selects_only_dependency_installs(tmp_path):
+    job_dir = tmp_path / "jobs" / "root"
+    trial_name = "fix-git__root"
+    trajectory_path = job_dir / trial_name / "agent" / "trajectory.json"
+    _write_atif_trajectory(
+        trajectory_path,
+        [
+            {
+                "step_id": 1,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "pip install requests\n"},
+                    }
+                ],
+                "observation": {"results": [{"content": "Successfully installed requests"}]},
+            },
+            {
+                "step_id": 2,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "git status\n"},
+                    }
+                ],
+                "observation": {"results": [{"content": "clean"}]},
+            },
+        ],
+    )
+    root_summary = JobSummary(
+        job_dir=job_dir,
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name=trial_name,
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+
+    output_path = write_replay_manifest_context(root_summary, root_summary.trials[0])
+
+    assert output_path == job_dir / trial_name / "agent" / "replay-manifest.json"
+    data = json.loads(output_path.read_text())
+    assert data["final_status"] == "planned"
+    assert [e["command"] for e in data["entries"]] == ["pip install requests"]
+    assert data["entries"][0]["status"] == "planned"
+
+
 def test_plan_snapshot_continuations_records_failure_symptom_mode(tmp_path):
     root_config = HarborRunConfig(
         agent="terminus-2",
@@ -1318,6 +1376,77 @@ def test_plan_start_state_baselines_diff_only_command_log_wires_both_artifacts(t
     # from the trajectory - not a placeholder path.
     assert command_log_path.exists()
     assert "001. $ pytest tests -q" in command_log_path.read_text()
+
+
+def test_plan_start_state_baselines_command_replay_starts_from_clean(tmp_path):
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    trial_name = "fix-git__root"
+    job_dir = tmp_path / "jobs" / "root"
+    trajectory_path = job_dir / trial_name / "agent" / "trajectory.json"
+    _write_atif_trajectory(
+        trajectory_path,
+        [
+            {
+                "step_id": 1,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "pip install requests\n"},
+                    }
+                ],
+                "observation": {"results": [{"content": "installed"}]},
+            },
+        ],
+    )
+    root_summary = JobSummary(
+        job_dir=job_dir,
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name=trial_name,
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+    manifest_path = job_dir / trial_name / "agent" / "replay-manifest.json"
+
+    plans = plan_start_state_baselines(
+        root_config=root_config,
+        root_summary=root_summary,
+        continuation_job_prefix="claim1",
+        start_state_types=("command_replay",),
+    )
+
+    assert len(plans) == 1
+    plan = plans[0]
+    assert plan.start_state_type == "command_replay"
+    assert plan.context_mode == "original_task_only"
+    assert plan.job_name == "claim1-command-replay"
+    assert plan.parent_artifacts == (str(manifest_path),)
+    assert plan.executor_status == "ready"
+    # Starts clean, not from a snapshot.
+    assert "--ek" not in plan.command
+    assert "snapshot_template_name=" not in " ".join(plan.command)
+    assert f"replay_manifest_path={manifest_path}" in plan.command
+    assert "context_mode=original_task_only" in plan.command
+
+    assert manifest_path.exists()
+    data = json.loads(manifest_path.read_text())
+    assert data["entries"][0]["command"] == "pip install requests"
 
 
 def test_plan_start_state_baselines_diff_only_default_mode_has_no_transcript(tmp_path):

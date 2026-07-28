@@ -124,6 +124,46 @@ def test_snapshot_aware_terminus2_accepts_diff_path_without_wrapped_leak(
     assert "diff_apply_timeout_sec" not in captured["kwargs"]
 
 
+def test_snapshot_aware_terminus2_accepts_replay_manifest_path_without_wrapped_leak(
+    tmp_path,
+    monkeypatch,
+):
+    """Same class of regression as diff_path: replay_manifest_path must reach
+    SnapshotAwareAgent (which replays it in setup()), not leak through to the
+    wrapped Terminus2 as an unknown kwarg."""
+    captured: dict[str, object] = {}
+
+    class FakeTerminus2:
+        def __init__(self, *, logs_dir, model_name, logger=None, **kwargs):
+            captured["kwargs"] = kwargs
+
+        def to_agent_info(self):
+            return {"name": "terminus-2"}
+
+    harbor_module = ModuleType("harbor")
+    agents_module = ModuleType("harbor.agents")
+    terminus_module = ModuleType("harbor.agents.terminus_2")
+    terminus_module.Terminus2 = FakeTerminus2
+    monkeypatch.setitem(sys.modules, "harbor", harbor_module)
+    monkeypatch.setitem(sys.modules, "harbor.agents", agents_module)
+    monkeypatch.setitem(sys.modules, "harbor.agents.terminus_2", terminus_module)
+
+    agent = SnapshotAwareTerminus2(
+        logs_dir=tmp_path,
+        model_name="model-a",
+        replay_manifest_path=str(tmp_path / "replay-manifest.json"),
+        replay_command_timeout_sec=15.0,
+        replay_total_budget_sec=60.0,
+    )
+
+    assert agent._replay_manifest_path == tmp_path / "replay-manifest.json"
+    assert agent._replay_command_timeout_sec == 15.0
+    assert agent._replay_total_budget_sec == 60.0
+    assert "replay_manifest_path" not in captured["kwargs"]
+    assert "replay_command_timeout_sec" not in captured["kwargs"]
+    assert "replay_total_budget_sec" not in captured["kwargs"]
+
+
 def test_snapshot_aware_agent_instantiation_without_sandbox():
     """Test that SnapshotAwareAgent can be instantiated without a sandbox."""
     wrapped = MagicMock()
@@ -1016,6 +1056,117 @@ async def test_diff_only_apply_failure_blocks_agent_run(tmp_path):
 
     wrapped.setup.assert_not_awaited()
     wrapped.run.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_command_replay_execs_planned_commands_before_agent_setup(tmp_path):
+    """command_replay must actually exec the planned commands in the fresh
+    sandbox during setup(), before the wrapped agent's own setup runs."""
+    from go_explore.snapshots.command_replay import (
+        ReplayCommandEntry,
+        ReplayManifest,
+        write_replay_manifest,
+    )
+
+    manifest_path = tmp_path / "replay-manifest.json"
+    write_replay_manifest(
+        ReplayManifest(
+            parent_job_dir="jobs/root",
+            parent_trial_name="fix-git__root",
+            parent_artifact_path="jobs/root/fix-git__root/agent/trajectory.json",
+            entries=(
+                ReplayCommandEntry(command="pip install requests", status="planned"),
+            ),
+        ),
+        manifest_path,
+    )
+
+    wrapped = MagicMock()
+    wrapped.setup = AsyncMock()
+
+    environment = MagicMock()
+    environment.exec = AsyncMock(
+        return_value=MagicMock(return_code=0, stdout="installed", stderr="")
+    )
+
+    logs_dir = tmp_path / "trial" / "agent"
+    logs_dir.mkdir(parents=True)
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        replay_manifest_path=manifest_path,
+        logs_dir=logs_dir,
+    )
+
+    await agent.setup(environment)
+
+    environment.exec.assert_awaited_once()
+    assert environment.exec.await_args.kwargs["command"] == "pip install requests"
+    wrapped.setup.assert_awaited_once_with(environment)
+
+    result_path = logs_dir / "replay-result.json"
+    assert result_path.exists()
+    result_data = json.loads(result_path.read_text())
+    assert result_data["entries"][0]["status"] == "replayed"
+    assert result_data["final_status"] == "completed"
+
+
+@pytest.mark.asyncio
+async def test_command_replay_failure_never_blocks_agent_setup(tmp_path):
+    """Unlike a diff that fails to apply, a failed replay command must never
+    raise or block the agent - replay is best-effort by design."""
+    from go_explore.snapshots.command_replay import (
+        ReplayCommandEntry,
+        ReplayManifest,
+        write_replay_manifest,
+    )
+
+    manifest_path = tmp_path / "replay-manifest.json"
+    write_replay_manifest(
+        ReplayManifest(
+            parent_job_dir="jobs/root",
+            parent_trial_name="fix-git__root",
+            parent_artifact_path="jobs/root/fix-git__root/agent/trajectory.json",
+            entries=(
+                ReplayCommandEntry(command="pip install bad-package", status="planned"),
+            ),
+        ),
+        manifest_path,
+    )
+
+    wrapped = MagicMock()
+    wrapped.setup = AsyncMock()
+
+    environment = MagicMock()
+    environment.exec = AsyncMock(side_effect=RuntimeError("sandbox died"))
+
+    logs_dir = tmp_path / "trial" / "agent"
+    logs_dir.mkdir(parents=True)
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        replay_manifest_path=manifest_path,
+        logs_dir=logs_dir,
+    )
+
+    await agent.setup(environment)
+
+    wrapped.setup.assert_awaited_once_with(environment)
+    result_data = json.loads((logs_dir / "replay-result.json").read_text())
+    assert result_data["entries"][0]["status"] == "failed"
+
+
+@pytest.mark.asyncio
+async def test_command_replay_skips_when_no_manifest_path():
+    wrapped = MagicMock()
+    wrapped.setup = AsyncMock()
+    environment = MagicMock()
+    environment.exec = AsyncMock()
+
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped)
+
+    await agent.setup(environment)
+
+    environment.exec.assert_not_awaited()
+    wrapped.setup.assert_awaited_once_with(environment)
 
 
 @pytest.mark.asyncio

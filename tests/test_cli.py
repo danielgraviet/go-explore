@@ -166,6 +166,7 @@ def test_plan_start_state_baselines_command_writes_manifest(tmp_path, capsys):
             extra_arg=[],
             clean_context_mode="original_task_only",
             diff_only_context_mode="original_task_only",
+            replay_max_commands=8,
         )
     )
 
@@ -219,6 +220,7 @@ def test_plan_start_state_baselines_command_can_plan_clean_parent_summary(
             extra_arg=[],
             clean_context_mode="parent_summary",
             diff_only_context_mode="original_task_only",
+            replay_max_commands=8,
         )
     )
 
@@ -270,6 +272,7 @@ def test_plan_start_state_baselines_command_can_plan_diff_only_transcript(
             extra_arg=[],
             clean_context_mode="original_task_only",
             diff_only_context_mode="full_transcript_summary",
+            replay_max_commands=8,
         )
     )
 
@@ -324,6 +327,7 @@ def test_plan_start_state_baselines_command_can_plan_diff_only_command_log(
             extra_arg=[],
             clean_context_mode="original_task_only",
             diff_only_context_mode="command_log",
+            replay_max_commands=8,
         )
     )
 

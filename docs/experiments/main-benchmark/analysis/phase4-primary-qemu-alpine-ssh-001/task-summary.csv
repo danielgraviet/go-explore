@@ -1,0 +1,5 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+phase4-primary-qemu-alpine-ssh-001,qemu-alpine-ssh,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,0,0,48342,0.0513275,547.18917,,,false
+phase4-primary-qemu-alpine-ssh-001,qemu-alpine-ssh,,,random_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,16,1,3503849,0.4143386499999999,2121.6575390000003,323.720063914996,4.021021,false
+phase4-primary-qemu-alpine-ssh-001,qemu-alpine-ssh,,,retry,anthropic/claude-haiku-4-5-20251001,false,5,5,29,0,7917915,0.9237422000000001,4269.3113410000005,158.9925915030144,,false
+phase4-primary-qemu-alpine-ssh-001,qemu-alpine-ssh,,,single,anthropic/claude-haiku-4-5-20251001,false,1,1,10,0,819082,0.13443695000000003,923.835872,139.9993351689991,,false
