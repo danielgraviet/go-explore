@@ -83,6 +83,44 @@ def test_snapshot_aware_terminus2_accepts_context_mode_without_wrapped_leak(
     assert "parent_context_path" not in captured["kwargs"]
 
 
+def test_snapshot_aware_terminus2_accepts_diff_path_without_wrapped_leak(
+    tmp_path,
+    monkeypatch,
+):
+    """Regression test: diff_path must reach SnapshotAwareAgent (which applies
+    it in setup()), not leak through to the wrapped Terminus2 as an unknown
+    kwarg - that bug meant `--ak diff_path=...` silently never applied any
+    diff in a live run, with no error to signal it."""
+    captured: dict[str, object] = {}
+
+    class FakeTerminus2:
+        def __init__(self, *, logs_dir, model_name, logger=None, **kwargs):
+            captured["kwargs"] = kwargs
+
+        def to_agent_info(self):
+            return {"name": "terminus-2"}
+
+    harbor_module = ModuleType("harbor")
+    agents_module = ModuleType("harbor.agents")
+    terminus_module = ModuleType("harbor.agents.terminus_2")
+    terminus_module.Terminus2 = FakeTerminus2
+    monkeypatch.setitem(sys.modules, "harbor", harbor_module)
+    monkeypatch.setitem(sys.modules, "harbor.agents", agents_module)
+    monkeypatch.setitem(sys.modules, "harbor.agents.terminus_2", terminus_module)
+
+    agent = SnapshotAwareTerminus2(
+        logs_dir=tmp_path,
+        model_name="model-a",
+        diff_path=str(tmp_path / "parent.diff"),
+        diff_apply_timeout_sec=30.0,
+    )
+
+    assert agent._diff_path == tmp_path / "parent.diff"
+    assert agent._diff_apply_timeout_sec == 30.0
+    assert "diff_path" not in captured["kwargs"]
+    assert "diff_apply_timeout_sec" not in captured["kwargs"]
+
+
 def test_snapshot_aware_agent_instantiation_without_sandbox():
     """Test that SnapshotAwareAgent can be instantiated without a sandbox."""
     wrapped = MagicMock()
@@ -269,6 +307,60 @@ async def test_snapshot_aware_agent_tmux_preflight_raises_clear_error_on_failure
         await agent.setup(environment)
 
     wrapped.setup.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_snapshot_aware_agent_applies_diff_before_wrapped_setup(tmp_path):
+    diff_path = tmp_path / "parent.diff"
+    diff_path.write_text("diff --git a/x b/x\n")
+    wrapped = MagicMock()
+    wrapped.setup = AsyncMock()
+    environment = MagicMock()
+    environment.upload_file = AsyncMock()
+    environment.exec = AsyncMock(return_value=MagicMock(return_code=0))
+    environment.task_env_config = MagicMock(workdir="/app")
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, diff_path=diff_path)
+
+    await agent.setup(environment)
+
+    environment.upload_file.assert_awaited_once()
+    wrapped.setup.assert_awaited_once_with(environment)
+
+
+@pytest.mark.asyncio
+async def test_snapshot_aware_agent_diff_apply_failure_raises_distinct_error(tmp_path):
+    diff_path = tmp_path / "parent.diff"
+    diff_path.write_text("diff --git a/x b/x\n")
+    wrapped = MagicMock()
+    wrapped.setup = AsyncMock()
+    environment = MagicMock()
+    environment.upload_file = AsyncMock()
+    environment.exec = AsyncMock(
+        return_value=MagicMock(return_code=1, stderr="patch does not apply")
+    )
+    environment.task_env_config = MagicMock(workdir="/app")
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, diff_path=diff_path)
+
+    from go_explore.snapshots.diff_only import DiffApplyFailed
+
+    with pytest.raises(DiffApplyFailed, match="patch does not apply"):
+        await agent.setup(environment)
+
+    wrapped.setup.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_snapshot_aware_agent_skips_diff_apply_when_no_diff_path():
+    wrapped = MagicMock()
+    wrapped.setup = AsyncMock()
+    environment = MagicMock()
+    environment.upload_file = AsyncMock()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped)
+
+    await agent.setup(environment)
+
+    environment.upload_file.assert_not_awaited()
+    wrapped.setup.assert_awaited_once_with(environment)
 
 
 def test_snapshot_aware_agent_name_matches_wrapped():

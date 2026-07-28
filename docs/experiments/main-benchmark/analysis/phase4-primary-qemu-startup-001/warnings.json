@@ -1,0 +1,137 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "docs/experiments/main-benchmark/manifests/primary/qemu-startup.json",
+      "field": "budget_enforcement",
+      "message": "planned token budgets are planning_only labels, not enforced caps; compare actual total_tokens before making strict fixed-budget claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-promising-branch-seed-0-cont-1",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-random-branch-seed-0-cont-0",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-random-branch-seed-0-cont-1",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-promising-branch-seed-0-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-promising-branch-seed-0-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-random-branch-seed-0-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-retry-seed-0-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-retry-seed-0-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-retry-seed-0-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-retry-seed-0-attempt-3",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-retry-seed-0-attempt-4",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-single-seed-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-promising-branch-seed-0-cont-1",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-promising-branch-seed-0-cont-1",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-promising-branch-seed-0-cont-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-random-branch-seed-0-cont-0",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-random-branch-seed-0-cont-0",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-random-branch-seed-0-cont-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-random-branch-seed-0-cont-1",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-random-branch-seed-0-cont-1",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/phase4-primary-qemu-startup-random-branch-seed-0-cont-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

@@ -168,11 +168,14 @@ The manifest contains:
 | Start state | Context mode | Executor status |
 | --- | --- | --- |
 | `clean` | `original_task_only` | `ready` |
-| `diff_only` | `original_task_only` | `manifest_only` |
+| `diff_only` | `original_task_only` | `ready` (or `pending_parent_diff` if the diff artifact is missing) |
 | `full_snapshot` | `parent_summary` | `ready` |
 
-`diff_only` is only scaffolded. The manifest records
-`jobs/e2e-p3-t002-root/parent.diff`, but no executor applies that diff yet.
+`diff_only` now has an executor (T007): `SnapshotAwareAgent.setup` applies the
+diff recorded at `jobs/e2e-p3-t002-root/parent.diff` via `git apply` before
+the agent runs. A plan is `executor_status="ready"` only if that diff file
+already exists on disk at plan time; otherwise it's `pending_parent_diff`,
+mirroring `full_snapshot`'s `pending_root_archive`.
 
 ## Live Continuation Smoke
 
@@ -247,7 +250,7 @@ too easy: the root and continuation both solved it.
 | Gap | Current state | Next move |
 | --- | --- | --- |
 | Runtime token enforcement | Manifest records budget splits, but Harbor/model calls are not capped by this planner. | Add runtime budget controls only if Harbor/model APIs expose a clean hook. |
-| Diff-only execution | `diff_only` is `manifest_only`; no patch application executor exists. | Implement or explicitly defer a clean diff-apply executor. |
+| Diff-only execution | Resolved (T007): `git apply`-based executor exists in `go_explore/snapshots/diff_only.py`, wired through `SnapshotAwareAgent.setup`. Not yet run at scale - see `tasks/phase-6-fixes/T007-create-start-states.md`. | Run the `clean` vs `diff_only` vs `full_snapshot` ablation pilot. |
 | Command/test event materialization | Live `events.jsonl` contains snapshot events, but not normalized `command_executed`, `test_run`, or `dependency_installed` events. | Materialize extracted ATIF signals into event logs or analysis inputs. |
 | Repeated-work tables | P3-T004 can compute repeated-work JSON, but it is not joined into CSV analysis tables yet. | P3-T006 should join repeated-work metrics into run summaries. |
 | Snapshot overhead fields | `snapshot_overhead_seconds` and `restore_overhead_seconds` are still `unknown`. | Persist timing from snapshot creation and restore paths. |

@@ -1,0 +1,5 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+phase4-smoke-qemu-startup-001,qemu-startup,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,0,0,1314,0.003202,25482.531923,,,false
+phase4-smoke-qemu-startup-001,qemu-startup,,,random_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,0,0,,,33609.784017,,,false
+phase4-smoke-qemu-startup-001,qemu-startup,,,retry,anthropic/claude-haiku-4-5-20251001,true,5,5,27,0,2383264,0.45112245,3623.134523,211.05920854100077,,false
+phase4-smoke-qemu-startup-001,qemu-startup,,,single,anthropic/claude-haiku-4-5-20251001,false,1,1,1,0,646651,0.1166108,1018.341315,9.888655624999956,,false

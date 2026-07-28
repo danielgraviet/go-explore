@@ -298,6 +298,7 @@ def build_clean_start_config(
     job_name: str,
     context_mode: ContextMode = "original_task_only",
     parent_context_path: Path | None = None,
+    diff_path: Path | None = None,
     agent: str | None = None,
     model: str | None = None,
     extra_args: Sequence[str] = (),
@@ -308,6 +309,7 @@ def build_clean_start_config(
         tuple(root_config.extra_args) + tuple(extra_args),
         context_mode=context_mode,
         parent_context_path=parent_context_path,
+        diff_path=diff_path,
     )
 
     return HarborRunConfig(
@@ -373,15 +375,18 @@ def _with_clean_context_extra_args(
     *,
     context_mode: ContextMode,
     parent_context_path: Path | None = None,
+    diff_path: Path | None = None,
 ) -> tuple[str, ...]:
     """Return Harbor extra args for a clean child context mode.
 
     Clean children cannot inherit `/tmp/go_explore_context.md` from a restored
     snapshot, so parent-summary modes use an explicit host-side context path.
+    `diff_path` (diff_only start states only) tells `SnapshotAwareAgent.setup`
+    to apply that parent diff onto the clean checkout before the agent runs.
     """
 
     cleaned: list[str] = []
-    replaced_keys = {"context_mode", "parent_context", "parent_context_path"}
+    replaced_keys = {"context_mode", "parent_context", "parent_context_path", "diff_path"}
     index = 0
     while index < len(args):
         current = args[index]
@@ -405,6 +410,8 @@ def _with_clean_context_extra_args(
         and context_mode in {"parent_summary", "critical_parent_summary"}
     ):
         cleaned.extend(["--ak", f"parent_context_path={parent_context_path}"])
+    if diff_path is not None:
+        cleaned.extend(["--ak", f"diff_path={diff_path}"])
     return tuple(cleaned)
 
 
@@ -509,9 +516,13 @@ def plan_start_state_baselines(
 ) -> list[ContinuationPlan]:
     """Plan Claim 1 child-start conditions without executing them.
 
-    `diff_only` is intentionally manifest-only for now: the plan records the
-    parent diff artifact and the clean Harbor command shape, but no executor
-    applies the diff yet.
+    `diff_only` starts from the same clean Harbor command shape as `clean`,
+    plus a `diff_path` agent kwarg that `SnapshotAwareAgent.setup` uses to
+    `git apply` the parent diff before the agent's first turn. If the diff
+    artifact doesn't exist on disk yet, the plan is recorded as
+    `executor_status="pending_parent_diff"` so runners skip it until the
+    artifact is produced, mirroring `full_snapshot`'s
+    `pending_root_archive` status.
     """
 
     parent_trial = select_trial(root_summary, parent_trial_name)
@@ -552,6 +563,7 @@ def plan_start_state_baselines(
             config = build_clean_start_config(
                 root_config=root_config,
                 job_name=f"{continuation_job_prefix}-diff-only",
+                diff_path=artifact_path,
                 agent=agent,
                 model=model,
                 extra_args=extra_args,
@@ -568,7 +580,9 @@ def plan_start_state_baselines(
                     start_state_type="diff_only",
                     context_mode="original_task_only",
                     parent_artifacts=(str(artifact_path),),
-                    executor_status="manifest_only",
+                    executor_status=(
+                        "ready" if artifact_path.exists() else "pending_parent_diff"
+                    ),
                 )
             )
 

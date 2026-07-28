@@ -111,6 +111,8 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
         preflight_verification_timeout_sec = float(
             kwargs.pop("preflight_verification_timeout_sec", 180.0)
         )
+        diff_path = kwargs.pop("diff_path", None)
+        diff_apply_timeout_sec = float(kwargs.pop("diff_apply_timeout_sec", 60.0))
         kwargs.setdefault("record_terminal_session", False)
         wrapped = Terminus2(
             logs_dir=logs_dir,
@@ -129,6 +131,8 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
             preinstall_tmux=preinstall_tmux,
             tmux_install_timeout_sec=tmux_install_timeout_sec,
             preflight_verification_timeout_sec=preflight_verification_timeout_sec,
+            diff_path=diff_path,
+            diff_apply_timeout_sec=diff_apply_timeout_sec,
             logs_dir=logs_dir,
             model_name=model_name,
             logger=logger,
@@ -156,6 +160,8 @@ class SnapshotAwareOracle(SnapshotAwareAgent):
         preflight_verification_timeout_sec = float(
             kwargs.pop("preflight_verification_timeout_sec", 180.0)
         )
+        diff_path = kwargs.pop("diff_path", None)
+        diff_apply_timeout_sec = float(kwargs.pop("diff_apply_timeout_sec", 60.0))
         wrapped = OracleAgent(
             logs_dir=logs_dir,
             model_name=model_name,
@@ -171,6 +177,8 @@ class SnapshotAwareOracle(SnapshotAwareAgent):
             parent_context=parent_context,
             parent_context_path=parent_context_path,
             preflight_verification_timeout_sec=preflight_verification_timeout_sec,
+            diff_path=diff_path,
+            diff_apply_timeout_sec=diff_apply_timeout_sec,
             logs_dir=logs_dir,
             model_name=model_name,
             logger=logger,

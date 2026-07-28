@@ -171,7 +171,7 @@ def test_plan_start_state_baselines_command_writes_manifest(tmp_path, capsys):
     assert exit_code == 0
     stdout = capsys.readouterr().out
     assert "clean\toriginal_task_only\tready\tclaim1-clean" in stdout
-    assert "diff_only\toriginal_task_only\tmanifest_only\tclaim1-diff-only" in stdout
+    assert "diff_only\toriginal_task_only\tpending_parent_diff\tclaim1-diff-only" in stdout
     assert "full_snapshot\tparent_summary\tready\tclaim1-full-snapshot-0" in stdout
 
     data = json.loads(manifest_path.read_text())
@@ -181,7 +181,8 @@ def test_plan_start_state_baselines_command_writes_manifest(tmp_path, capsys):
         "full_snapshot",
     ]
     assert data["plans"][1]["parent_artifacts"] == [str(diff_path)]
-    assert data["plans"][1]["executor_status"] == "manifest_only"
+    assert data["plans"][1]["executor_status"] == "pending_parent_diff"
+    assert f"diff_path={diff_path}" in " ".join(data["plans"][1]["command"])
     assert data["plans"][2]["parent_snapshot"] == "snapshot-a"
 
 

@@ -1004,12 +1004,54 @@ def test_plan_start_state_baselines_records_modes_and_artifacts(tmp_path):
     assert "--ek" not in plans[0].command
     assert plans[1].snapshot_name is None
     assert plans[1].parent_artifacts == (str(tmp_path / "parent.diff"),)
-    assert plans[1].executor_status == "manifest_only"
+    assert plans[1].executor_status == "pending_parent_diff"
     assert "--ek" not in plans[1].command
+    assert f"diff_path={tmp_path / 'parent.diff'}" in plans[1].command
     assert plans[2].snapshot_name == "snapshot-a"
     assert plans[2].executor_status == "ready"
     assert "snapshot_template_name=snapshot-a" in plans[2].command
     assert "context_mode=none" in plans[2].command
+
+
+def test_plan_start_state_baselines_diff_only_ready_when_artifact_exists(tmp_path):
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    root_summary = JobSummary(
+        job_dir=tmp_path / "jobs" / "root",
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name="fix-git__root",
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+    diff_path = tmp_path / "parent.diff"
+    diff_path.write_text("diff --git a/x b/x\n")
+
+    plans = plan_start_state_baselines(
+        root_config=root_config,
+        root_summary=root_summary,
+        continuation_job_prefix="claim1",
+        start_state_types=("diff_only",),
+        diff_path=diff_path,
+    )
+
+    assert len(plans) == 1
+    assert plans[0].executor_status == "ready"
+    assert f"diff_path={diff_path}" in plans[0].command
 
 
 def test_plan_start_state_baselines_records_clean_parent_summary_metadata(tmp_path):

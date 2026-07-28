@@ -140,7 +140,7 @@ Likely failure modes:
 | `context_mode` | `original_task_only` |
 | Inputs | Clean environment plus parent git diff. |
 | Expected artifacts | Diff file, clean run job, and manifest linking the diff to the parent run. |
-| Current status | Not implemented. |
+| Current status | Implemented (T007): `SnapshotAwareAgent.setup` applies the parent diff via `git apply` before the agent's first turn; a failed apply raises `DiffApplyFailed` so it is recorded as an executor failure, not a task failure. |
 | Immediate target | Yes, for P3-T002 as the first compressed-state comparator. |
 
 This mode applies the parent's code changes to a clean environment but does not

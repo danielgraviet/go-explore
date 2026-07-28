@@ -36,6 +36,7 @@ except ImportError:
 
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, ArchiveStore
 from go_explore.snapshots.backends import DaytonaSnapshotBackend
+from go_explore.snapshots.diff_only import DiffApplyFailed, apply_parent_diff
 from go_explore.snapshots.live import AsyncLiveSnapshotSession
 from go_explore.snapshots.manager import AsyncSnapshotManager
 from go_explore.snapshots.models import CONTEXT_FILE_PATH, SnapshotContext
@@ -65,6 +66,8 @@ class SnapshotAwareAgent(BaseAgent):
         tmux_install_timeout_sec: float = 360.0,
         preflight_verification_timeout_sec: float = 180.0,
         snapshot_retention_limit: int | str | None = None,
+        diff_path: str | Path | None = None,
+        diff_apply_timeout_sec: float = 60.0,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -80,6 +83,8 @@ class SnapshotAwareAgent(BaseAgent):
         self._preinstall_tmux = preinstall_tmux
         self._tmux_install_timeout_sec = tmux_install_timeout_sec
         self._preflight_verification_timeout_sec = preflight_verification_timeout_sec
+        self._diff_path = Path(diff_path) if diff_path else None
+        self._diff_apply_timeout_sec = diff_apply_timeout_sec
         snapshot_retention_limit = (
             snapshot_retention_limit
             if snapshot_retention_limit is not None
@@ -203,7 +208,22 @@ class SnapshotAwareAgent(BaseAgent):
     async def setup(self, environment: Any) -> None:
         if self._preinstall_tmux:
             await self._ensure_tmux_available(environment)
+        if self._diff_path is not None:
+            await self._apply_parent_diff(environment)
         await self._wrapped_agent.setup(environment)
+
+    async def _apply_parent_diff(self, environment: Any) -> None:
+        assert self._diff_path is not None
+        result = await apply_parent_diff(
+            environment,
+            self._diff_path,
+            timeout_sec=self._diff_apply_timeout_sec,
+        )
+        if result.status != "applied":
+            raise DiffApplyFailed(
+                f"diff_only executor failed to apply {self._diff_path}: "
+                f"{result.detail}"
+            )
 
     async def _ensure_tmux_available(self, environment: Any) -> None:
         exec_fn = getattr(environment, "exec", None)
