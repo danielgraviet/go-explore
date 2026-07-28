@@ -81,6 +81,66 @@ If a root has already finished, run continuations from its archive:
 Use `--selector-mode random` with `--selector-seed 0` for the random-branch
 control.
 
+## Start-State Baselines (`clean` / `diff_only` / `full_snapshot`)
+
+`plan-start-state-baselines` plans (but does not execute) child jobs that
+start a task from different states, to isolate how much benefit comes from
+restored environment state vs. restored code vs. nothing:
+
+- `clean` — fresh task environment, no parent state.
+- `diff_only` — fresh task environment + the parent's `git diff` applied via
+  `git apply` before the agent's first turn. Filesystem operation, not
+  context injection: with `context_mode=original_task_only` the diff text is
+  never shown to the agent and costs zero prompt tokens. Implemented in
+  `go_explore/snapshots/diff_only.py`, wired through
+  `SnapshotAwareAgent.setup()` in `go_explore/agents/snapshot_agent.py`.
+- `full_snapshot` — restores a full Daytona sandbox snapshot.
+
+```bash
+# 1. Plan: point at a parent job dir + diff file, ask for diff_only
+.venv/bin/python -m go_explore.cli plan-start-state-baselines jobs/<root-job-dir> \
+  --start-state-type diff_only \
+  --diff-path jobs/<root-job-dir>/parent.diff \
+  --job-prefix <experiment-prefix> \
+  --model anthropic/claude-haiku-4-5-20251001 \
+  --manifest-path jobs/<root-job-dir>/start-state-plan.json
+
+# prints: diff_only  original_task_only  ready  <experiment-prefix>-diff-only
+# harbor run ... --ak context_mode=original_task_only --ak diff_path=jobs/<root-job-dir>/parent.diff
+
+# 2. Run: execute the printed command directly (no --execute flag on this subcommand)
+harbor run --agent-import-path go_explore.agents.factory:SnapshotAwareTerminus2 \
+  --env daytona --jobs-dir jobs --n-attempts 1 --n-concurrent 1 \
+  --dataset terminal-bench@2.0 --model anthropic/claude-haiku-4-5-20251001 \
+  --include-task-name <task-name> --n-tasks 1 \
+  --job-name <experiment-prefix>-diff-only --export-traces \
+  --ak context_mode=original_task_only \
+  --ak diff_path=jobs/<root-job-dir>/parent.diff
+```
+
+If `git apply` fails, `SnapshotAwareAgent` raises `DiffApplyFailed` before
+the agent runs, so a bad diff shows up as an executor failure
+(`exception_type="DiffApplyFailed"`), not a task failure. `executor_status`
+on the plan is `"ready"` only if the diff file exists on disk at plan time,
+else `"pending_parent_diff"` (mirrors `full_snapshot`'s
+`"pending_root_archive"`) — `experiment_runner.py` skips anything not
+`"ready"`.
+
+**Gotcha:** `git apply` runs with `cwd=environment.task_env_config.workdir`,
+which is not always the git repo root (e.g. for `fix-git`, `workdir` is
+already `/app/personal-site`, the repo root itself). Diffs should come from
+an actual `git diff` run inside the parent's own checkout so paths are
+anchored correctly by construction — don't hand-write synthetic diffs
+without checking where the task's repo actually lives.
+
+Tests: `tests/test_diff_only.py` (apply mechanics), `tests/test_snapshot_agent.py`
+(`test_diff_only_applies_to_filesystem_not_agent_context`,
+`test_diff_only_apply_failure_blocks_agent_run`,
+`test_snapshot_aware_terminus2_accepts_diff_path_without_wrapped_leak`),
+`tests/test_continuations.py` / `tests/test_cli.py` (plan-level
+`executor_status` and command-shape checks). Full ticket:
+`tasks/phase-6-fixes/T007-create-start-states.md`.
+
 ## Inspect Results
 
 Summarize a completed Harbor job:
