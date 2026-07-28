@@ -3,12 +3,12 @@ from __future__ import annotations
 import json
 import shlex
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 from go_explore.snapshots.replay import ExtractedSignal
-
 
 DISCOVERY_COMMANDS = {
     "cat",

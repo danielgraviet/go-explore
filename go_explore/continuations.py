@@ -21,6 +21,7 @@ from go_explore.snapshots.replay import (
     extract_signals_from_atif_step,
     load_atif_trajectory_steps,
 )
+from go_explore.snapshots.transcript import build_transcript_summary, parent_outcome
 
 
 class ContinuationError(ValueError):
@@ -35,6 +36,7 @@ ContextMode = Literal[
     "failure_symptom",
     "resume_notice",
     "preflight_verification",
+    "full_transcript_summary",
     "none",
 ]
 
@@ -407,7 +409,8 @@ def _with_clean_context_extra_args(
     cleaned.extend(["--ak", f"context_mode={context_mode}"])
     if (
         parent_context_path is not None
-        and context_mode in {"parent_summary", "critical_parent_summary"}
+        and context_mode
+        in {"parent_summary", "critical_parent_summary", "full_transcript_summary"}
     ):
         cleaned.extend(["--ak", f"parent_context_path={parent_context_path}"])
     if diff_path is not None:
@@ -513,6 +516,7 @@ def plan_start_state_baselines(
     parent_trial_name: str | None = None,
     clean_context_mode: ContextMode = "original_task_only",
     full_snapshot_context_mode: ContextMode = "parent_summary",
+    diff_only_context_mode: ContextMode = "original_task_only",
 ) -> list[ContinuationPlan]:
     """Plan Claim 1 child-start conditions without executing them.
 
@@ -523,6 +527,15 @@ def plan_start_state_baselines(
     `executor_status="pending_parent_diff"` so runners skip it until the
     artifact is produced, mirroring `full_snapshot`'s
     `pending_root_archive` status.
+
+    `diff_only_context_mode="full_transcript_summary"` additionally writes a
+    deterministic, rule-based summary of the parent trajectory (see
+    `go_explore.snapshots.transcript`) and attaches it as `parent_context_path`,
+    giving the child code state (diff) plus text memory (transcript) without
+    restoring a full sandbox. This is a distinct experiment arm from plain
+    `diff_only` - plan it with its own `continuation_job_prefix` (or rely on
+    the automatic `-diff-only-transcript` job-name suffix) so both can be
+    planned from the same parent root without colliding.
     """
 
     parent_trial = select_trial(root_summary, parent_trial_name)
@@ -560,9 +573,26 @@ def plan_start_state_baselines(
 
         elif start_state_type == "diff_only":
             artifact_path = diff_path or root_summary.job_dir / "parent.diff"
+            is_transcript_arm = diff_only_context_mode == "full_transcript_summary"
+            diff_only_suffix = (
+                "diff-only-transcript" if is_transcript_arm else "diff-only"
+            )
+            job_name = f"{continuation_job_prefix}-{diff_only_suffix}"
+
+            transcript_path = (
+                write_transcript_summary_context(root_summary, parent_trial)
+                if is_transcript_arm
+                else None
+            )
+            parent_artifacts = [str(artifact_path)]
+            if transcript_path is not None:
+                parent_artifacts.append(str(transcript_path))
+
             config = build_clean_start_config(
                 root_config=root_config,
-                job_name=f"{continuation_job_prefix}-diff-only",
+                job_name=job_name,
+                context_mode=diff_only_context_mode,
+                parent_context_path=transcript_path,
                 diff_path=artifact_path,
                 agent=agent,
                 model=model,
@@ -573,13 +603,11 @@ def plan_start_state_baselines(
                     parent_job_dir=root_summary.job_dir,
                     parent_trial_name=parent_trial.trial_name,
                     snapshot_name=None,
-                    job_name=(
-                        config.job_name or f"{continuation_job_prefix}-diff-only"
-                    ),
+                    job_name=config.job_name or job_name,
                     command=tuple(build_harbor_command(config)),
                     start_state_type="diff_only",
-                    context_mode="original_task_only",
-                    parent_artifacts=(str(artifact_path),),
+                    context_mode=diff_only_context_mode,
+                    parent_artifacts=tuple(parent_artifacts),
                     executor_status=(
                         "ready" if artifact_path.exists() else "pending_parent_diff"
                     ),
@@ -705,6 +733,32 @@ def write_failure_symptom_context(
 
     output_path = (
         root_summary.job_dir / root_trial.trial_name / "agent" / "failure-symptom.md"
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(text)
+    return output_path
+
+
+def write_transcript_summary_context(
+    root_summary: JobSummary,
+    root_trial: TrialSummary,
+) -> Path:
+    """Write a deterministic, rule-based transcript summary of the parent's
+    run to a host file, for `diff_only` children using
+    `context_mode="full_transcript_summary"`. No model call - see
+    `go_explore.snapshots.transcript.build_transcript_summary`.
+    """
+    trajectory_path = _parent_context_path(root_summary, root_trial.trial_name)
+    text = build_transcript_summary(
+        trajectory_path,
+        trial_name=root_trial.trial_name,
+        task_name=root_trial.task_name,
+        outcome=parent_outcome(root_trial.reward, root_trial.exception_type),
+        reward=root_trial.reward,
+    )
+
+    output_path = (
+        root_summary.job_dir / root_trial.trial_name / "agent" / "transcript-summary.md"
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(text)

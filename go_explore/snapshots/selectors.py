@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 import random
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Mapping
+from typing import Literal
 
 from go_explore.snapshots.archive import ArchiveEntry, SnapshotArchive
-
 
 ArchiveSelectorMode = Literal[
     "list_order",

@@ -166,8 +166,8 @@ Implementation constraint:
 | `context_mode` | `full_transcript_summary` |
 | Inputs | Clean environment, parent git diff, and parent transcript summary. |
 | Expected artifacts | Diff file, transcript/summary file, and manifest linking both to the parent. |
-| Current status | Not implemented. |
-| Immediate target | No; defer until `diff_only` and transcript summary artifacts exist. |
+| Current status | Implemented (T008): `plan_start_state_baselines(..., diff_only_context_mode="full_transcript_summary")` writes a deterministic, rule-based transcript (`go_explore/snapshots/transcript.py`, no model call) alongside the diff, and attaches it via `parent_context_path`. `SnapshotAwareAgent` injects it with an explicit "not a model-generated narrative, verify yourself" disclaimer. |
+| Immediate target | Yes - this is the Claim 1 compressed-memory comparator. |
 
 This mode tests a strong compressed baseline: code state plus text memory, but
 without preserving the full sandbox.

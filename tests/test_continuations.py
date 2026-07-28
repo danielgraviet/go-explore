@@ -17,6 +17,7 @@ from go_explore.continuations import (
     snapshot_prefix_for_trial,
     write_failure_symptom_context,
     write_plan_manifest,
+    write_transcript_summary_context,
 )
 from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.fixed_budget import (
@@ -786,6 +787,64 @@ def test_write_failure_symptom_context_handles_missing_trajectory(tmp_path):
     assert "did not solve the task" in output_path.read_text()
 
 
+def test_write_transcript_summary_context_writes_deterministic_summary(tmp_path):
+    job_dir = tmp_path / "jobs" / "root"
+    trial_name = "fix-git__root"
+    trajectory_path = job_dir / trial_name / "agent" / "trajectory.json"
+    _write_atif_trajectory(
+        trajectory_path,
+        [
+            {
+                "step_id": 1,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "pip install requests\n"},
+                    }
+                ],
+                "observation": {"results": [{"content": "Successfully installed requests"}]},
+            },
+            {
+                "step_id": 2,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "pytest tests -q\n"},
+                    }
+                ],
+                "observation": {"results": [{"content": "2 passed, 1 failed"}]},
+            },
+        ],
+    )
+    root_summary = JobSummary(
+        job_dir=job_dir,
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name=trial_name,
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+
+    output_path = write_transcript_summary_context(root_summary, root_summary.trials[0])
+
+    assert output_path == job_dir / trial_name / "agent" / "transcript-summary.md"
+    text = output_path.read_text()
+    assert "pip install requests" in text
+    assert "pytest tests -q" in text
+    assert "2 passed, 1 failed" in text
+    assert "outcome: failed" in text
+
+
 def test_plan_snapshot_continuations_records_failure_symptom_mode(tmp_path):
     root_config = HarborRunConfig(
         agent="terminus-2",
@@ -1052,6 +1111,127 @@ def test_plan_start_state_baselines_diff_only_ready_when_artifact_exists(tmp_pat
     assert len(plans) == 1
     assert plans[0].executor_status == "ready"
     assert f"diff_path={diff_path}" in plans[0].command
+
+
+def test_plan_start_state_baselines_diff_only_transcript_wires_both_artifacts(tmp_path):
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    trial_name = "fix-git__root"
+    job_dir = tmp_path / "jobs" / "root"
+    trajectory_path = job_dir / trial_name / "agent" / "trajectory.json"
+    _write_atif_trajectory(
+        trajectory_path,
+        [
+            {
+                "step_id": 1,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "pytest tests -q\n"},
+                    }
+                ],
+                "observation": {"results": [{"content": "1 passed"}]},
+            },
+        ],
+    )
+    root_summary = JobSummary(
+        job_dir=job_dir,
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name=trial_name,
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=1.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+    diff_path = tmp_path / "parent.diff"
+    diff_path.write_text("diff --git a/x b/x\n")
+    transcript_path = job_dir / trial_name / "agent" / "transcript-summary.md"
+
+    plans = plan_start_state_baselines(
+        root_config=root_config,
+        root_summary=root_summary,
+        continuation_job_prefix="claim1",
+        start_state_types=("diff_only",),
+        diff_path=diff_path,
+        diff_only_context_mode="full_transcript_summary",
+    )
+
+    assert len(plans) == 1
+    plan = plans[0]
+    assert plan.start_state_type == "diff_only"
+    assert plan.context_mode == "full_transcript_summary"
+    assert plan.job_name == "claim1-diff-only-transcript"
+    assert plan.parent_artifacts == (str(diff_path), str(transcript_path))
+    assert plan.executor_status == "ready"
+    assert f"diff_path={diff_path}" in plan.command
+    assert "context_mode=full_transcript_summary" in plan.command
+    assert f"parent_context_path={transcript_path}" in plan.command
+
+    # The transcript artifact was actually generated on disk, deterministically
+    # from the trajectory - not a placeholder path.
+    assert transcript_path.exists()
+    assert "pytest tests -q" in transcript_path.read_text()
+
+
+def test_plan_start_state_baselines_diff_only_default_mode_has_no_transcript(tmp_path):
+    """Plain diff_only (original_task_only) must not pick up a transcript
+    artifact or parent_context_path - only the explicit transcript arm does."""
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    root_summary = JobSummary(
+        job_dir=tmp_path / "jobs" / "root",
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name="fix-git__root",
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+    diff_path = tmp_path / "parent.diff"
+    diff_path.write_text("diff --git a/x b/x\n")
+
+    plans = plan_start_state_baselines(
+        root_config=root_config,
+        root_summary=root_summary,
+        continuation_job_prefix="claim1",
+        start_state_types=("diff_only",),
+        diff_path=diff_path,
+    )
+
+    assert len(plans) == 1
+    assert plans[0].job_name == "claim1-diff-only"
+    assert plans[0].parent_artifacts == (str(diff_path),)
+    assert "parent_context_path" not in " ".join(plans[0].command)
+    assert not (
+        tmp_path / "jobs" / "root" / "fix-git__root" / "agent" / "transcript-summary.md"
+    ).exists()
 
 
 def test_plan_start_state_baselines_records_clean_parent_summary_metadata(tmp_path):

@@ -149,6 +149,7 @@ class SnapshotAwareAgent(BaseAgent):
             "failure_symptom",
             "resume_notice",
             "preflight_verification",
+            "full_transcript_summary",
             "none",
             "original_task_only",
         }
@@ -461,6 +462,7 @@ class SnapshotAwareAgent(BaseAgent):
             "parent_summary",
             "critical_parent_summary",
             "failure_symptom",
+            "full_transcript_summary",
         }
 
     async def _apply_context_mode(
@@ -506,6 +508,11 @@ class SnapshotAwareAgent(BaseAgent):
                 instruction,
                 parent_context,
             )
+        if context_mode == "full_transcript_summary":
+            return SnapshotAwareAgent._augment_instruction_full_transcript_summary(
+                instruction,
+                parent_context,
+            )
         return (
             f"{instruction}\n\n"
             "---\n"
@@ -541,6 +548,32 @@ class SnapshotAwareAgent(BaseAgent):
             "not shown to you, so you are free to take a different approach. "
             "Below is only the observed outcome of that attempt - what happened, "
             "not how it was attempted:\n\n"
+            f"{parent_context}"
+        )
+
+    @staticmethod
+    def _augment_instruction_full_transcript_summary(
+        instruction: str, parent_context: str
+    ) -> str:
+        """Pairs with `start_state_type=diff_only`: the diff has already put
+        the parent's code changes on disk (a filesystem operation, applied by
+        `setup()` before this instruction is ever built). This text is the
+        only channel carrying the parent's *process* - commands run, files
+        touched, observed test results - and it is a deterministic, rule-based
+        extraction, not a model-generated narrative, so it must not be
+        oversold as trustworthy or authoritative."""
+        return (
+            f"{instruction}\n\n"
+            "---\n"
+            "You are starting from a clean checkout with the parent attempt's "
+            "code changes already applied (via git diff). Below is a "
+            "deterministic, rule-based summary of that prior attempt - not a "
+            "model-generated narrative - covering commands run, files "
+            "touched, and observed test results. Treat it as an unverified "
+            "record of what was tried and observed, not proof the approach "
+            "was correct or complete: verify current state and test results "
+            "yourself before relying on it.\n\n"
+            "Prior-attempt summary:\n"
             f"{parent_context}"
         )
 
