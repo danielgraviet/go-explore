@@ -5,7 +5,7 @@ import json
 import subprocess
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import Any, Callable, Literal, Sequence
 
 from daytona import AsyncDaytona
 
@@ -21,6 +21,7 @@ from go_explore.snapshots.replay import (
     extract_signals_from_atif_step,
     load_atif_trajectory_steps,
 )
+from go_explore.snapshots.command_log import build_command_log
 from go_explore.snapshots.transcript import build_transcript_summary, parent_outcome
 
 
@@ -37,6 +38,7 @@ ContextMode = Literal[
     "resume_notice",
     "preflight_verification",
     "full_transcript_summary",
+    "command_log",
     "none",
 ]
 
@@ -410,7 +412,12 @@ def _with_clean_context_extra_args(
     if (
         parent_context_path is not None
         and context_mode
-        in {"parent_summary", "critical_parent_summary", "full_transcript_summary"}
+        in {
+            "parent_summary",
+            "critical_parent_summary",
+            "full_transcript_summary",
+            "command_log",
+        }
     ):
         cleaned.extend(["--ak", f"parent_context_path={parent_context_path}"])
     if diff_path is not None:
@@ -528,14 +535,14 @@ def plan_start_state_baselines(
     artifact is produced, mirroring `full_snapshot`'s
     `pending_root_archive` status.
 
-    `diff_only_context_mode="full_transcript_summary"` additionally writes a
-    deterministic, rule-based summary of the parent trajectory (see
-    `go_explore.snapshots.transcript`) and attaches it as `parent_context_path`,
-    giving the child code state (diff) plus text memory (transcript) without
-    restoring a full sandbox. This is a distinct experiment arm from plain
-    `diff_only` - plan it with its own `continuation_job_prefix` (or rely on
-    the automatic `-diff-only-transcript` job-name suffix) so both can be
-    planned from the same parent root without colliding.
+    `diff_only_context_mode` in `_DIFF_ONLY_MEMORY_ARMS` additionally writes a
+    deterministic, rule-based text-memory artifact of the parent trajectory
+    (see `go_explore.snapshots.transcript` / `go_explore.snapshots.command_log`)
+    and attaches it as `parent_context_path`, giving the child code state
+    (diff) plus text memory without restoring a full sandbox. Each mode is a
+    distinct experiment arm from plain `diff_only` - plan it with its own
+    `continuation_job_prefix` (or rely on the automatic job-name suffix) so
+    they can all be planned from the same parent root without colliding.
     """
 
     parent_trial = select_trial(root_summary, parent_trial_name)
@@ -573,26 +580,26 @@ def plan_start_state_baselines(
 
         elif start_state_type == "diff_only":
             artifact_path = diff_path or root_summary.job_dir / "parent.diff"
-            is_transcript_arm = diff_only_context_mode == "full_transcript_summary"
-            diff_only_suffix = (
-                "diff-only-transcript" if is_transcript_arm else "diff-only"
+            memory_arm = _DIFF_ONLY_MEMORY_ARMS.get(diff_only_context_mode)
+            job_name = (
+                f"{continuation_job_prefix}-{memory_arm[0]}"
+                if memory_arm is not None
+                else f"{continuation_job_prefix}-diff-only"
             )
-            job_name = f"{continuation_job_prefix}-{diff_only_suffix}"
-
-            transcript_path = (
-                write_transcript_summary_context(root_summary, parent_trial)
-                if is_transcript_arm
+            memory_artifact_path = (
+                memory_arm[1](root_summary, parent_trial)
+                if memory_arm is not None
                 else None
             )
             parent_artifacts = [str(artifact_path)]
-            if transcript_path is not None:
-                parent_artifacts.append(str(transcript_path))
+            if memory_artifact_path is not None:
+                parent_artifacts.append(str(memory_artifact_path))
 
             config = build_clean_start_config(
                 root_config=root_config,
                 job_name=job_name,
                 context_mode=diff_only_context_mode,
-                parent_context_path=transcript_path,
+                parent_context_path=memory_artifact_path,
                 diff_path=artifact_path,
                 agent=agent,
                 model=model,
@@ -763,6 +770,43 @@ def write_transcript_summary_context(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(text)
     return output_path
+
+
+def write_command_log_context(
+    root_summary: JobSummary,
+    root_trial: TrialSummary,
+) -> Path:
+    """Write a deterministic, ordered command+output log of the parent's run
+    to a host file, for `diff_only` children using
+    `context_mode="command_log"`. No model call - see
+    `go_explore.snapshots.command_log.build_command_log`.
+    """
+    trajectory_path = _parent_context_path(root_summary, root_trial.trial_name)
+    text = build_command_log(
+        trajectory_path,
+        trial_name=root_trial.trial_name,
+        task_name=root_trial.task_name,
+        outcome=parent_outcome(root_trial.reward, root_trial.exception_type),
+        reward=root_trial.reward,
+    )
+
+    output_path = (
+        root_summary.job_dir / root_trial.trial_name / "agent" / "command-log.md"
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(text)
+    return output_path
+
+
+# Maps a `diff_only_context_mode` to the (job-name suffix, artifact writer)
+# for its text-memory arm. Modes not listed here (e.g. "original_task_only")
+# get plain `diff_only` behavior - no artifact, no parent_context_path.
+_DIFF_ONLY_MEMORY_ARMS: dict[
+    ContextMode, tuple[str, Callable[[JobSummary, TrialSummary], Path]]
+] = {
+    "full_transcript_summary": ("diff-only-transcript", write_transcript_summary_context),
+    "command_log": ("diff-only-command-log", write_command_log_context),
+}
 
 
 def write_plan_manifest(plans: Sequence[ContinuationPlan], path: Path) -> None:

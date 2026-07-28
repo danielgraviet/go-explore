@@ -291,6 +291,60 @@ def test_plan_start_state_baselines_command_can_plan_diff_only_transcript(
     assert transcript_path.exists()
 
 
+def test_plan_start_state_baselines_command_can_plan_diff_only_command_log(
+    tmp_path,
+    capsys,
+):
+    root_job_dir = tmp_path / "jobs" / "root"
+    root_job_dir.mkdir(parents=True)
+    _write_root_job(root_job_dir)
+    manifest_path = tmp_path / "plans" / "claim1.json"
+    diff_path = tmp_path / "artifacts" / "parent.diff"
+    diff_path.parent.mkdir(parents=True)
+    diff_path.write_text("diff --git a/x b/x\n")
+    command_log_path = root_job_dir / "fix-git__root" / "agent" / "command-log.md"
+
+    exit_code = plan_start_state_baselines_cmd(
+        argparse.Namespace(
+            root_job_dir=root_job_dir,
+            trial_name=None,
+            start_state_type=["diff_only"],
+            snapshot=[],
+            from_archive=False,
+            selector_mode="archive_priority",
+            selector_seed=None,
+            oracle_labels=None,
+            archive_path=None,
+            diff_path=diff_path,
+            manifest_path=manifest_path,
+            job_prefix="claim1",
+            max_snapshots=None,
+            agent=None,
+            model=None,
+            extra_arg=[],
+            clean_context_mode="original_task_only",
+            diff_only_context_mode="command_log",
+        )
+    )
+
+    assert exit_code == 0
+    stdout = capsys.readouterr().out
+    assert (
+        "diff_only\tcommand_log\tready\tclaim1-diff-only-command-log"
+        in stdout
+    )
+
+    data = json.loads(manifest_path.read_text())
+    plan = data["plans"][0]
+    assert plan["start_state_type"] == "diff_only"
+    assert plan["context_mode"] == "command_log"
+    assert plan["job_name"] == "claim1-diff-only-command-log"
+    assert plan["parent_artifacts"] == [str(diff_path), str(command_log_path)]
+    assert f"diff_path={diff_path}" in " ".join(plan["command"])
+    assert f"parent_context_path={command_log_path}" in " ".join(plan["command"])
+    assert command_log_path.exists()
+
+
 def test_plan_fixed_budget_command_writes_manifest(tmp_path, capsys):
     manifest_path = tmp_path / "plans" / "fixed-budget.json"
 

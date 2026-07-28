@@ -627,12 +627,13 @@ def main() -> int:
     )
     start_state_parser.add_argument(
         "--diff-only-context-mode",
-        choices=("original_task_only", "full_transcript_summary"),
+        choices=("original_task_only", "full_transcript_summary", "command_log"),
         default="original_task_only",
         help=(
             "Parent context mode for diff_only start-state jobs. "
-            "full_transcript_summary also writes and attaches a deterministic "
-            "transcript summary of the parent trajectory."
+            "full_transcript_summary writes and attaches a deterministic "
+            "transcript summary of the parent trajectory; command_log writes "
+            "and attaches a deterministic ordered command+output log."
         ),
     )
     start_state_parser.set_defaults(func=plan_start_state_baselines_cmd)

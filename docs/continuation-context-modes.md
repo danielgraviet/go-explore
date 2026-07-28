@@ -46,7 +46,7 @@ conditions. Represent those conditions with these mode pairs:
 | Fresh restart | `clean` | `original_task_only` |
 | Diff only | `diff_only` | `original_task_only` |
 | Diff + transcript summary | `diff_only` | `full_transcript_summary` |
-| Diff + command log | `command_replay` | `command_log` |
+| Diff + command log | `diff_only` | `command_log` |
 | Replayed environment | `command_replay` | `original_task_only` |
 | Full snapshot | `full_snapshot` | `parent_summary`, `original_task_only`, or `none` |
 
@@ -177,6 +177,30 @@ Likely failure modes:
 - combines diff-application failures with context misuse,
 - can look artificially strong if summary cost is not counted,
 - can hide that runtime state was missing until the child reruns tests.
+
+### Diff Plus Command Log
+
+| Property | Value |
+| --- | --- |
+| `start_state_type` | `diff_only` |
+| `context_mode` | `command_log` |
+| Inputs | Clean environment, parent git diff, and parent command log. |
+| Expected artifacts | Diff file, command-log file, and manifest linking both to the parent. |
+| Current status | Implemented (T009): `plan_start_state_baselines(..., diff_only_context_mode="command_log")` writes a deterministic, ordered command+output log (`go_explore/snapshots/command_log.py`, no model call, no replay execution) alongside the diff, and attaches it via `parent_context_path`. Distinct in shape from `full_transcript_summary`: entries are grouped by ATIF step (command batch + its one observed terminal excerpt, harness retry/formatting boilerplate stripped) rather than categorized into narrative sections - the most explicit compressed-memory condition short of actually replaying the commands. Not to be confused with `command_replay` below, which would *execute* the parent's commands again; this only shows their record. |
+| Immediate target | Yes - this is the Claim 1 exact-memory comparator, alongside `full_transcript_summary`. |
+
+This mode tests whether giving the child the literal setup/discovery sequence
+(not a summary of it) is enough to recover missing sandbox state, and how
+that compares against a categorized summary of the same trajectory.
+
+Likely failure modes:
+
+- same diff-application and context-misuse risks as diff + transcript,
+- longer prompts than transcript summary for the same trajectory, so any
+  advantage must be weighed against added token cost,
+- batched-command steps share one terminal excerpt, so the log can't always
+  attribute an observed effect to one specific command in a multi-command
+  turn.
 
 ### Command Replay
 

@@ -180,6 +180,56 @@ prompt-contract discipline), `tests/test_continuations.py`
 (`test_snapshot_aware_agent_full_transcript_summary_uses_disclaimer_prompt`).
 Full ticket: `tasks/phase-6-fixes/T008-diff-transcript.md`.
 
+### `diff_only + command_log` (exact-memory comparator)
+
+`--diff-only-context-mode command_log` adds a fifth arm: the same
+filesystem-applied diff, plus a deterministic, ordered command+output log
+(literal commands and their observed terminal excerpts, grouped by ATIF
+step) injected into the child's prompt. No model call, no replay execution —
+see `go_explore/snapshots/command_log.py`. Distinct in shape from
+`full_transcript_summary`'s categorized narrative: this is the most explicit
+compressed-memory condition short of actually replaying the commands, and
+tests exact execution memory against summary memory and against
+`full_snapshot`.
+
+```bash
+.venv/bin/python -m go_explore.cli plan-start-state-baselines jobs/<root-job-dir> \
+  --start-state-type diff_only \
+  --diff-path jobs/<root-job-dir>/parent.diff \
+  --diff-only-context-mode command_log \
+  --job-prefix <experiment-prefix> \
+  --model anthropic/claude-haiku-4-5-20251001 \
+  --manifest-path jobs/<root-job-dir>/start-state-plan.json
+
+# prints: diff_only  command_log  ready  <experiment-prefix>-diff-only-command-log
+# harbor run ... --ak context_mode=command_log \
+#   --ak diff_path=jobs/<root-job-dir>/parent.diff \
+#   --ak parent_context_path=jobs/<root-job-dir>/<parent-trial>/agent/command-log.md
+```
+
+The job name auto-suffixes to `-diff-only-command-log` so all three
+`diff_only` arms (plain, transcript, command_log) can be planned from the
+same root without colliding. The log file is written to
+`jobs/<root-job-dir>/<parent-trial>/agent/command-log.md` at plan time —
+inspect it directly before running a batch.
+
+**Gotcha:** Terminus-2's own harness prepends retry/formatting warnings
+("Previous response had warnings: ...") before the actual terminal output in
+each ATIF step's observation text. `build_command_log` strips everything up
+to the last `New Terminal Output:` / `Current Terminal Screen:` marker
+before excerpting — without that, the excerpt is almost entirely harness
+boilerplate instead of real command output. Caught by inspecting a real
+generated artifact per the ticket's Validation step, not by unit tests alone
+(the test fixtures use clean synthetic observation text).
+
+Tests: `tests/test_command_log.py` (log generation: ordered entries,
+chronological command→output shape, test/dependency/file annotations,
+truncation, determinism, prompt-contract discipline),
+`tests/test_continuations.py` (`write_command_log_context`,
+`plan_start_state_baselines` wiring), `tests/test_snapshot_agent.py`
+(`test_snapshot_aware_agent_command_log_uses_disclaimer_prompt`). Full
+ticket: `tasks/phase-6-fixes/T009-diff-command-log.md`.
+
 ## Inspect Results
 
 Summarize a completed Harbor job:
@@ -210,7 +260,7 @@ Build analysis tables:
 ## Current Benchmark Targets
 
 - Claim 2: promising snapshot branching vs retry and random branch.
-- Claim 1: `clean` vs `diff_only` vs `diff_only + transcript` vs `full_snapshot`.
+- Claim 1: `clean` vs `diff_only` vs `diff_only + transcript` vs `diff_only + command_log` vs `full_snapshot`.
 
 Useful files:
 
