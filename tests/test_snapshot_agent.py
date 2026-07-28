@@ -691,6 +691,75 @@ def test_augment_instruction_resume_notice_carries_no_parent_narrative():
     assert "prior attempt" in result
 
 
+def test_snapshot_aware_agent_full_transcript_summary_uses_disclaimer_prompt(tmp_path):
+    """diff_only + transcript pairs a filesystem-applied diff with a
+    deterministic, rule-based text summary. The prompt must carry an
+    explicit "not a model-generated narrative / verify yourself" disclaimer,
+    per T008's prompt-contract discipline."""
+    transcript_path = tmp_path / "transcript-summary.md"
+    transcript_path.write_text(
+        "# Parent attempt summary: fix-git\n"
+        "outcome: failed (reward: 0.0)\n\n"
+        "## Test runs (observed, not inferred)\n"
+        "- `pytest tests -q` -> 2 passed, 1 failed\n"
+    )
+
+    class FakeWrapped:
+        def __init__(self):
+            self.instruction = None
+
+        def perform_task(
+            self, *, instruction, session, logging_dir=None, time_limit_seconds=None
+        ):
+            self.instruction = instruction
+            return MagicMock()
+
+        def to_agent_info(self):
+            return {}
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        context_mode="full_transcript_summary",
+        parent_context_path=transcript_path,
+    )
+
+    agent.perform_task("solve task", MagicMock(session_name="trial-a"))
+
+    assert wrapped.instruction is not None
+    assert "solve task" in wrapped.instruction
+    assert "2 passed, 1 failed" in wrapped.instruction
+    assert "not a model-generated narrative" in wrapped.instruction
+    assert "verify" in wrapped.instruction.lower()
+    assert "already applied" in wrapped.instruction
+
+
+@pytest.mark.asyncio
+async def test_snapshot_aware_agent_original_task_only_ignores_transcript_file(tmp_path):
+    """A plain diff_only run (original_task_only) must not pick up a
+    transcript file even if one happens to be passed - only
+    full_transcript_summary triggers injection."""
+    transcript_path = tmp_path / "transcript-summary.md"
+    transcript_path.write_text("# Parent attempt summary: fix-git\n")
+
+    wrapped = MagicMock()
+    wrapped.run = AsyncMock()
+    environment = MagicMock()
+    environment.trial_paths = None
+    environment.session_id = "trial-1"
+
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        context_mode="original_task_only",
+        parent_context_path=transcript_path,
+    )
+
+    await agent.run("solve task", environment, context=None)
+
+    received_instruction = wrapped.run.await_args.args[0]
+    assert received_instruction == "solve task"
+
+
 def _write_trajectory(path: Path, steps: list[dict]) -> None:
     path.write_text(json.dumps({"steps": steps}))
 

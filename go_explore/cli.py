@@ -270,6 +270,7 @@ def plan_start_state_baselines_cmd(args: argparse.Namespace) -> int:
         max_snapshots=args.max_snapshots,
         parent_trial_name=root_trial.trial_name,
         clean_context_mode=args.clean_context_mode,
+        diff_only_context_mode=args.diff_only_context_mode,
     )
 
     if args.manifest_path:
@@ -623,6 +624,16 @@ def main() -> int:
         choices=("original_task_only", "parent_summary", "none"),
         default="original_task_only",
         help="Parent context mode for clean start-state jobs.",
+    )
+    start_state_parser.add_argument(
+        "--diff-only-context-mode",
+        choices=("original_task_only", "full_transcript_summary"),
+        default="original_task_only",
+        help=(
+            "Parent context mode for diff_only start-state jobs. "
+            "full_transcript_summary also writes and attaches a deterministic "
+            "transcript summary of the parent trajectory."
+        ),
     )
     start_state_parser.set_defaults(func=plan_start_state_baselines_cmd)
 

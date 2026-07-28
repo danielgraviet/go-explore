@@ -141,6 +141,45 @@ Tests: `tests/test_diff_only.py` (apply mechanics), `tests/test_snapshot_agent.p
 `executor_status` and command-shape checks). Full ticket:
 `tasks/phase-6-fixes/T007-create-start-states.md`.
 
+### `diff_only + transcript` (compressed-memory comparator)
+
+`--diff-only-context-mode full_transcript_summary` adds a fourth arm: the
+same filesystem-applied diff as `diff_only`, plus a deterministic,
+rule-based text summary of the parent's trajectory (commands run, files
+touched, observed test pass/fail counts, last verifier output) injected into
+the child's prompt. No model call — see `go_explore/snapshots/transcript.py`.
+This isolates "does text memory on top of code state help" from
+`full_snapshot`'s "does the whole restored sandbox help."
+
+```bash
+.venv/bin/python -m go_explore.cli plan-start-state-baselines jobs/<root-job-dir> \
+  --start-state-type diff_only \
+  --diff-path jobs/<root-job-dir>/parent.diff \
+  --diff-only-context-mode full_transcript_summary \
+  --job-prefix <experiment-prefix> \
+  --model anthropic/claude-haiku-4-5-20251001 \
+  --manifest-path jobs/<root-job-dir>/start-state-plan.json
+
+# prints: diff_only  full_transcript_summary  ready  <experiment-prefix>-diff-only-transcript
+# harbor run ... --ak context_mode=full_transcript_summary \
+#   --ak diff_path=jobs/<root-job-dir>/parent.diff \
+#   --ak parent_context_path=jobs/<root-job-dir>/<parent-trial>/agent/transcript-summary.md
+```
+
+The job name auto-suffixes to `-diff-only-transcript` (vs plain `diff_only`'s
+`-diff-only`) so both arms can be planned from the same root without
+colliding. The transcript file is written to
+`jobs/<root-job-dir>/<parent-trial>/agent/transcript-summary.md` at plan
+time — inspect it directly before running a batch.
+
+Tests: `tests/test_transcript.py` (summary generation: commands, files, test
+runs, dependency installs, last observation, truncation, determinism,
+prompt-contract discipline), `tests/test_continuations.py`
+(`write_transcript_summary_context`, `plan_start_state_baselines` wiring),
+`tests/test_snapshot_agent.py`
+(`test_snapshot_aware_agent_full_transcript_summary_uses_disclaimer_prompt`).
+Full ticket: `tasks/phase-6-fixes/T008-diff-transcript.md`.
+
 ## Inspect Results
 
 Summarize a completed Harbor job:
@@ -171,7 +210,7 @@ Build analysis tables:
 ## Current Benchmark Targets
 
 - Claim 2: promising snapshot branching vs retry and random branch.
-- Claim 1: `clean` vs `diff_only` vs `full_snapshot`.
+- Claim 1: `clean` vs `diff_only` vs `diff_only + transcript` vs `full_snapshot`.
 
 Useful files:
 
