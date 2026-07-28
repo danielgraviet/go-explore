@@ -15,6 +15,7 @@ from go_explore.continuations import (
     plan_start_state_baselines,
     plan_snapshot_continuations,
     snapshot_prefix_for_trial,
+    write_command_log_context,
     write_failure_symptom_context,
     write_plan_manifest,
     write_transcript_summary_context,
@@ -845,6 +846,64 @@ def test_write_transcript_summary_context_writes_deterministic_summary(tmp_path)
     assert "outcome: failed" in text
 
 
+def test_write_command_log_context_writes_deterministic_log(tmp_path):
+    job_dir = tmp_path / "jobs" / "root"
+    trial_name = "fix-git__root"
+    trajectory_path = job_dir / trial_name / "agent" / "trajectory.json"
+    _write_atif_trajectory(
+        trajectory_path,
+        [
+            {
+                "step_id": 1,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "pip install requests\n"},
+                    }
+                ],
+                "observation": {"results": [{"content": "Successfully installed requests"}]},
+            },
+            {
+                "step_id": 2,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "pytest tests -q\n"},
+                    }
+                ],
+                "observation": {"results": [{"content": "2 passed, 1 failed"}]},
+            },
+        ],
+    )
+    root_summary = JobSummary(
+        job_dir=job_dir,
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name=trial_name,
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+
+    output_path = write_command_log_context(root_summary, root_summary.trials[0])
+
+    assert output_path == job_dir / trial_name / "agent" / "command-log.md"
+    text = output_path.read_text()
+    assert "001. $ pip install requests" in text
+    assert "002. $ pytest tests -q" in text
+    assert "2 passed, 1 failed" in text
+    assert "outcome: failed" in text
+
+
 def test_plan_snapshot_continuations_records_failure_symptom_mode(tmp_path):
     root_config = HarborRunConfig(
         agent="terminus-2",
@@ -1185,6 +1244,80 @@ def test_plan_start_state_baselines_diff_only_transcript_wires_both_artifacts(tm
     # from the trajectory - not a placeholder path.
     assert transcript_path.exists()
     assert "pytest tests -q" in transcript_path.read_text()
+
+
+def test_plan_start_state_baselines_diff_only_command_log_wires_both_artifacts(tmp_path):
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    trial_name = "fix-git__root"
+    job_dir = tmp_path / "jobs" / "root"
+    trajectory_path = job_dir / trial_name / "agent" / "trajectory.json"
+    _write_atif_trajectory(
+        trajectory_path,
+        [
+            {
+                "step_id": 1,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "pytest tests -q\n"},
+                    }
+                ],
+                "observation": {"results": [{"content": "1 passed"}]},
+            },
+        ],
+    )
+    root_summary = JobSummary(
+        job_dir=job_dir,
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name=trial_name,
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=1.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+    diff_path = tmp_path / "parent.diff"
+    diff_path.write_text("diff --git a/x b/x\n")
+    command_log_path = job_dir / trial_name / "agent" / "command-log.md"
+
+    plans = plan_start_state_baselines(
+        root_config=root_config,
+        root_summary=root_summary,
+        continuation_job_prefix="claim1",
+        start_state_types=("diff_only",),
+        diff_path=diff_path,
+        diff_only_context_mode="command_log",
+    )
+
+    assert len(plans) == 1
+    plan = plans[0]
+    assert plan.start_state_type == "diff_only"
+    assert plan.context_mode == "command_log"
+    assert plan.job_name == "claim1-diff-only-command-log"
+    assert plan.parent_artifacts == (str(diff_path), str(command_log_path))
+    assert plan.executor_status == "ready"
+    assert f"diff_path={diff_path}" in plan.command
+    assert "context_mode=command_log" in plan.command
+    assert f"parent_context_path={command_log_path}" in plan.command
+
+    # The command-log artifact was actually generated on disk, deterministically
+    # from the trajectory - not a placeholder path.
+    assert command_log_path.exists()
+    assert "001. $ pytest tests -q" in command_log_path.read_text()
 
 
 def test_plan_start_state_baselines_diff_only_default_mode_has_no_transcript(tmp_path):

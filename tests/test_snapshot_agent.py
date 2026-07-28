@@ -734,6 +734,77 @@ def test_snapshot_aware_agent_full_transcript_summary_uses_disclaimer_prompt(tmp
     assert "already applied" in wrapped.instruction
 
 
+def test_snapshot_aware_agent_command_log_uses_disclaimer_prompt(tmp_path):
+    """diff_only + command_log pairs a filesystem-applied diff with a
+    deterministic, ordered command+output log. Same prompt-contract
+    discipline as full_transcript_summary, but distinct framing text
+    ("ordered log", "not ... a summary") since it's a different arm."""
+    command_log_path = tmp_path / "command-log.md"
+    command_log_path.write_text(
+        "# Parent command log: fix-git\n"
+        "outcome: failed (reward: 0.0)\n\n"
+        "001. $ pytest tests -q\n"
+        "    -> 2 passed, 1 failed\n"
+        "    [test result: 2 passed, 1 failed]\n"
+    )
+
+    class FakeWrapped:
+        def __init__(self):
+            self.instruction = None
+
+        def perform_task(
+            self, *, instruction, session, logging_dir=None, time_limit_seconds=None
+        ):
+            self.instruction = instruction
+            return MagicMock()
+
+        def to_agent_info(self):
+            return {}
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        context_mode="command_log",
+        parent_context_path=command_log_path,
+    )
+
+    agent.perform_task("solve task", MagicMock(session_name="trial-a"))
+
+    assert wrapped.instruction is not None
+    assert "solve task" in wrapped.instruction
+    assert "2 passed, 1 failed" in wrapped.instruction
+    assert "not a model-generated narrative" in wrapped.instruction
+    assert "not a summary" in wrapped.instruction
+    assert "verify" in wrapped.instruction.lower()
+    assert "already applied" in wrapped.instruction
+
+
+@pytest.mark.asyncio
+async def test_snapshot_aware_agent_original_task_only_ignores_command_log_file(tmp_path):
+    """A plain diff_only run (original_task_only) must not pick up a
+    command-log file even if one happens to be passed - only command_log
+    triggers injection."""
+    command_log_path = tmp_path / "command-log.md"
+    command_log_path.write_text("# Parent command log: fix-git\n")
+
+    wrapped = MagicMock()
+    wrapped.run = AsyncMock()
+    environment = MagicMock()
+    environment.trial_paths = None
+    environment.session_id = "trial-1"
+
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        context_mode="original_task_only",
+        parent_context_path=command_log_path,
+    )
+
+    await agent.run("solve task", environment, context=None)
+
+    received_instruction = wrapped.run.await_args.args[0]
+    assert received_instruction == "solve task"
+
+
 @pytest.mark.asyncio
 async def test_snapshot_aware_agent_original_task_only_ignores_transcript_file(tmp_path):
     """A plain diff_only run (original_task_only) must not pick up a

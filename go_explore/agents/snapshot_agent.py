@@ -150,6 +150,7 @@ class SnapshotAwareAgent(BaseAgent):
             "resume_notice",
             "preflight_verification",
             "full_transcript_summary",
+            "command_log",
             "none",
             "original_task_only",
         }
@@ -463,6 +464,7 @@ class SnapshotAwareAgent(BaseAgent):
             "critical_parent_summary",
             "failure_symptom",
             "full_transcript_summary",
+            "command_log",
         }
 
     async def _apply_context_mode(
@@ -510,6 +512,11 @@ class SnapshotAwareAgent(BaseAgent):
             )
         if context_mode == "full_transcript_summary":
             return SnapshotAwareAgent._augment_instruction_full_transcript_summary(
+                instruction,
+                parent_context,
+            )
+        if context_mode == "command_log":
+            return SnapshotAwareAgent._augment_instruction_command_log(
                 instruction,
                 parent_context,
             )
@@ -574,6 +581,31 @@ class SnapshotAwareAgent(BaseAgent):
             "was correct or complete: verify current state and test results "
             "yourself before relying on it.\n\n"
             "Prior-attempt summary:\n"
+            f"{parent_context}"
+        )
+
+    @staticmethod
+    def _augment_instruction_command_log(
+        instruction: str, parent_context: str
+    ) -> str:
+        """diff_only + command_log: the most explicit compressed-memory
+        comparator short of full replay. Unlike full_transcript_summary's
+        categorized narrative, this is a literal, ordered command+output
+        log - closer to "what actually happened" than "what it meant."
+        Same discipline as the other modes: a record of what was tried and
+        observed, not proof it was correct."""
+        return (
+            f"{instruction}\n\n"
+            "---\n"
+            "You are starting from a clean checkout with the parent attempt's "
+            "code changes already applied (via git diff). Below is a "
+            "deterministic, ordered log of the commands the parent ran and "
+            "their observed outputs - not a model-generated narrative and not "
+            "a summary. Treat it as an unverified record of what was tried "
+            "and observed, not proof the approach was correct or complete: "
+            "verify current state and test results yourself before relying "
+            "on it.\n\n"
+            "Prior-attempt command log:\n"
             f"{parent_context}"
         )
 
