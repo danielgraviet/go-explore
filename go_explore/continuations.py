@@ -22,6 +22,11 @@ from go_explore.snapshots.replay import (
     load_atif_trajectory_steps,
 )
 from go_explore.snapshots.command_log import build_command_log
+from go_explore.snapshots.command_replay import (
+    DEFAULT_MAX_COMMANDS as DEFAULT_REPLAY_MAX_COMMANDS,
+    build_replay_manifest,
+    write_replay_manifest,
+)
 from go_explore.snapshots.transcript import build_transcript_summary, parent_outcome
 
 
@@ -29,7 +34,7 @@ class ContinuationError(ValueError):
     """Raised when a continuation run cannot be planned from job metadata."""
 
 
-StartStateType = Literal["clean", "diff_only", "full_snapshot"]
+StartStateType = Literal["clean", "diff_only", "full_snapshot", "command_replay"]
 ContextMode = Literal[
     "original_task_only",
     "parent_summary",
@@ -303,6 +308,7 @@ def build_clean_start_config(
     context_mode: ContextMode = "original_task_only",
     parent_context_path: Path | None = None,
     diff_path: Path | None = None,
+    replay_manifest_path: Path | None = None,
     agent: str | None = None,
     model: str | None = None,
     extra_args: Sequence[str] = (),
@@ -314,6 +320,7 @@ def build_clean_start_config(
         context_mode=context_mode,
         parent_context_path=parent_context_path,
         diff_path=diff_path,
+        replay_manifest_path=replay_manifest_path,
     )
 
     return HarborRunConfig(
@@ -380,6 +387,7 @@ def _with_clean_context_extra_args(
     context_mode: ContextMode,
     parent_context_path: Path | None = None,
     diff_path: Path | None = None,
+    replay_manifest_path: Path | None = None,
 ) -> tuple[str, ...]:
     """Return Harbor extra args for a clean child context mode.
 
@@ -387,10 +395,20 @@ def _with_clean_context_extra_args(
     snapshot, so parent-summary modes use an explicit host-side context path.
     `diff_path` (diff_only start states only) tells `SnapshotAwareAgent.setup`
     to apply that parent diff onto the clean checkout before the agent runs.
+    `replay_manifest_path` (command_replay start states only) tells it to
+    replay the manifest's allowlisted commands in that same fresh sandbox -
+    independent of `context_mode`, since command_replay is a filesystem/
+    environment operation, not a prompt-context one.
     """
 
     cleaned: list[str] = []
-    replaced_keys = {"context_mode", "parent_context", "parent_context_path", "diff_path"}
+    replaced_keys = {
+        "context_mode",
+        "parent_context",
+        "parent_context_path",
+        "diff_path",
+        "replay_manifest_path",
+    }
     index = 0
     while index < len(args):
         current = args[index]
@@ -422,6 +440,8 @@ def _with_clean_context_extra_args(
         cleaned.extend(["--ak", f"parent_context_path={parent_context_path}"])
     if diff_path is not None:
         cleaned.extend(["--ak", f"diff_path={diff_path}"])
+    if replay_manifest_path is not None:
+        cleaned.extend(["--ak", f"replay_manifest_path={replay_manifest_path}"])
     return tuple(cleaned)
 
 
@@ -524,6 +544,7 @@ def plan_start_state_baselines(
     clean_context_mode: ContextMode = "original_task_only",
     full_snapshot_context_mode: ContextMode = "parent_summary",
     diff_only_context_mode: ContextMode = "original_task_only",
+    replay_max_commands: int = DEFAULT_REPLAY_MAX_COMMANDS,
 ) -> list[ContinuationPlan]:
     """Plan Claim 1 child-start conditions without executing them.
 
@@ -543,6 +564,14 @@ def plan_start_state_baselines(
     distinct experiment arm from plain `diff_only` - plan it with its own
     `continuation_job_prefix` (or rely on the automatic job-name suffix) so
     they can all be planned from the same parent root without colliding.
+
+    `command_replay` starts from a fresh (`clean`) sandbox and replays a
+    conservative, allowlisted set of the parent's dependency-install commands
+    (see `go_explore.snapshots.command_replay`) before the agent's first
+    turn. This tests whether rebuilding setup state by rerunning commands is
+    a credible substitute for a `full_snapshot` restore - always
+    `context_mode="original_task_only"`, since this arm is about environment
+    state, not text memory.
     """
 
     parent_trial = select_trial(root_summary, parent_trial_name)
@@ -651,6 +680,34 @@ def plan_start_state_baselines(
                         context_mode=full_snapshot_context_mode,
                     )
                 )
+
+        elif start_state_type == "command_replay":
+            manifest_path = write_replay_manifest_context(
+                root_summary, parent_trial, max_commands=replay_max_commands
+            )
+            job_name = f"{continuation_job_prefix}-command-replay"
+            config = build_clean_start_config(
+                root_config=root_config,
+                job_name=job_name,
+                context_mode="original_task_only",
+                replay_manifest_path=manifest_path,
+                agent=agent,
+                model=model,
+                extra_args=extra_args,
+            )
+            plans.append(
+                ContinuationPlan(
+                    parent_job_dir=root_summary.job_dir,
+                    parent_trial_name=parent_trial.trial_name,
+                    snapshot_name=None,
+                    job_name=config.job_name or job_name,
+                    command=tuple(build_harbor_command(config)),
+                    start_state_type="command_replay",
+                    context_mode="original_task_only",
+                    parent_artifacts=(str(manifest_path),),
+                    executor_status="ready",
+                )
+            )
 
         else:
             raise ContinuationError(f"Unsupported start_state_type: {start_state_type}")
@@ -795,6 +852,35 @@ def write_command_log_context(
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(text)
+    return output_path
+
+
+def write_replay_manifest_context(
+    root_summary: JobSummary,
+    root_trial: TrialSummary,
+    *,
+    max_commands: int = DEFAULT_REPLAY_MAX_COMMANDS,
+) -> Path:
+    """Write a conservative, allowlisted replay plan (dependency installs
+    only) derived from the parent's run to a host file, for
+    `start_state_type="command_replay"` children. This is the plan-time
+    artifact - every entry starts `planned` or `skipped` (with a reason);
+    `SnapshotAwareAgent.setup` fills in `replayed`/`failed` once it actually
+    execs the planned commands in the child's fresh sandbox. No model call.
+    See `go_explore.snapshots.command_replay.build_replay_manifest`.
+    """
+    trajectory_path = _parent_context_path(root_summary, root_trial.trial_name)
+    manifest = build_replay_manifest(
+        trajectory_path,
+        parent_job_dir=root_summary.job_dir,
+        parent_trial_name=root_trial.trial_name,
+        max_commands=max_commands,
+    )
+
+    output_path = (
+        root_summary.job_dir / root_trial.trial_name / "agent" / "replay-manifest.json"
+    )
+    write_replay_manifest(manifest, output_path)
     return output_path
 
 

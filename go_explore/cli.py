@@ -41,6 +41,7 @@ from go_explore.figure_tables import (
 from go_explore.harbor import HarborRunConfig, run_harbor
 from go_explore.results import format_job_summary, summarize_job
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
+from go_explore.snapshots.command_replay import DEFAULT_MAX_COMMANDS as DEFAULT_REPLAY_MAX_COMMANDS
 from go_explore.snapshots.selectors import load_oracle_labels, select_archive_entries
 from go_explore.task_inventory import load_cached_tasks
 from go_explore.viability import (
@@ -271,6 +272,7 @@ def plan_start_state_baselines_cmd(args: argparse.Namespace) -> int:
         parent_trial_name=root_trial.trial_name,
         clean_context_mode=args.clean_context_mode,
         diff_only_context_mode=args.diff_only_context_mode,
+        replay_max_commands=args.replay_max_commands,
     )
 
     if args.manifest_path:
@@ -594,7 +596,7 @@ def main() -> int:
     start_state_parser.add_argument(
         "--start-state-type",
         action="append",
-        choices=("clean", "diff_only", "full_snapshot"),
+        choices=("clean", "diff_only", "full_snapshot", "command_replay"),
         help="Start-state mode to include. Repeat to plan multiple modes.",
     )
     start_state_parser.add_argument("--snapshot", action="append", default=[])
@@ -634,6 +636,15 @@ def main() -> int:
             "full_transcript_summary writes and attaches a deterministic "
             "transcript summary of the parent trajectory; command_log writes "
             "and attaches a deterministic ordered command+output log."
+        ),
+    )
+    start_state_parser.add_argument(
+        "--replay-max-commands",
+        type=int,
+        default=DEFAULT_REPLAY_MAX_COMMANDS,
+        help=(
+            "Max allowlisted (dependency-install) commands to replay for "
+            "command_replay start-state jobs."
         ),
     )
     start_state_parser.set_defaults(func=plan_start_state_baselines_cmd)

@@ -87,6 +87,32 @@ evidence:
 3. Do not start with full 3-model coverage across every harness variant unless
    the pilot results are already strong enough to justify it.
 
+## Spend Control Plan
+
+Target: keep total provider spend around `$1,500` or lower for the full
+experimental sweep.
+
+Recommended execution order:
+
+1. Start with a single-seed pilot on Haiku across the smallest useful slice of
+   `clean`, `diff_only`, and `full_snapshot`.
+2. Use that pilot to identify the highest-signal harness/task combinations.
+3. Expand breadth on Haiku before adding more seeds or more expensive models.
+4. Promote only a narrow confirmatory subset to Sonnet.
+5. Use Opus only for the smallest set of cases where the marginal evidence is
+   worth the cost.
+6. Keep branch fanout, retry counts, and best-of-N low until the cheaper sweep
+   has already shown a clear signal.
+
+Practical guardrails:
+
+- Prefer one seed first for each new condition.
+- Avoid running all model sizes across all harness variants at once.
+- Treat `qemu-*` and other VM-heavy tasks as high-cost outliers and keep their
+  coverage narrow.
+- If the first Haiku pass is ambiguous, promote a subset rather than rerunning
+  the entire matrix on a larger model.
+
 ## Notes
 
 - The benchmark runs in this repo already show that a few tasks can jump above

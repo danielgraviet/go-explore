@@ -230,6 +230,68 @@ truncation, determinism, prompt-contract discipline),
 (`test_snapshot_aware_agent_command_log_uses_disclaimer_prompt`). Full
 ticket: `tasks/phase-6-fixes/T009-diff-command-log.md`.
 
+### `command_replay` (environment-reconstruction comparator)
+
+A different kind of arm from the `diff_only` family above: `command_replay`
+starts from a **fresh sandbox** (no diff applied) and replays a
+conservative, allowlisted set of the parent's dependency-install commands
+before the agent's first turn — testing whether rerunning the right setup
+commands is a cheap substitute for `full_snapshot`'s full sandbox restore.
+No model call, no general shell-history replay — see
+`go_explore/snapshots/command_replay.py`. Always
+`context_mode=original_task_only`: this arm is about environment state, not
+prompt text.
+
+```bash
+.venv/bin/python -m go_explore.cli plan-start-state-baselines jobs/<root-job-dir> \
+  --start-state-type command_replay \
+  --replay-max-commands 8 \
+  --job-prefix <experiment-prefix> \
+  --model anthropic/claude-haiku-4-5-20251001 \
+  --manifest-path jobs/<root-job-dir>/start-state-plan.json
+
+# prints: command_replay  original_task_only  ready  <experiment-prefix>-command-replay
+# harbor run ... --ak context_mode=original_task_only \
+#   --ak replay_manifest_path=jobs/<root-job-dir>/<parent-trial>/agent/replay-manifest.json
+```
+
+Two artifacts, written at two different times:
+
+- `replay-manifest.json` (plan time, host-side): the selector's decision for
+  every candidate dependency-install command - `planned` (will be replayed)
+  or `skipped` with an explicit reason (unsafe shell metacharacters, budget
+  exceeded). Inspect this before running a batch.
+- `replay-result.json` (setup time, sandbox-side, written next to the
+  child's own `trajectory.json`): the same entries updated with what
+  actually happened - `replayed`/`failed`, exit code, output excerpt,
+  per-command duration, and `total_replay_seconds` for the whole batch.
+
+**Selector is intentionally narrow**: only bare dependency-install commands
+(`pip install ...`, `npm install ...`, etc.) are candidates, and anything
+containing shell metacharacters (`;`, `&`, `|`, `` ` ``, `$(`) is rejected -
+so a command like `cd /app/pkg && pip install -e . | tail -20` is correctly
+skipped rather than replayed, even though the underlying intent (install the
+package) would have been useful. This is real, observed behavior (see
+`build-cython-ext` trajectories) - the narrow allowlist trades replay
+coverage for safety, on purpose.
+
+**Failure handling is best-effort, not fail-fast** (unlike `diff_only`'s
+`DiffApplyFailed`): a failed or skipped replay command never raises and
+never blocks the agent from starting. Replay is inherently an approximation
+of the parent's environment, not a guarantee, so partial failure is a result
+to measure, not an executor error.
+
+Tests: `tests/test_command_replay.py` (selector: allowlist filtering, dedup,
+shell-injection rejection shapes, budget enforcement, manifest round-trip;
+executor: success/failure per-command, never raises, wall-clock budget
+cutoff, missing-exec degrades to `unavailable`), `tests/test_snapshot_agent.py`
+(`test_command_replay_execs_planned_commands_before_agent_setup`,
+`test_command_replay_failure_never_blocks_agent_setup`,
+`test_snapshot_aware_terminus2_accepts_replay_manifest_path_without_wrapped_leak`),
+`tests/test_continuations.py` (`write_replay_manifest_context`,
+`plan_start_state_baselines` wiring - starts clean, no `--ek`). Full ticket:
+`tasks/phase-6-fixes/T010-replayed-env.md`.
+
 ## Inspect Results
 
 Summarize a completed Harbor job:
@@ -260,7 +322,7 @@ Build analysis tables:
 ## Current Benchmark Targets
 
 - Claim 2: promising snapshot branching vs retry and random branch.
-- Claim 1: `clean` vs `diff_only` vs `diff_only + transcript` vs `diff_only + command_log` vs `full_snapshot`.
+- Claim 1: `clean` vs `diff_only` vs `diff_only + transcript` vs `diff_only + command_log` vs `command_replay` vs `full_snapshot`.
 
 Useful files:
 

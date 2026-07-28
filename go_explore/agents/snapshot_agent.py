@@ -36,6 +36,13 @@ except ImportError:
 
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, ArchiveStore
 from go_explore.snapshots.backends import DaytonaSnapshotBackend
+from go_explore.snapshots.command_replay import (
+    DEFAULT_COMMAND_TIMEOUT_SEC,
+    DEFAULT_TOTAL_BUDGET_SEC,
+    load_replay_manifest,
+    run_command_replay,
+    write_replay_manifest,
+)
 from go_explore.snapshots.diff_only import DiffApplyFailed, apply_parent_diff
 from go_explore.snapshots.live import AsyncLiveSnapshotSession
 from go_explore.snapshots.manager import AsyncSnapshotManager
@@ -68,6 +75,9 @@ class SnapshotAwareAgent(BaseAgent):
         snapshot_retention_limit: int | str | None = None,
         diff_path: str | Path | None = None,
         diff_apply_timeout_sec: float = 60.0,
+        replay_manifest_path: str | Path | None = None,
+        replay_command_timeout_sec: float = DEFAULT_COMMAND_TIMEOUT_SEC,
+        replay_total_budget_sec: float = DEFAULT_TOTAL_BUDGET_SEC,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -85,6 +95,11 @@ class SnapshotAwareAgent(BaseAgent):
         self._preflight_verification_timeout_sec = preflight_verification_timeout_sec
         self._diff_path = Path(diff_path) if diff_path else None
         self._diff_apply_timeout_sec = diff_apply_timeout_sec
+        self._replay_manifest_path = (
+            Path(replay_manifest_path) if replay_manifest_path else None
+        )
+        self._replay_command_timeout_sec = replay_command_timeout_sec
+        self._replay_total_budget_sec = replay_total_budget_sec
         snapshot_retention_limit = (
             snapshot_retention_limit
             if snapshot_retention_limit is not None
@@ -212,6 +227,8 @@ class SnapshotAwareAgent(BaseAgent):
             await self._ensure_tmux_available(environment)
         if self._diff_path is not None:
             await self._apply_parent_diff(environment)
+        if self._replay_manifest_path is not None:
+            await self._run_command_replay(environment)
         await self._wrapped_agent.setup(environment)
 
     async def _apply_parent_diff(self, environment: Any) -> None:
@@ -226,6 +243,31 @@ class SnapshotAwareAgent(BaseAgent):
                 f"diff_only executor failed to apply {self._diff_path}: "
                 f"{result.detail}"
             )
+
+    async def _run_command_replay(self, environment: Any) -> None:
+        """Best-effort: replay never raises and never blocks the agent from
+        starting, since a partially failed replay is a result to measure
+        (command_replay is inherently an approximation), not an executor
+        error like a diff that fails to apply."""
+        assert self._replay_manifest_path is not None
+        try:
+            manifest = load_replay_manifest(self._replay_manifest_path)
+        except (OSError, ValueError, KeyError) as error:
+            self._debug_log(f"DEBUG command replay: failed to load manifest: {error}")
+            return
+
+        result = await run_command_replay(
+            environment,
+            manifest,
+            command_timeout_sec=self._replay_command_timeout_sec,
+            total_budget_sec=self._replay_total_budget_sec,
+        )
+
+        if self._logs_dir is not None:
+            try:
+                write_replay_manifest(result, self._logs_dir / "replay-result.json")
+            except OSError as error:
+                self._debug_log(f"DEBUG command replay: failed to write result: {error}")
 
     async def _ensure_tmux_available(self, environment: Any) -> None:
         exec_fn = getattr(environment, "exec", None)

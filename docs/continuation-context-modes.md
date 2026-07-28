@@ -207,11 +207,11 @@ Likely failure modes:
 | Property | Value |
 | --- | --- |
 | `start_state_type` | `command_replay` |
-| `context_mode` | `original_task_only` or `command_log` |
-| Inputs | Clean environment plus selected parent command log. |
-| Expected artifacts | Replay manifest containing commands, outputs hashes, skipped commands, and replay result. |
-| Current status | Not implemented; command extraction exists, replay execution does not. |
-| Immediate target | No; defer until event logs are richer and P3 planner exists. |
+| `context_mode` | `original_task_only` (always - this arm is about environment state, not text memory) |
+| Inputs | Fresh (`clean`) sandbox plus a replay manifest of allowlisted parent commands. |
+| Expected artifacts | Replay manifest (`replay-manifest.json`, plan-time: selected/skipped commands with reasons) and replay result (`replay-result.json`, sandbox-side: per-command replayed/failed status, output excerpts, total replay seconds). |
+| Current status | Implemented (T010): `plan_start_state_baselines(start_state_types=("command_replay",))` writes the plan-time manifest via `go_explore/snapshots/command_replay.py`'s conservative selector (dependency-install commands only, deduplicated, rejected if they contain shell metacharacters, capped at `--replay-max-commands`). `SnapshotAwareAgent.setup` execs the planned commands in the fresh sandbox best-effort - a failed or skipped command never raises or blocks the agent, since replay is inherently an approximation, not a guarantee. |
+| Immediate target | Yes - this is the Claim 1 environment-reconstruction comparator against `full_snapshot`. |
 
 This mode tries to recreate useful environment state by rerunning setup or
 discovery commands. It is a useful comparator for full snapshots because it
@@ -223,12 +223,17 @@ Likely failure modes:
 - network/package versions drift,
 - services or background processes are not reconstructed,
 - replay can be slower than snapshot restore,
-- dangerous commands must be filtered before replay.
+- dangerous or compound commands must be filtered before replay - and the
+  narrow selector means many real-world install commands (e.g. wrapped in
+  `cd X && pip install Y | tail -20`) get correctly rejected rather than
+  replayed, so this arm's coverage is inherently partial by design.
 
-Implementation constraint:
+Implementation constraint (honored):
 
-- Command replay must start with a conservative allowlist. It should not blindly
-  replay arbitrary shell history.
+- Command replay starts with a conservative allowlist (dependency installs
+  only) and does not blindly replay arbitrary shell history. Broadening the
+  allowlist (build commands, service starts) is an explicit follow-up, not
+  part of this first cut.
 
 ### Full Snapshot
 
