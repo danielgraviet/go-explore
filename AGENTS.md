@@ -1,4 +1,4 @@
-## Coding Principles
+# Coding Principles
 
 * Prefer simple, clear solutions over unnecessary complexity.
 * Favor readable, idiomatic Python.

@@ -36,3 +36,8 @@ asyncio_mode = "auto"
 markers = [
     "e2e: tests that invoke Harbor, Docker, Daytona, or model APIs",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.0",
+]

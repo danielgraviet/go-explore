@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import json
 import sys
-from types import ModuleType
 from pathlib import Path
+from types import ModuleType
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from go_explore.agents.factory import SnapshotAwareTerminus2
 from go_explore.agents.snapshot_agent import SnapshotAwareAgent
-from go_explore.snapshots.policies import EveryAgentStepPolicy, InterestingAgentStepPolicy
+from go_explore.snapshots.policies import (
+    EveryAgentStepPolicy,
+    InterestingAgentStepPolicy,
+)
 
 
 def test_snapshot_aware_terminus2_advertises_atif_support():
@@ -174,7 +177,9 @@ def test_snapshot_aware_agent_appends_parent_context_by_default():
         def __init__(self):
             self.instruction = None
 
-        def perform_task(self, *, instruction, session, logging_dir=None, time_limit_seconds=None):
+        def perform_task(
+            self, *, instruction, session, logging_dir=None, time_limit_seconds=None
+        ):
             self.instruction = instruction
             return MagicMock()
 
@@ -197,7 +202,9 @@ def test_snapshot_aware_agent_none_context_mode_does_not_append_parent_context()
         def __init__(self):
             self.instruction = None
 
-        def perform_task(self, *, instruction, session, logging_dir=None, time_limit_seconds=None):
+        def perform_task(
+            self, *, instruction, session, logging_dir=None, time_limit_seconds=None
+        ):
             self.instruction = instruction
             return MagicMock()
 
@@ -218,7 +225,9 @@ def test_snapshot_aware_agent_critical_context_uses_untrusted_audit_prompt():
         def __init__(self):
             self.instruction = None
 
-        def perform_task(self, *, instruction, session, logging_dir=None, time_limit_seconds=None):
+        def perform_task(
+            self, *, instruction, session, logging_dir=None, time_limit_seconds=None
+        ):
             self.instruction = instruction
             return MagicMock()
 
@@ -486,7 +495,9 @@ def test_summarize_step_reports_error_signal():
     wrapped = MagicMock()
     agent = SnapshotAwareAgent(wrapped_agent=wrapped)
 
-    line = agent._summarize_step(0, ["python bad.py"], "Traceback (most recent call last):")
+    line = agent._summarize_step(
+        0, ["python bad.py"], "Traceback (most recent call last):"
+    )
 
     assert line.endswith("-> error")
 
@@ -590,13 +601,14 @@ async def test_load_parent_context_summarizes_host_trajectory_path(tmp_path):
     )
 
     assert await agent._load_parent_context() == (
-        "step 1: Ran pytest and saw failure.\n"
-        "step 2: Edited parser.py."
+        "step 1: Ran pytest and saw failure.\nstep 2: Edited parser.py."
     )
 
 
 def test_augment_instruction_appends_parent_context():
-    result = SnapshotAwareAgent._augment_instruction("Fix the bug.", "step 0: pip install -> ok")
+    result = SnapshotAwareAgent._augment_instruction(
+        "Fix the bug.", "step 0: pip install -> ok"
+    )
 
     assert result.startswith("Fix the bug.\n\n")
     assert "step 0: pip install -> ok" in result
@@ -607,7 +619,9 @@ def test_snapshot_aware_agent_failure_symptom_uses_diverge_prompt():
         def __init__(self):
             self.instruction = None
 
-        def perform_task(self, *, instruction, session, logging_dir=None, time_limit_seconds=None):
+        def perform_task(
+            self, *, instruction, session, logging_dir=None, time_limit_seconds=None
+        ):
             self.instruction = instruction
             return MagicMock()
 
@@ -643,7 +657,9 @@ def test_snapshot_aware_agent_resume_notice_appends_static_orientation():
         def __init__(self):
             self.instruction = None
 
-        def perform_task(self, *, instruction, session, logging_dir=None, time_limit_seconds=None):
+        def perform_task(
+            self, *, instruction, session, logging_dir=None, time_limit_seconds=None
+        ):
             self.instruction = instruction
             return MagicMock()
 
@@ -701,7 +717,11 @@ def test_read_atif_trajectory_steps_parses_existing_file(tmp_path):
         tmp_path / "trajectory.json",
         [
             {"step_id": 1, "source": "user", "message": "Fix the failing test."},
-            {"step_id": 2, "source": "agent", "message": "Analysis: ...\nPlan: install deps"},
+            {
+                "step_id": 2,
+                "source": "agent",
+                "message": "Analysis: ...\nPlan: install deps",
+            },
         ],
     )
 
@@ -828,7 +848,9 @@ async def test_diff_only_apply_failure_blocks_agent_run(tmp_path):
     wrapper raises before delegating to wrapped.run(), so a broken diff can't
     silently masquerade as a normal (if unlucky) task attempt."""
     diff_path = tmp_path / "parent.diff"
-    diff_path.write_text("diff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -1 +1 @@\n-old\n+new\n")
+    diff_path.write_text(
+        "diff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -1 +1 @@\n-old\n+new\n"
+    )
 
     wrapped = MagicMock()
     wrapped.setup = AsyncMock()
