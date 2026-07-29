@@ -15,6 +15,7 @@ from go_explore.continuations import (
     plan_start_state_baselines,
     plan_snapshot_continuations,
     snapshot_prefix_for_trial,
+    snapshot_belongs_to_trial,
     write_command_log_context,
     write_failure_symptom_context,
     write_plan_manifest,
@@ -35,6 +36,15 @@ def test_snapshot_prefix_for_trial_matches_daytona_snapshot_names():
     assert snapshot_prefix_for_trial("fix-git__abc123") == "go-explore-fix-git__abc123-step-"
 
 
+def test_snapshot_belongs_to_trial_rejects_cross_trial_go_explore_snapshot():
+    assert snapshot_belongs_to_trial(
+        "go-explore-fix-git__abc123-step-2", "fix-git__abc123"
+    )
+    assert not snapshot_belongs_to_trial(
+        "go-explore-fix-git__other-step-2", "fix-git__abc123"
+    )
+
+
 def test_build_snapshot_continuation_config_restores_daytona_snapshot():
     root_config = HarborRunConfig(
         agent="terminus-2",
@@ -53,6 +63,7 @@ def test_build_snapshot_continuation_config_restores_daytona_snapshot():
 
     assert continuation_config.environment_kwargs == (
         "snapshot_template_name=go-explore-fix-git__abc-step-2",
+        "assume_global_snapshot=true",
     )
     assert build_harbor_command(continuation_config) == [
         "harbor",
@@ -80,6 +91,8 @@ def test_build_snapshot_continuation_config_restores_daytona_snapshot():
         "--export-traces",
         "--ek",
         "snapshot_template_name=go-explore-fix-git__abc-step-2",
+        "--ek",
+        "assume_global_snapshot=true",
         "--ak",
         "context_mode=parent_summary",
     ]

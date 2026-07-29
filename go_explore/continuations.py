@@ -58,6 +58,15 @@ def snapshot_prefix_for_trial(
     return f"{name_prefix}-{trial_name}-step-"
 
 
+def snapshot_belongs_to_trial(snapshot_name: str, trial_name: str) -> bool:
+    """Return whether a Go-Explore snapshot name carries this trial identity."""
+
+    prefix = "go-explore-"
+    return not snapshot_name.startswith(prefix) or snapshot_name.startswith(
+        f"{prefix}{trial_name}-step-"
+    )
+
+
 @dataclass(frozen=True)
 class ContinuationPlan:
     """One continuation job launched from one Daytona snapshot."""
@@ -296,7 +305,13 @@ def build_snapshot_continuation_config(
         n_tasks=1,
         job_name=job_name,
         export_traces=root_config.export_traces,
-        environment_kwargs=(f"snapshot_template_name={snapshot_name}",),
+        # Never let Harbor silently replace a requested parent snapshot with a
+        # declarative build. A missing snapshot must make the child fail so the
+        # experiment cannot record a clean run as a restore run.
+        environment_kwargs=(
+            f"snapshot_template_name={snapshot_name}",
+            "assume_global_snapshot=true",
+        ),
         extra_args=combined_extra_args,
     )
 
@@ -477,6 +492,18 @@ def plan_snapshot_continuations(
     )
 
     for index, snapshot_name in enumerate(selected_snapshots):
+        if not snapshot_belongs_to_trial(snapshot_name, parent_trial.trial_name):
+            plans.append(
+                ContinuationPlan(
+                    parent_job_dir=root_summary.job_dir,
+                    parent_trial_name=parent_trial.trial_name,
+                    snapshot_name=snapshot_name,
+                    job_name=f"{continuation_job_prefix}-snapshot-{index}",
+                    command=(),
+                    executor_status="snapshot_parent_mismatch",
+                )
+            )
+            continue
         config = build_snapshot_continuation_config(
             root_config=root_config,
             snapshot_name=snapshot_name,
@@ -657,6 +684,20 @@ def plan_start_state_baselines(
                 else list(snapshots)
             )
             for index, snapshot_name in enumerate(selected_snapshots):
+                if not snapshot_belongs_to_trial(snapshot_name, parent_trial.trial_name):
+                    plans.append(
+                        ContinuationPlan(
+                            parent_job_dir=root_summary.job_dir,
+                            parent_trial_name=parent_trial.trial_name,
+                            snapshot_name=snapshot_name,
+                            job_name=f"{continuation_job_prefix}-full-snapshot-{index}",
+                            command=(),
+                            start_state_type="full_snapshot",
+                            context_mode=full_snapshot_context_mode,
+                            executor_status="snapshot_parent_mismatch",
+                        )
+                    )
+                    continue
                 config = build_snapshot_continuation_config(
                     root_config=root_config,
                     snapshot_name=snapshot_name,

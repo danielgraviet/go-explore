@@ -1,0 +1,53 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "docs/experiments/claim1-regex-log-pilot-manifest.json",
+      "field": "budget_enforcement",
+      "message": "planned token budgets are planning_only labels, not enforced caps; compare actual total_tokens before making strict fixed-budget claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/claim1-regex-log-clean-20260729-clean",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/claim1-regex-log-command-log-20260729-diff-only-command-log",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/claim1-regex-log-diff-20260729-diff-only",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/claim1-regex-log-replay-20260729-command-replay",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/claim1-regex-log-snapshot-20260729-full-snapshot-0",
+      "field": "snapshot_cell_key",
+      "message": "parent snapshot has no archive/event cell metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/claim1-regex-log-snapshot-20260729-full-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/claim1-regex-log-transcript-20260729-diff-only-transcript",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": "go-explore-fixed-budget-plan-v1",
+  "experiment_id": "claim1-fix-git-pilot-20260729",
+  "task_id": "fix-git",
+  "model": "anthropic/claude-haiku-4-5-20251001",
+  "budget": {"total_token_budget": 100000, "enforcement": "planning_only"},
+  "methods": ["start_state_baseline"],
+  "seeds": [0],
+  "jobs": [
+    {"method": "clean", "role": "start_state_baseline", "seed": 0, "job_name": "claim1-fix-git-clean-20260729-clean-r3", "budget": {"token_budget": 100000, "budget_fraction": 1.0, "enforcement": "planning_only"}, "start_state_type": "clean", "context_mode": "original_task_only", "selector_mode": null, "parent_run_id": null, "parent_snapshot": null, "executor_status": "ready"},
+    {"method": "diff_only", "role": "start_state_baseline", "seed": 0, "job_name": "claim1-fix-git-diff-20260729-diff-only-r2", "budget": {"token_budget": 100000, "budget_fraction": 1.0, "enforcement": "planning_only"}, "start_state_type": "diff_only", "context_mode": "original_task_only", "selector_mode": null, "parent_run_id": null, "parent_snapshot": null, "executor_status": "ready"},
+    {"method": "diff_only_transcript", "role": "start_state_baseline", "seed": 0, "job_name": "claim1-fix-git-transcript-20260729-diff-only-transcript-r2", "budget": {"token_budget": 100000, "budget_fraction": 1.0, "enforcement": "planning_only"}, "start_state_type": "diff_only", "context_mode": "full_transcript_summary", "selector_mode": null, "parent_run_id": null, "parent_snapshot": null, "executor_status": "ready"},
+    {"method": "diff_only_command_log", "role": "start_state_baseline", "seed": 0, "job_name": "claim1-fix-git-command-log-20260729-diff-only-command-log-r3", "budget": {"token_budget": 100000, "budget_fraction": 1.0, "enforcement": "planning_only"}, "start_state_type": "diff_only", "context_mode": "command_log", "selector_mode": null, "parent_run_id": null, "parent_snapshot": null, "executor_status": "ready"},
+    {"method": "command_replay", "role": "start_state_baseline", "seed": 0, "job_name": "claim1-fix-git-replay-20260729-command-replay-r2", "budget": {"token_budget": 100000, "budget_fraction": 1.0, "enforcement": "planning_only"}, "start_state_type": "command_replay", "context_mode": "original_task_only", "selector_mode": null, "parent_run_id": null, "parent_snapshot": null, "executor_status": "ready"},
+    {"method": "full_snapshot", "role": "start_state_baseline", "seed": 0, "job_name": "claim1-fix-git-snapshot-20260729-full-snapshot-0-r2", "budget": {"token_budget": 100000, "budget_fraction": 1.0, "enforcement": "planning_only"}, "start_state_type": "full_snapshot", "context_mode": "parent_summary", "selector_mode": "archive_priority", "parent_run_id": null, "parent_snapshot": "go-explore-fix-git__Ymy9fVC-step-5", "executor_status": "ready"}
+  ]
+}

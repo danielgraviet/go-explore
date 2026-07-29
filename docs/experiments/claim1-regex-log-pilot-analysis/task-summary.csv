@@ -1,0 +1,7 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+claim1-regex-log-pilot-20260729,regex-log,,,clean,anthropic/claude-haiku-4-5-20251001,false,1,1,2,0,14237,0.02431875,128.256663,32.71036641599994,,false
+claim1-regex-log-pilot-20260729,regex-log,,,command_replay,anthropic/claude-haiku-4-5-20251001,false,1,1,6,0,81232,0.048691150000000016,343.225191,102.55507054100008,,false
+claim1-regex-log-pilot-20260729,regex-log,,,diff_only,anthropic/claude-haiku-4-5-20251001,false,1,1,8,0,220190,0.07137405000000001,296.075893,81.44503529200074,,false
+claim1-regex-log-pilot-20260729,regex-log,,,diff_only_command_log,anthropic/claude-haiku-4-5-20251001,false,1,1,3,0,104965,0.043835500000000006,231.968294,41.68825899900003,,false
+claim1-regex-log-pilot-20260729,regex-log,,,diff_only_transcript,anthropic/claude-haiku-4-5-20251001,true,1,1,5,0,433357,0.10571889999999999,263.669665,53.866095667999616,,true
+claim1-regex-log-pilot-20260729,regex-log,,,full_snapshot,anthropic/claude-haiku-4-5-20251001,false,1,1,1,0,5729,0.012409,165.186527,42.43437724999967,52.325161,false

@@ -1,0 +1,7 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+claim1-fix-git-pilot-20260729,fix-git,,,clean,anthropic/claude-haiku-4-5-20251001,true,1,1,7,0,186721,0.04400975000000001,353.419138,104.92018571000017,,true
+claim1-fix-git-pilot-20260729,fix-git,,,command_replay,anthropic/claude-haiku-4-5-20251001,true,1,1,6,0,73718,0.0298989,159.35351,53.048276875000056,,true
+claim1-fix-git-pilot-20260729,fix-git,,,diff_only,anthropic/claude-haiku-4-5-20251001,true,1,1,5,0,38053,0.031044250000000002,216.375213,57.525452291999954,,true
+claim1-fix-git-pilot-20260729,fix-git,,,diff_only_command_log,anthropic/claude-haiku-4-5-20251001,true,1,1,4,0,28106,0.027361149999999997,124.130837,24.03999258299973,,true
+claim1-fix-git-pilot-20260729,fix-git,,,diff_only_transcript,anthropic/claude-haiku-4-5-20251001,true,1,1,5,0,47086,0.027477300000000003,212.53605,42.180654999000126,,true
+claim1-fix-git-pilot-20260729,fix-git,,,full_snapshot,anthropic/claude-haiku-4-5-20251001,true,1,1,6,0,74209,0.03021925,167.710742,36.84660120799981,52.142097,true
