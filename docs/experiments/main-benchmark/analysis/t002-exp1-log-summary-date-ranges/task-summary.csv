@@ -1,0 +1,3 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t002-exp1-log-summary-date-ranges,log-summary-date-ranges,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,9,9,22,6,757673,0.2650834,579.362944,140.53705425202497,29.709996999999998,false
+t002-exp1-log-summary-date-ranges,log-summary-date-ranges,,,retry,anthropic/claude-haiku-4-5-20251001,true,9,9,25,0,884694,0.30115315000000004,726.3969089999999,181.25739291601712,,false

@@ -1,0 +1,3 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t002-exp1-fixgit-canary,fix-git,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,3,3,13,2,81786,0.0664455,248.55260900000002,90.17511050100802,10.8029,false
+t002-exp1-fixgit-canary,fix-git,,,retry,anthropic/claude-haiku-4-5-20251001,true,3,3,13,0,60510,0.06441645,347.225653,141.43337808500655,,false

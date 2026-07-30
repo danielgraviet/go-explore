@@ -1,0 +1,3 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t002-exp1-pypi-server,pypi-server,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,9,9,25,6,404154,0.23749315000000001,974.530222,186.8173520819837,31.582264,false
+t002-exp1-pypi-server,pypi-server,,,retry,anthropic/claude-haiku-4-5-20251001,true,9,9,28,0,438937,0.25895460000000003,1088.415534,280.89337083199644,,false

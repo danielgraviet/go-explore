@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t002-exp2-screen-gcode-to-text,gcode-to-text,,,single,anthropic/claude-haiku-4-5-20251001,false,3,3,13,0,570720,0.19030880000000003,394.500914,99.41327137697954,,false

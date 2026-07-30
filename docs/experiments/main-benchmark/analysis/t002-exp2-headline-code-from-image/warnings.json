@@ -1,0 +1,323 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-0-snapshot-0/code-from-image__JeVJoZo",
+      "field": "total_tokens",
+      "message": "observed total_tokens (187796) exceeded the enforced token_budget (175000) by 12796; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-0-snapshot-1/code-from-image__C7ku5yk",
+      "field": "total_tokens",
+      "message": "observed total_tokens (214907) exceeded the enforced token_budget (175000) by 39907; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-1-root/code-from-image__frD3LuR",
+      "field": "total_tokens",
+      "message": "observed total_tokens (162730) exceeded the enforced token_budget (150000) by 12730; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-1-snapshot-1/code-from-image__c2NDFMD",
+      "field": "total_tokens",
+      "message": "observed total_tokens (200001) exceeded the enforced token_budget (175000) by 25001; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-2-root/code-from-image__EcKT9pV",
+      "field": "total_tokens",
+      "message": "observed total_tokens (162991) exceeded the enforced token_budget (150000) by 12991; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-2-snapshot-0/code-from-image__qJkKQX9",
+      "field": "total_tokens",
+      "message": "observed total_tokens (193616) exceeded the enforced token_budget (175000) by 18616; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-2-snapshot-1/code-from-image__wYzJXhV",
+      "field": "total_tokens",
+      "message": "observed total_tokens (196703) exceeded the enforced token_budget (175000) by 21703; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-3-root/code-from-image__srajczR",
+      "field": "total_tokens",
+      "message": "observed total_tokens (171474) exceeded the enforced token_budget (150000) by 21474; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-3-snapshot-0/code-from-image__yxP32bQ",
+      "field": "total_tokens",
+      "message": "observed total_tokens (180836) exceeded the enforced token_budget (175000) by 5836; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-3-snapshot-1/code-from-image__SqZ88EK",
+      "field": "total_tokens",
+      "message": "observed total_tokens (192326) exceeded the enforced token_budget (175000) by 17326; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-4-root/code-from-image__BJUac9D",
+      "field": "total_tokens",
+      "message": "observed total_tokens (162635) exceeded the enforced token_budget (150000) by 12635; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-4-snapshot-1/code-from-image__3HFqXHC",
+      "field": "total_tokens",
+      "message": "observed total_tokens (194678) exceeded the enforced token_budget (175000) by 19678; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-0-attempt-0/code-from-image__x6WVYds",
+      "field": "total_tokens",
+      "message": "observed total_tokens (228929) exceeded the enforced token_budget (166667) by 62262; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-0-attempt-1/code-from-image__PnagwLD",
+      "field": "total_tokens",
+      "message": "observed total_tokens (179828) exceeded the enforced token_budget (166667) by 13161; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-0-attempt-2/code-from-image__6r9uuFN",
+      "field": "total_tokens",
+      "message": "observed total_tokens (184491) exceeded the enforced token_budget (166666) by 17825; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-1-attempt-2/code-from-image__sdLERV3",
+      "field": "total_tokens",
+      "message": "observed total_tokens (191812) exceeded the enforced token_budget (166666) by 25146; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-2-attempt-0/code-from-image__evNeHrt",
+      "field": "total_tokens",
+      "message": "observed total_tokens (175034) exceeded the enforced token_budget (166667) by 8367; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-2-attempt-1/code-from-image__N9DmjuG",
+      "field": "total_tokens",
+      "message": "observed total_tokens (172539) exceeded the enforced token_budget (166667) by 5872; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-2-attempt-2/code-from-image__VSeN4Fk",
+      "field": "total_tokens",
+      "message": "observed total_tokens (186818) exceeded the enforced token_budget (166666) by 20152; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-3-attempt-0/code-from-image__MzGdCg2",
+      "field": "total_tokens",
+      "message": "observed total_tokens (189622) exceeded the enforced token_budget (166667) by 22955; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-3-attempt-1/code-from-image__iemrnMv",
+      "field": "total_tokens",
+      "message": "observed total_tokens (176971) exceeded the enforced token_budget (166667) by 10304; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-4-attempt-0/code-from-image__TJDkPTe",
+      "field": "total_tokens",
+      "message": "observed total_tokens (185170) exceeded the enforced token_budget (166667) by 18503; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-4-attempt-2/code-from-image__gCMo7Pb",
+      "field": "total_tokens",
+      "message": "observed total_tokens (173166) exceeded the enforced token_budget (166666) by 6500; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-0-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-0-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-0-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-1-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-1-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-1-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-2-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-2-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-2-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-3-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-3-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-3-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-4-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-4-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-promising-branch-seed-4-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-0-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-0-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-0-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-1-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-1-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-1-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-2-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-2-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-2-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-3-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-3-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-3-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-4-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-4-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-code-from-image-retry-seed-4-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

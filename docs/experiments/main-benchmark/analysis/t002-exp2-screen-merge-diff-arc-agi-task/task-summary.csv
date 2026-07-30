@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t002-exp2-screen-merge-diff-arc-agi-task,merge-diff-arc-agi-task,,,single,anthropic/claude-haiku-4-5-20251001,false,3,3,18,0,1553606,0.28231300000000004,914.027447,404.08686220800155,,false

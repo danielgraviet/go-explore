@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t002-exp2-screen-git-multibranch,git-multibranch,,,single,anthropic/claude-haiku-4-5-20251001,true,3,3,22,0,1045393,0.22271050000000003,845.942935,247.59567887499725,,false

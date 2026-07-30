@@ -1,0 +1,167 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-0-root/kv-store-grpc__QyzYoct",
+      "field": "total_tokens",
+      "message": "observed total_tokens (164616) exceeded the enforced token_budget (150000) by 14616; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-0-snapshot-1/kv-store-grpc__GrarxQ5",
+      "field": "total_tokens_status",
+      "message": "budget_enforcement is hard_token_limit but observed token accounting is incomplete; enforcement cannot be verified from this artifact, so do not treat this as a validated equal-budget comparison",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-2-root/kv-store-grpc__rEFeNBn",
+      "field": "total_tokens",
+      "message": "observed total_tokens (161848) exceeded the enforced token_budget (150000) by 11848; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-2-snapshot-0/kv-store-grpc__PuYRPWE",
+      "field": "total_tokens",
+      "message": "observed total_tokens (178339) exceeded the enforced token_budget (175000) by 3339; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-retry-seed-0-attempt-0/kv-store-grpc__EcyKgd2",
+      "field": "total_tokens",
+      "message": "observed total_tokens (179199) exceeded the enforced token_budget (166667) by 12532; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-retry-seed-2-attempt-0/kv-store-grpc__HAkcZPb",
+      "field": "total_tokens",
+      "message": "observed total_tokens (170315) exceeded the enforced token_budget (166667) by 3648; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-retry-seed-2-attempt-1/kv-store-grpc__LHKS4Za",
+      "field": "total_tokens",
+      "message": "observed total_tokens (176040) exceeded the enforced token_budget (166667) by 9373; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-0-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-0-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-0-snapshot-1",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-0-snapshot-1",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-0-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-1-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-1-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-1-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-2-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-2-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-promising-branch-seed-2-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-retry-seed-0-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-retry-seed-0-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-retry-seed-0-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-retry-seed-1-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-retry-seed-1-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-retry-seed-1-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-retry-seed-2-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-retry-seed-2-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp1-kv-store-grpc-retry-seed-2-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

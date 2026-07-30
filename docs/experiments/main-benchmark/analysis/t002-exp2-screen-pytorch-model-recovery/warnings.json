@@ -1,0 +1,35 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "jobs/t002-exp2-screen-pytorch-model-recovery-single-seed-0/pytorch-model-recovery__8uBYKYb",
+      "field": "total_tokens",
+      "message": "observed total_tokens (506984) exceeded the enforced token_budget (500000) by 6984; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-pytorch-model-recovery-single-seed-1/pytorch-model-recovery__xuiS2J3",
+      "field": "total_tokens",
+      "message": "observed total_tokens (544754) exceeded the enforced token_budget (500000) by 44754; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-pytorch-model-recovery-single-seed-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-pytorch-model-recovery-single-seed-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-pytorch-model-recovery-single-seed-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

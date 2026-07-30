@@ -1,0 +1,35 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "jobs/t002-exp2-screen-db-wal-recovery-single-seed-0/db-wal-recovery__Qyubm9V",
+      "field": "total_tokens",
+      "message": "observed total_tokens (509915) exceeded the enforced token_budget (500000) by 9915; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-db-wal-recovery-single-seed-2/db-wal-recovery__3Axum6z",
+      "field": "total_tokens",
+      "message": "observed total_tokens (505780) exceeded the enforced token_budget (500000) by 5780; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-db-wal-recovery-single-seed-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-db-wal-recovery-single-seed-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-db-wal-recovery-single-seed-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

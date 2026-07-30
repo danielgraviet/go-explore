@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t002-exp2-screen-custom-memory-heap-crash,custom-memory-heap-crash,,,single,anthropic/claude-haiku-4-5-20251001,true,3,3,33,0,1287062,0.53523715,1141.3756119999998,417.46225875401433,,false

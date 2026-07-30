@@ -1,0 +1,3 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t002-exp1-kv-store-grpc,kv-store-grpc,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,9,9,26,6,981110,0.36896690000000004,1182.54331,255.54273441600526,42.762455,false
+t002-exp1-kv-store-grpc,kv-store-grpc,,,retry,anthropic/claude-haiku-4-5-20251001,true,9,9,30,0,1180773,0.3919857,1374.301383,401.29005654498906,,false

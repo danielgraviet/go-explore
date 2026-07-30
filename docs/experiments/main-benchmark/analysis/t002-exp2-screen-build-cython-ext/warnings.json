@@ -1,0 +1,41 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "jobs/t002-exp2-screen-build-cython-ext-single-seed-0/build-cython-ext__EPo7mdv",
+      "field": "total_tokens",
+      "message": "observed total_tokens (533267) exceeded the enforced token_budget (500000) by 33267; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-build-cython-ext-single-seed-1/build-cython-ext__oUvCsru",
+      "field": "total_tokens",
+      "message": "observed total_tokens (516873) exceeded the enforced token_budget (500000) by 16873; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-build-cython-ext-single-seed-2/build-cython-ext__pSFJFex",
+      "field": "total_tokens",
+      "message": "observed total_tokens (525390) exceeded the enforced token_budget (500000) by 25390; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-build-cython-ext-single-seed-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-build-cython-ext-single-seed-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-screen-build-cython-ext-single-seed-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}
