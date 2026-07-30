@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -449,6 +449,83 @@ def test_snapshot_agent_handles_missing_execute_commands():
         agent._hook_agent_loop()
     except AttributeError:
         pytest.fail("_hook_agent_loop should not raise AttributeError")
+
+
+def test_hook_token_budget_noop_without_token_budget():
+    wrapped = MagicMock()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, token_budget=None)
+
+    agent._hook_token_budget()
+
+    assert agent._token_budget_hooked is False
+
+
+def test_hook_token_budget_logs_unsupported_when_no_query_llm(tmp_path):
+    wrapped = MagicMock(spec=[])  # no _query_llm attribute
+    logs_dir = tmp_path / "jobs" / "job-a" / "trial-a" / "agent"
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped, token_budget=1000, logs_dir=logs_dir
+    )
+    agent._trial_name = "trial-a"
+
+    agent._hook_token_budget()
+
+    assert agent._token_budget_hooked is False
+    event_log_path = logs_dir.parent.parent / "events.jsonl"
+    events = [json.loads(line) for line in event_log_path.read_text().splitlines()]
+    assert events[0]["event_type"] == "budget_enforcement_unsupported"
+    assert events[0]["token_budget"] == 1000
+
+
+@pytest.mark.asyncio
+async def test_hook_token_budget_raises_when_exhausted(tmp_path):
+    class FakeWrapped:
+        def __init__(self):
+            self.called = False
+
+        async def _query_llm(self, chat, prompt, *args, **kwargs):
+            self.called = True
+            return "should not be reached"
+
+    from go_explore.agents.token_budget import AgentBudgetExhaustedError
+
+    wrapped = FakeWrapped()
+    logs_dir = tmp_path / "jobs" / "job-a" / "trial-a" / "agent"
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped, token_budget=1000, logs_dir=logs_dir
+    )
+    agent._trial_name = "trial-a"
+    agent._hook_token_budget()
+
+    chat = SimpleNamespace(
+        total_input_tokens=800, total_output_tokens=200, total_cache_tokens=0
+    )
+    with pytest.raises(AgentBudgetExhaustedError):
+        await wrapped._query_llm(chat, "prompt")
+
+    assert wrapped.called is False
+    event_log_path = logs_dir.parent.parent / "events.jsonl"
+    events = [json.loads(line) for line in event_log_path.read_text().splitlines()]
+    assert events[0]["event_type"] == "budget_exhausted"
+    assert events[0]["tokens_consumed"] == 1000
+
+
+@pytest.mark.asyncio
+async def test_hook_token_budget_calls_through_under_budget():
+    class FakeWrapped:
+        async def _query_llm(self, chat, prompt, *args, **kwargs):
+            return "ok"
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, token_budget=1000)
+    agent._hook_token_budget()
+
+    chat = SimpleNamespace(
+        total_input_tokens=100, total_output_tokens=50, total_cache_tokens=0
+    )
+    result = await wrapped._query_llm(chat, "prompt")
+
+    assert result == "ok"
 
 
 @pytest.mark.asyncio

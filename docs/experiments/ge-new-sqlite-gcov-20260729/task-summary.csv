@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+ge-new-sqlite-gcov-20260729,sqlite-with-gcov,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,3,3,0,0,133994,0.039274300000000005,252.481355,,,true

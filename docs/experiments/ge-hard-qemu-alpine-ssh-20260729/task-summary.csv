@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+ge-hard-qemu-alpine-ssh-20260729,qemu-alpine-ssh,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,3,3,40,2,4296024,0.5881563999999999,4388.2463769999995,250.07589262599504,5.528516,false

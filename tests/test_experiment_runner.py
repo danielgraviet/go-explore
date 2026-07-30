@@ -3,8 +3,8 @@ from __future__ import annotations
 import csv
 import json
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from go_explore.continuations import (
     ContinuationAttempt,
@@ -178,18 +178,17 @@ def test_run_fixed_budget_experiment_executes_branch_and_builds_analysis(tmp_pat
     assert (tmp_path / "manifest.json").exists()
     assert (tmp_path / "analysis" / "execution-report.json").exists()
     assert (tmp_path / "analysis" / "run-summary.csv").exists()
-    assert report.budget_enforcement == "planning_only"
-    assert "not stopped" in report.budget_enforcement_description
+    assert report.budget_enforcement == "hard_token_limit"
+    assert "token_budget" in report.budget_enforcement_description
 
     formatted = format_run_experiment_report(report)
-    assert "budget_enforcement: planning_only" in formatted
-    assert "not stopped when a job reaches this value" in formatted
+    assert "budget_enforcement: hard_token_limit" in formatted
 
     execution_report = json.loads(
         (tmp_path / "analysis" / "execution-report.json").read_text()
     )
-    assert execution_report["budget_enforcement"] == "planning_only"
-    assert "not stopped" in execution_report["budget_enforcement_description"]
+    assert execution_report["budget_enforcement"] == "hard_token_limit"
+    assert "token_budget" in execution_report["budget_enforcement_description"]
 
     rows = list(csv.DictReader((tmp_path / "analysis" / "run-summary.csv").open()))
     rows_by_run = {row["run_id"]: row for row in rows}
@@ -199,3 +198,48 @@ def test_run_fixed_budget_experiment_executes_branch_and_builds_analysis(tmp_pat
     assert child["method"] == "promising_branch"
     assert child["role"] == "continuation"
     assert child["outcome"] == "success"
+
+
+def test_run_fixed_budget_experiment_threads_child_token_budget_into_continuation_plans(
+    tmp_path,
+):
+    captured_plans: list[ContinuationPlan] = []
+
+    def _capturing_continuation_runner(
+        plans: Sequence[ContinuationPlan],
+        **kwargs,
+    ) -> ContinuationReport:
+        captured_plans.extend(plans)
+        return _fake_continuation_runner(plans, **kwargs)
+
+    run_fixed_budget_experiment(
+        RunExperimentConfig(
+            experiment_id="exp-2",
+            base_config=HarborRunConfig(
+                jobs_dir=tmp_path / "jobs",
+                agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
+                agent=None,
+                env="daytona",
+                dataset="terminal-bench@2.0",
+                model="model-a",
+                task_name="fix-git",
+            ),
+            total_token_budget=100_000,
+            methods=("promising_branch",),
+            seeds=(0,),
+            job_prefix="exp2",
+            manifest_path=tmp_path / "manifest2.json",
+            analysis_dir=tmp_path / "analysis2",
+            n_branch_continuations=1,
+            branch_root_fraction=0.3,
+            execute=True,
+        ),
+        command_runner=_fake_harbor_run,
+        continuation_runner=_capturing_continuation_runner,
+    )
+
+    assert len(captured_plans) == 1
+    plan = captured_plans[0]
+    assert plan.budget.token_budget == 70_000
+    assert plan.budget.enforcement == "hard_token_limit"
+    assert "token_budget=70000" in " ".join(plan.command)

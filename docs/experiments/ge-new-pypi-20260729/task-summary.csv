@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+ge-new-pypi-20260729,pypi-server,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,3,3,7,2,461012,0.16036540000000002,463.011455,68.30552274799811,10.076664000000001,true

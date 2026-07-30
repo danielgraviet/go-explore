@@ -363,6 +363,12 @@ def _rows_from_job_dir(
         if model is not None:
             row["_model"] = model
         rows.append(row)
+        _warn_for_budget_overshoot(
+            planned,
+            budget,
+            warnings,
+            artifact=str(job_dir / trial.trial_name),
+        )
 
     if not rows:
         warnings.append(
@@ -877,6 +883,54 @@ def _warn_for_planning_only_budgets(
             ),
         )
     )
+
+
+def _warn_for_budget_overshoot(
+    planned: PlannedJobMetadata | None,
+    budget: BudgetSummary,
+    warnings: list[AnalysisWarning],
+    *,
+    artifact: str,
+) -> None:
+    if planned is None or planned.budget_enforcement != "hard_token_limit":
+        return
+    if planned.planned_token_budget is None:
+        return
+
+    if budget.total_tokens_status != "complete":
+        warnings.append(
+            AnalysisWarning(
+                artifact=artifact,
+                field="total_tokens_status",
+                message=(
+                    "budget_enforcement is hard_token_limit but observed token "
+                    "accounting is incomplete; enforcement cannot be verified "
+                    "from this artifact, so do not treat this as a validated "
+                    "equal-budget comparison"
+                ),
+            )
+        )
+        return
+
+    if (
+        budget.total_tokens is not None
+        and budget.total_tokens > planned.planned_token_budget
+    ):
+        overshoot = budget.total_tokens - planned.planned_token_budget
+        warnings.append(
+            AnalysisWarning(
+                artifact=artifact,
+                field="total_tokens",
+                message=(
+                    f"observed total_tokens ({budget.total_tokens}) exceeded the "
+                    f"enforced token_budget ({planned.planned_token_budget}) by "
+                    f"{overshoot}; this is the expected bounded overshoot from "
+                    "the in-flight request that crossed the limit, not an "
+                    "enforcement failure, but should be reported alongside "
+                    "solve-rate claims"
+                ),
+            )
+        )
 
 
 def _run_id_for_trial(

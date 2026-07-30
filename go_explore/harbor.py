@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -92,6 +93,36 @@ def run_harbor(config: HarborRunConfig, *, dry_run: bool = False) -> subprocess.
         text=True,
         env=environment_with_repo_path(),
     )
+
+
+def with_agent_kwarg(
+    extra_args: Sequence[str],
+    key: str,
+    value: str,
+) -> tuple[str, ...]:
+    """Return `extra_args` with exactly one `--ak key=value`, replacing any
+    prior value for `key`.
+
+    `--ak` is Harbor's agent-kwarg flag; the snapshot-aware agent factories
+    read these as constructor kwargs (see `go_explore/agents/factory.py`).
+    """
+
+    cleaned: list[str] = []
+    index = 0
+    while index < len(extra_args):
+        current = extra_args[index]
+        if current == "--ak" and index + 1 < len(extra_args):
+            if str(extra_args[index + 1]).split("=", 1)[0] == key:
+                index += 2
+                continue
+            cleaned.extend([current, extra_args[index + 1]])
+            index += 2
+            continue
+        cleaned.append(current)
+        index += 1
+
+    cleaned.extend(["--ak", f"{key}={value}"])
+    return tuple(cleaned)
 
 
 def environment_with_repo_path(base: dict[str, str] | None = None) -> dict[str, str]:

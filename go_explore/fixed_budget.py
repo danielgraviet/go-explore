@@ -2,21 +2,44 @@ from __future__ import annotations
 
 import json
 import random
-from dataclasses import dataclass
+from collections.abc import Sequence
+from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import Any, Literal
 
-from go_explore.harbor import HarborRunConfig, build_harbor_command
-
+from go_explore.harbor import HarborRunConfig, build_harbor_command, with_agent_kwarg
 
 ExperimentMethod = Literal["single", "retry", "random_branch", "promising_branch"]
 PlannedJobRole = Literal["single", "retry_attempt", "root", "continuation"]
 BUDGET_ENFORCEMENT_PLANNING_ONLY = "planning_only"
+BUDGET_ENFORCEMENT_HARD_TOKEN_LIMIT = "hard_token_limit"
 BUDGET_ENFORCEMENT_DESCRIPTION = (
     "Token budgets are planned analysis allocations only; Harbor and the agent "
     "are not stopped when a job reaches this value."
 )
+BUDGET_ENFORCEMENT_HARD_TOKEN_LIMIT_DESCRIPTION = (
+    "The agent is passed this token_budget and stops issuing further model "
+    "requests once its accumulated input+output+cache tokens reach it. This "
+    "bounds the overshoot to at most one in-flight agent step's token usage "
+    "and does not cover Terminus-2's rare context-length-exceeded fallback "
+    "path, which can call the model directly. See "
+    "go_explore/agents/token_budget.py."
+)
 DEFAULT_BRANCH_CONTEXT_MODE = "none"
+
+
+def _enforcement_description(enforcement: str) -> str:
+    if enforcement == BUDGET_ENFORCEMENT_HARD_TOKEN_LIMIT:
+        return BUDGET_ENFORCEMENT_HARD_TOKEN_LIMIT_DESCRIPTION
+    return BUDGET_ENFORCEMENT_DESCRIPTION
+
+
+def _enforcement_for(token_budget: int | None) -> str:
+    return (
+        BUDGET_ENFORCEMENT_HARD_TOKEN_LIMIT
+        if token_budget is not None
+        else BUDGET_ENFORCEMENT_PLANNING_ONLY
+    )
 
 
 @dataclass(frozen=True)
@@ -32,7 +55,7 @@ class BudgetAllocation:
             "token_budget": self.token_budget,
             "budget_fraction": self.budget_fraction,
             "enforcement": self.enforcement,
-            "enforcement_description": BUDGET_ENFORCEMENT_DESCRIPTION,
+            "enforcement_description": _enforcement_description(self.enforcement),
         }
 
 
@@ -100,6 +123,7 @@ class FixedBudgetManifest:
     jobs: tuple[PlannedExperimentJob, ...]
 
     def to_json_dict(self) -> dict[str, Any]:
+        enforcement = _enforcement_for(self.total_token_budget)
         return {
             "schema_version": "go-explore-fixed-budget-plan-v1",
             "experiment_id": self.experiment_id,
@@ -107,8 +131,8 @@ class FixedBudgetManifest:
             "model": self.model,
             "budget": {
                 "total_token_budget": self.total_token_budget,
-                "enforcement": BUDGET_ENFORCEMENT_PLANNING_ONLY,
-                "enforcement_description": BUDGET_ENFORCEMENT_DESCRIPTION,
+                "enforcement": enforcement,
+                "enforcement_description": _enforcement_description(enforcement),
             },
             "methods": list(self.methods),
             "seeds": list(self.seeds),
@@ -126,9 +150,7 @@ def plan_fixed_budget_runs(config: FixedBudgetPlanConfig) -> FixedBudgetManifest
                 jobs.extend(_plan_single(config, seed=seed))
             elif method == "retry":
                 jobs.extend(_plan_retry(config, seed=seed))
-            elif method == "random_branch":
-                jobs.extend(_plan_branch(config, method=method, seed=seed))
-            elif method == "promising_branch":
+            elif method == "random_branch" or method == "promising_branch":
                 jobs.extend(_plan_branch(config, method=method, seed=seed))
             else:
                 raise ValueError(f"Unsupported method: {method}")
@@ -257,7 +279,11 @@ def _plan_single(
     seed: int,
 ) -> tuple[PlannedExperimentJob, ...]:
     job_name = f"{config.job_prefix}-single-seed-{seed}"
-    run_config = _with_job_name(config.base_config, job_name)
+    token_budget = config.total_token_budget
+    run_config = _with_token_budget(
+        _with_job_name(config.base_config, job_name),
+        token_budget,
+    )
     return (
         PlannedExperimentJob(
             method="single",
@@ -266,8 +292,9 @@ def _plan_single(
             job_name=job_name,
             command=tuple(build_harbor_command(run_config)),
             budget=BudgetAllocation(
-                token_budget=config.total_token_budget,
+                token_budget=token_budget,
                 budget_fraction=1.0,
+                enforcement=_enforcement_for(token_budget),
             ),
             start_state_type="clean",
             context_mode="original_task_only",
@@ -285,7 +312,10 @@ def _plan_retry(
     jobs: list[PlannedExperimentJob] = []
     for index, token_budget in enumerate(token_budgets):
         job_name = f"{config.job_prefix}-retry-seed-{seed}-attempt-{index}"
-        run_config = _with_job_name(config.base_config, job_name)
+        run_config = _with_token_budget(
+            _with_job_name(config.base_config, job_name),
+            token_budget,
+        )
         jobs.append(
             PlannedExperimentJob(
                 method="retry",
@@ -296,6 +326,7 @@ def _plan_retry(
                 budget=BudgetAllocation(
                     token_budget=token_budget,
                     budget_fraction=budget_fraction,
+                    enforcement=_enforcement_for(token_budget),
                 ),
                 start_state_type="clean",
                 context_mode="original_task_only",
@@ -342,12 +373,16 @@ def _plan_branch(
             job_name=root_job_name,
             command=tuple(
                 build_harbor_command(
-                    _with_job_name(config.base_config, root_job_name)
+                    _with_token_budget(
+                        _with_job_name(config.base_config, root_job_name),
+                        root_budget,
+                    )
                 )
             ),
             budget=BudgetAllocation(
                 token_budget=root_budget,
                 budget_fraction=config.branch_root_fraction,
+                enforcement=_enforcement_for(root_budget),
             ),
             start_state_type="clean",
             context_mode="original_task_only",
@@ -367,11 +402,14 @@ def _plan_branch(
             command: tuple[str, ...] = ()
             executor_status = "pending_root_archive"
         else:
-            child_config = _snapshot_child_config(
-                config.base_config,
-                job_name=job_name,
-                snapshot_name=snapshot_name,
-                context_mode=config.branch_context_mode,
+            child_config = _with_token_budget(
+                _snapshot_child_config(
+                    config.base_config,
+                    job_name=job_name,
+                    snapshot_name=snapshot_name,
+                    context_mode=config.branch_context_mode,
+                ),
+                token_budget,
             )
             command = tuple(build_harbor_command(child_config))
             executor_status = "ready"
@@ -386,6 +424,7 @@ def _plan_branch(
                 budget=BudgetAllocation(
                     token_budget=token_budget,
                     budget_fraction=child_fraction,
+                    enforcement=_enforcement_for(token_budget),
                 ),
                 start_state_type="full_snapshot",
                 context_mode=config.branch_context_mode,
@@ -425,6 +464,20 @@ def _select_branch_snapshots(
         rng = random.Random(seed)
         rng.shuffle(selected)
     return tuple(selected[:limit])
+
+
+def _with_token_budget(
+    config: HarborRunConfig,
+    token_budget: int | None,
+) -> HarborRunConfig:
+    if token_budget is None:
+        return config
+    return replace(
+        config,
+        extra_args=with_agent_kwarg(
+            config.extra_args, "token_budget", str(token_budget)
+        ),
+    )
 
 
 def _with_job_name(config: HarborRunConfig, job_name: str) -> HarborRunConfig:
