@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+ge-new-log-summary-20260729,log-summary-date-ranges,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,3,3,9,2,265753,0.09410135,215.212724,45.05523329100288,6.586879,true

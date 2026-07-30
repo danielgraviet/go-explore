@@ -3,29 +3,34 @@ from __future__ import annotations
 import asyncio
 import json
 import subprocess
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Literal, Sequence
+from typing import Any, Literal
 
 from daytona import AsyncDaytona
 
 from go_explore.events import EVENT_LOG_FILENAME, append_event, base_event
+from go_explore.fixed_budget import BudgetAllocation
 from go_explore.harbor import (
     HarborRunConfig,
     build_harbor_command,
     environment_with_repo_path,
+    with_agent_kwarg,
 )
 from go_explore.results import BudgetSummary, JobSummary, TrialSummary, summarize_job
+from go_explore.snapshots.command_log import build_command_log
+from go_explore.snapshots.command_replay import (
+    DEFAULT_MAX_COMMANDS as DEFAULT_REPLAY_MAX_COMMANDS,
+)
+from go_explore.snapshots.command_replay import (
+    build_replay_manifest,
+    write_replay_manifest,
+)
 from go_explore.snapshots.models import context_from_atif_step
 from go_explore.snapshots.replay import (
     extract_signals_from_atif_step,
     load_atif_trajectory_steps,
-)
-from go_explore.snapshots.command_log import build_command_log
-from go_explore.snapshots.command_replay import (
-    DEFAULT_MAX_COMMANDS as DEFAULT_REPLAY_MAX_COMMANDS,
-    build_replay_manifest,
-    write_replay_manifest,
 )
 from go_explore.snapshots.transcript import build_transcript_summary, parent_outcome
 
@@ -80,6 +85,9 @@ class ContinuationPlan:
     context_mode: ContextMode = "parent_summary"
     parent_artifacts: tuple[str, ...] = ()
     executor_status: str = "ready"
+    budget: BudgetAllocation = field(
+        default_factory=lambda: BudgetAllocation(None, 0.0)
+    )
 
     def to_json_dict(self) -> dict[str, Any]:
         return {
@@ -92,6 +100,7 @@ class ContinuationPlan:
             "context_mode": self.context_mode,
             "parent_artifacts": list(self.parent_artifacts),
             "executor_status": self.executor_status,
+            "budget": self.budget.to_json_dict(),
         }
 
 
@@ -120,6 +129,9 @@ class ContinuationAttempt:
     reward: float | None
     exception_type: str | None
     budget: BudgetSummary = field(default_factory=BudgetSummary)
+    planned_budget: BudgetAllocation = field(
+        default_factory=lambda: BudgetAllocation(None, 0.0)
+    )
     start_state_type: StartStateType = "full_snapshot"
     context_mode: ContextMode = "parent_summary"
     parent_artifacts: tuple[str, ...] = ()
@@ -282,6 +294,7 @@ def build_snapshot_continuation_config(
     agent: str | None = None,
     model: str | None = None,
     extra_args: Sequence[str] = (),
+    token_budget: int | None = None,
 ) -> HarborRunConfig:
     """Build a Harbor job that starts Daytona from a saved snapshot."""
 
@@ -290,6 +303,10 @@ def build_snapshot_continuation_config(
         context_mode=context_mode,
         parent_context_path=parent_context_path,
     )
+    if token_budget is not None:
+        combined_extra_args = with_agent_kwarg(
+            combined_extra_args, "token_budget", str(token_budget)
+        )
 
     return HarborRunConfig(
         agent=agent if agent is not None else root_config.agent,
@@ -327,6 +344,7 @@ def build_clean_start_config(
     agent: str | None = None,
     model: str | None = None,
     extra_args: Sequence[str] = (),
+    token_budget: int | None = None,
 ) -> HarborRunConfig:
     """Build a Harbor job that starts from the original clean task state."""
 
@@ -337,6 +355,10 @@ def build_clean_start_config(
         diff_path=diff_path,
         replay_manifest_path=replay_manifest_path,
     )
+    if token_budget is not None:
+        combined_extra_args = with_agent_kwarg(
+            combined_extra_args, "token_budget", str(token_budget)
+        )
 
     return HarborRunConfig(
         agent=agent if agent is not None else root_config.agent,
@@ -476,6 +498,7 @@ def plan_snapshot_continuations(
     selector_mode: str = "list_order",
     selection_metadata: Sequence[SnapshotSelectionMetadata] = (),
     context_mode: ContextMode = "parent_summary",
+    child_budgets: Sequence[BudgetAllocation] | None = None,
 ) -> list[ContinuationPlan]:
     parent_trial = select_trial(root_summary, parent_trial_name)
     selected_snapshots = (
@@ -492,6 +515,11 @@ def plan_snapshot_continuations(
     )
 
     for index, snapshot_name in enumerate(selected_snapshots):
+        budget = (
+            child_budgets[index]
+            if child_budgets is not None and index < len(child_budgets)
+            else BudgetAllocation(None, 0.0)
+        )
         if not snapshot_belongs_to_trial(snapshot_name, parent_trial.trial_name):
             plans.append(
                 ContinuationPlan(
@@ -501,6 +529,7 @@ def plan_snapshot_continuations(
                     job_name=f"{continuation_job_prefix}-snapshot-{index}",
                     command=(),
                     executor_status="snapshot_parent_mismatch",
+                    budget=budget,
                 )
             )
             continue
@@ -513,6 +542,7 @@ def plan_snapshot_continuations(
             agent=agent,
             model=model,
             extra_args=extra_args,
+            token_budget=budget.token_budget,
         )
         plans.append(
             ContinuationPlan(
@@ -526,6 +556,7 @@ def plan_snapshot_continuations(
                 command=tuple(build_harbor_command(config)),
                 start_state_type="full_snapshot",
                 context_mode=context_mode,
+                budget=budget,
             )
         )
 
@@ -1034,6 +1065,7 @@ def _attempt_from_summary(
         reward=trial.reward if trial else None,
         exception_type=trial.exception_type if trial else "missing-trial-result",
         budget=trial.budget if trial else BudgetSummary(),
+        planned_budget=plan.budget,
         start_state_type=plan.start_state_type,
         context_mode=plan.context_mode,
         parent_artifacts=plan.parent_artifacts,
@@ -1073,6 +1105,7 @@ def run_continuation_plan(
             reward=None,
             exception_type=f"harbor-return-code-{result.returncode}",
             budget=BudgetSummary(),
+            planned_budget=plan.budget,
             start_state_type=plan.start_state_type,
             context_mode=plan.context_mode,
             parent_artifacts=plan.parent_artifacts,

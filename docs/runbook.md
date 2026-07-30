@@ -282,11 +282,18 @@ tmux new-session -d -s phase6-viability-pilot \
 tmux attach -t phase6-viability-pilot
 ```
 
-Budget fields in these manifests and analysis tables are planning labels only.
-They split a target token budget across methods for analysis, but Harbor and
-the agent are not stopped when a job reaches the planned value. Treat
-`budget_enforcement=planning_only` as a warning against strict fixed-budget
-claims unless actual `total_tokens` are comparable.
+Budget fields in these manifests and analysis tables split a target token
+budget across methods. When a manifest sets `total_token_budget`, that split
+is enforced (`budget_enforcement=hard_token_limit`): the agent stops issuing
+further model requests once its accumulated tokens reach its job's share
+(see `go_explore/agents/token_budget.py` and the `budget_exhausted` /
+`budget_enforcement_unsupported` events in each job's `events.jsonl`).
+Overshoot is possible but bounded to roughly one in-flight agent step; the
+analysis tables warn when observed `total_tokens` exceed the planned budget,
+or when token accounting is incomplete and enforcement can't be verified.
+Runs without `total_token_budget` stay `budget_enforcement=planning_only` —
+treat those as a warning against strict fixed-budget claims unless actual
+`total_tokens` are comparable.
 
 The lower-level manual flow is still useful for debugging individual stages:
 

@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+ge-hard-pytorch-model-recovery-20260729,pytorch-model-recovery,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,3,3,6,1,1245686,0.2388757,1315.4734939999998,59.94978974999685,3.808306,true

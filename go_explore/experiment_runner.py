@@ -4,10 +4,9 @@ import json
 import shlex
 import subprocess
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Sequence
 
 from go_explore.analysis_tables import (
     AnalysisInputs,
@@ -26,6 +25,8 @@ from go_explore.continuations import (
 from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.fixed_budget import (
     BUDGET_ENFORCEMENT_DESCRIPTION,
+    BUDGET_ENFORCEMENT_HARD_TOKEN_LIMIT,
+    BUDGET_ENFORCEMENT_HARD_TOKEN_LIMIT_DESCRIPTION,
     BUDGET_ENFORCEMENT_PLANNING_ONLY,
     DEFAULT_BRANCH_CONTEXT_MODE,
     ExperimentMethod,
@@ -35,12 +36,10 @@ from go_explore.fixed_budget import (
     plan_fixed_budget_runs,
     write_fixed_budget_manifest,
 )
-from go_explore.harbor import HarborRunConfig
-from go_explore.harbor import environment_with_repo_path
+from go_explore.harbor import HarborRunConfig, environment_with_repo_path
 from go_explore.results import summarize_job
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, SnapshotArchive
 from go_explore.snapshots.selectors import select_archive_entries
-
 
 CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
 ContinuationRunner = Callable[..., ContinuationReport]
@@ -223,13 +222,23 @@ def run_fixed_budget_manifest(
         )
         write_analysis_tables(analysis_tables, analysis_dir)
 
+    budget_enforcement = (
+        BUDGET_ENFORCEMENT_HARD_TOKEN_LIMIT
+        if manifest.total_token_budget is not None
+        else BUDGET_ENFORCEMENT_PLANNING_ONLY
+    )
+    budget_enforcement_description = (
+        BUDGET_ENFORCEMENT_HARD_TOKEN_LIMIT_DESCRIPTION
+        if budget_enforcement == BUDGET_ENFORCEMENT_HARD_TOKEN_LIMIT
+        else BUDGET_ENFORCEMENT_DESCRIPTION
+    )
     report = RunExperimentReport(
         experiment_id=manifest.experiment_id,
         manifest_path=manifest_path,
         analysis_dir=analysis_dir if build_analysis else None,
         execution_report_path=execution_report_path,
-        budget_enforcement=BUDGET_ENFORCEMENT_PLANNING_ONLY,
-        budget_enforcement_description=BUDGET_ENFORCEMENT_DESCRIPTION,
+        budget_enforcement=budget_enforcement,
+        budget_enforcement_description=budget_enforcement_description,
         records=tuple(records),
         job_dirs=tuple(_dedupe_paths(observed_job_dirs)),
         continuation_reports=tuple(_dedupe_paths(continuation_report_paths)),
@@ -444,6 +453,7 @@ def _run_branch_continuations(
         selector_mode=selector_mode,
         selection_metadata=selection_metadata,
         context_mode=branch_context_mode,
+        child_budgets=[job.budget for job in planned_children],
     )
 
     records = [

@@ -12,10 +12,10 @@ from go_explore.continuations import (
     build_snapshot_continuation_config,
     harbor_config_from_job,
     log_continuation_started,
-    plan_start_state_baselines,
     plan_snapshot_continuations,
-    snapshot_prefix_for_trial,
+    plan_start_state_baselines,
     snapshot_belongs_to_trial,
+    snapshot_prefix_for_trial,
     write_command_log_context,
     write_failure_symptom_context,
     write_plan_manifest,
@@ -24,6 +24,7 @@ from go_explore.continuations import (
 )
 from go_explore.events import EVENT_LOG_FILENAME
 from go_explore.fixed_budget import (
+    BudgetAllocation,
     FixedBudgetPlanConfig,
     plan_fixed_budget_runs,
     write_fixed_budget_manifest,
@@ -587,6 +588,61 @@ def test_plan_snapshot_continuations_records_parent_lineage():
     assert "snapshot_template_name=go-explore-fix-git__root-step-0" in plans[0].command
     assert plans[0].context_mode == "parent_summary"
     assert "context_mode=parent_summary" in plans[0].command
+
+
+def test_plan_snapshot_continuations_threads_child_budgets():
+    root_config = HarborRunConfig(
+        agent="terminus-2",
+        model="model-a",
+        env="daytona",
+        dataset="terminal-bench@2.0",
+        task_name="fix-git",
+        job_name="root",
+    )
+    root_summary = JobSummary(
+        job_dir=Path("jobs/root"),
+        n_total_trials=1,
+        n_errors=0,
+        mean=0.0,
+        trials=(
+            TrialSummary(
+                trial_name="fix-git__root",
+                task_name="fix-git",
+                source="terminal-bench",
+                reward=0.0,
+                exception_type=None,
+                exception_message=None,
+            ),
+        ),
+    )
+
+    plans = plan_snapshot_continuations(
+        root_config=root_config,
+        root_summary=root_summary,
+        snapshots=(
+            "go-explore-fix-git__root-step-0",
+            "go-explore-fix-git__root-step-1",
+        ),
+        continuation_job_prefix="cont",
+        child_budgets=(
+            BudgetAllocation(
+                token_budget=15_000,
+                budget_fraction=0.5,
+                enforcement="hard_token_limit",
+            ),
+            BudgetAllocation(
+                token_budget=None,
+                budget_fraction=0.5,
+                enforcement="planning_only",
+            ),
+        ),
+    )
+
+    assert len(plans) == 2
+    assert plans[0].budget.token_budget == 15_000
+    assert "token_budget=15000" in " ".join(plans[0].command)
+    assert plans[1].budget.token_budget is None
+    assert "token_budget=" not in " ".join(plans[1].command)
 
 
 def test_plan_snapshot_continuations_records_none_context_mode():
@@ -1793,7 +1849,38 @@ def test_fixed_budget_planner_allocates_single_retry_and_branch_budgets():
         35_000,
     ]
     assert {job.seed for job in jobs} == {3}
+    assert manifest.to_json_dict()["budget"]["enforcement"] == "hard_token_limit"
+    for job in jobs:
+        assert job.budget.enforcement == "hard_token_limit"
+        assert f"token_budget={job.budget.token_budget}" in " ".join(job.command)
+
+
+def test_fixed_budget_planner_without_total_budget_stays_planning_only():
+    base_config = HarborRunConfig(
+        agent="terminus-2",
+        env="daytona",
+        jobs_dir=Path("jobs"),
+        dataset="terminal-bench@2.0",
+        model="model-a",
+        task_name="fix-git",
+    )
+
+    manifest = plan_fixed_budget_runs(
+        FixedBudgetPlanConfig(
+            experiment_id="pilot-1",
+            base_config=base_config,
+            job_prefix="pilot",
+            total_token_budget=None,
+            methods=("single",),
+            seeds=(0,),
+        )
+    )
+
     assert manifest.to_json_dict()["budget"]["enforcement"] == "planning_only"
+    single = manifest.jobs[0]
+    assert single.budget.enforcement == "planning_only"
+    assert single.budget.token_budget is None
+    assert "token_budget=" not in " ".join(single.command)
 
 
 def test_fixed_budget_planner_generates_method_commands_and_snapshot_children():
@@ -1836,6 +1923,8 @@ def test_fixed_budget_planner_generates_method_commands_and_snapshot_children():
     assert child_0.executor_status == "ready"
     assert "snapshot_template_name=" in " ".join(child_0.command)
     assert "context_mode=none" in child_0.command
+    assert f"token_budget={root.budget.token_budget}" in " ".join(root.command)
+    assert f"token_budget={child_0.budget.token_budget}" in " ".join(child_0.command)
     assert child_1.parent_run_id == root.job_name
 
 

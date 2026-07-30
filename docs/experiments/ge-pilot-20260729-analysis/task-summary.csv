@@ -1,0 +1,7 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+ge-pilot-20260729,build-cython-ext,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,2,2,17,0,507029,0.13546415,562.37754,98.41770545700001,4.241877000000001,false
+ge-pilot-20260729,build-cython-ext,,,root,anthropic/claude-haiku-4-5-20251001,false,1,1,17,0,1725543,0.17751115,921.31739,426.48364750100063,,false
+ge-pilot-20260729,fix-git,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,2,2,8,0,64738,0.05268975,233.567353,38.765145123002185,5.328112,true
+ge-pilot-20260729,fix-git,,,root,anthropic/claude-haiku-4-5-20251001,true,1,1,5,0,31667,0.03199855,176.572237,48.91667320899887,,true
+ge-pilot-20260729,regex-log,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,2,2,8,0,243029,0.09639725,421.904279,50.8208063739994,18.046418,false
+ge-pilot-20260729,regex-log,,,root,anthropic/claude-haiku-4-5-20251001,false,1,1,5,0,101331,0.048968600000000015,158.31391,55.96815137500107,,false

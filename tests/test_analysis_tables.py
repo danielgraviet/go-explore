@@ -411,6 +411,117 @@ def test_build_analysis_tables_cli_writes_csv_and_warnings(tmp_path, capsys):
     )
 
 
+def _manifest_with_single_job(
+    *,
+    token_budget: int,
+    enforcement: str,
+    job_name: str = "budget-job",
+) -> dict:
+    return {
+        "schema_version": "go-explore-fixed-budget-plan-v1",
+        "experiment_id": "exp-budget",
+        "task_id": "fix-git",
+        "model": "model-a",
+        "budget": {"total_token_budget": token_budget, "enforcement": enforcement},
+        "methods": ["single"],
+        "seeds": [0],
+        "jobs": [
+            {
+                "method": "single",
+                "role": "single",
+                "seed": 0,
+                "job_name": job_name,
+                "command": [],
+                "budget": {
+                    "token_budget": token_budget,
+                    "budget_fraction": 1.0,
+                    "enforcement": enforcement,
+                },
+                "start_state_type": "clean",
+                "context_mode": "original_task_only",
+                "selector_mode": None,
+                "parent_run_id": None,
+                "parent_snapshot": None,
+                "executor_status": "ready",
+            }
+        ],
+    }
+
+
+def test_hard_token_limit_overshoot_warns_with_amount(tmp_path):
+    jobs_dir = tmp_path / "jobs"
+    job_dir = jobs_dir / "budget-job"
+    # _write_job's default tokens sum to 10 + 3 + 2 = 15.
+    _write_job(job_dir, trial_name="budget-trial", reward=1.0)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            _manifest_with_single_job(token_budget=10, enforcement="hard_token_limit")
+        )
+        + "\n"
+    )
+
+    tables = build_analysis_tables(
+        AnalysisInputs(manifest_path=manifest_path, job_dirs=(job_dir,), jobs_dir=jobs_dir)
+    )
+
+    overshoot_warnings = [
+        warning for warning in tables.warnings if warning.field == "total_tokens"
+    ]
+    assert len(overshoot_warnings) == 1
+    assert "15" in overshoot_warnings[0].message
+    assert "10" in overshoot_warnings[0].message
+    assert "5" in overshoot_warnings[0].message
+
+
+def test_hard_token_limit_within_budget_does_not_warn(tmp_path):
+    jobs_dir = tmp_path / "jobs"
+    job_dir = jobs_dir / "budget-job"
+    _write_job(job_dir, trial_name="budget-trial", reward=1.0)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            _manifest_with_single_job(
+                token_budget=1_000, enforcement="hard_token_limit"
+            )
+        )
+        + "\n"
+    )
+
+    tables = build_analysis_tables(
+        AnalysisInputs(manifest_path=manifest_path, job_dirs=(job_dir,), jobs_dir=jobs_dir)
+    )
+
+    assert not any(warning.field == "total_tokens" for warning in tables.warnings)
+
+
+def test_hard_token_limit_incomplete_accounting_warns(tmp_path):
+    jobs_dir = tmp_path / "jobs"
+    job_dir = jobs_dir / "budget-job"
+    _write_job(job_dir, trial_name="budget-trial", reward=1.0, tokens=False)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            _manifest_with_single_job(
+                token_budget=1_000, enforcement="hard_token_limit"
+            )
+        )
+        + "\n"
+    )
+
+    tables = build_analysis_tables(
+        AnalysisInputs(manifest_path=manifest_path, job_dirs=(job_dir,), jobs_dir=jobs_dir)
+    )
+
+    incomplete_warnings = [
+        warning
+        for warning in tables.warnings
+        if warning.field == "total_tokens_status"
+    ]
+    assert len(incomplete_warnings) == 1
+    assert "cannot be verified" in incomplete_warnings[0].message
+
+
 def test_build_analysis_tables_uses_per_job_task_and_experiment_metadata(tmp_path):
     jobs_dir = tmp_path / "jobs"
     manifest_path = tmp_path / "combined.json"

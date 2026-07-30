@@ -29,6 +29,12 @@ def _as_bool(value: Any) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _as_optional_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    return int(value)
+
+
 def _resolve_snapshot_policy(value: Any) -> SnapshotPolicy | None:
     if value is None or not isinstance(value, str):
         return value
@@ -124,6 +130,7 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
         replay_total_budget_sec = float(
             kwargs.pop("replay_total_budget_sec", DEFAULT_TOTAL_BUDGET_SEC)
         )
+        token_budget = _as_optional_int(kwargs.pop("token_budget", None))
         kwargs.setdefault("record_terminal_session", False)
         wrapped = Terminus2(
             logs_dir=logs_dir,
@@ -147,6 +154,7 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
             replay_manifest_path=replay_manifest_path,
             replay_command_timeout_sec=replay_command_timeout_sec,
             replay_total_budget_sec=replay_total_budget_sec,
+            token_budget=token_budget,
             logs_dir=logs_dir,
             model_name=model_name,
             logger=logger,
@@ -183,6 +191,7 @@ class SnapshotAwareOracle(SnapshotAwareAgent):
         replay_total_budget_sec = float(
             kwargs.pop("replay_total_budget_sec", DEFAULT_TOTAL_BUDGET_SEC)
         )
+        token_budget = _as_optional_int(kwargs.pop("token_budget", None))
         wrapped = OracleAgent(
             logs_dir=logs_dir,
             model_name=model_name,
@@ -203,6 +212,7 @@ class SnapshotAwareOracle(SnapshotAwareAgent):
             replay_manifest_path=replay_manifest_path,
             replay_command_timeout_sec=replay_command_timeout_sec,
             replay_total_budget_sec=replay_total_budget_sec,
+            token_budget=token_budget,
             logs_dir=logs_dir,
             model_name=model_name,
             logger=logger,

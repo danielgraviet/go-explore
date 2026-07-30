@@ -334,6 +334,11 @@ Useful files:
 ## Guardrails
 
 - Do not change shared defaults just to run one experiment.
-- Keep `planning_only` token budgets as labels, not hard caps.
+- When a manifest has `total_token_budget` set, every job's `--ak token_budget=`
+  is a real, enforced cap (`budget_enforcement=hard_token_limit`): the agent
+  stops issuing further model requests once its accumulated tokens reach the
+  limit (see `go_explore/agents/token_budget.py`). Without `total_token_budget`,
+  budgets remain `planning_only` labels, not caps — do not present a
+  `planning_only` run as a strict fixed-budget comparison.
 - Record missing root archives and skipped continuations explicitly.
 - Treat interrupted Harbor jobs as interrupted, not complete.

@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+ge-new-git-leak-20260729,git-leak-recovery,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,3,3,5,1,42085,0.0476434,227.407544,52.951007081999705,6.072676,true

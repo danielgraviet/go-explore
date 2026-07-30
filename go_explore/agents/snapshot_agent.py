@@ -34,6 +34,12 @@ except ImportError:
 
         pass
 
+from go_explore.agents.token_budget import (
+    AgentBudgetExhaustedError,
+    is_budget_exhausted,
+    tokens_consumed,
+)
+from go_explore.events import EVENT_LOG_FILENAME, append_event, base_event
 from go_explore.snapshots.archive import ARCHIVE_FILENAME, ArchiveStore
 from go_explore.snapshots.backends import DaytonaSnapshotBackend
 from go_explore.snapshots.command_replay import (
@@ -78,12 +84,15 @@ class SnapshotAwareAgent(BaseAgent):
         replay_manifest_path: str | Path | None = None,
         replay_command_timeout_sec: float = DEFAULT_COMMAND_TIMEOUT_SEC,
         replay_total_budget_sec: float = DEFAULT_TOTAL_BUDGET_SEC,
+        token_budget: int | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self._wrapped_agent = wrapped_agent
         self._sandbox = sandbox
         self._hooks_debug = hooks_debug
+        self._token_budget = token_budget
+        self._token_budget_hooked = False
         self._snapshot_policy = snapshot_policy or InterestingAgentStepPolicy()
         self._context_mode = self._normalize_context_mode(context_mode)
         self._parent_context = parent_context
@@ -131,6 +140,30 @@ class SnapshotAwareAgent(BaseAgent):
         if self._logs_dir is None:
             return None
         return self._logs_dir.parent.parent / ARCHIVE_FILENAME
+
+    def _event_log_path(self) -> Path | None:
+        """Job-level event log path, alongside `_archive_path()`."""
+        archive_path = self._archive_path()
+        if archive_path is None:
+            return None
+        return archive_path.parent / EVENT_LOG_FILENAME
+
+    def _log_budget_event(self, event_type: str, **extra: Any) -> None:
+        event_log_path = self._event_log_path()
+        if event_log_path is None:
+            return
+        run_id = self._trial_name or "unknown"
+        event = base_event(
+            event_type=event_type,
+            event_id=f"{run_id}:{event_type}:{self._step_counter}",
+            experiment_id=None,
+            run_id=run_id,
+            job_dir=event_log_path.parent,
+            trial_name=self._trial_name,
+            step_id=self._step_counter,
+        )
+        event.update(extra)
+        append_event(event_log_path, event)
 
     def _ensure_snapshot_session(self, sandbox: Any) -> None:
         if sandbox is None or isinstance(sandbox, str) or self._snapshot_session is not None:
@@ -324,6 +357,7 @@ class SnapshotAwareAgent(BaseAgent):
         )
         self._ensure_snapshot_session(getattr(environment, "_sandbox", None))
         self._hook_agent_loop()
+        self._hook_token_budget()
 
         instruction = await self._apply_context_mode(instruction, environment)
 
@@ -808,6 +842,52 @@ class SnapshotAwareAgent(BaseAgent):
             setattr(session, method_name, wrapped_method)
             return
 
+    def _hook_token_budget(self) -> None:
+        """Hook the wrapped agent's LLM-request path to enforce `token_budget`.
+
+        Wraps `_query_llm(chat, prompt, ...)`, the single call site Harbor's
+        Terminus-2 uses for every model request in the episode loop. `chat`
+        carries running totals (`total_input_tokens`, `total_output_tokens`,
+        `total_cache_tokens`) that persist across the whole trial, so no
+        separate accounting is needed here.
+
+        This does not intercept Terminus-2's context-length-exceeded fallback
+        path, which can call the LLM directly outside `_query_llm` in rare
+        cases. That is a known, documented gap, not a silent one.
+        """
+        if self._token_budget is None:
+            return
+
+        if not hasattr(self._wrapped_agent, "_query_llm"):
+            self._log_budget_event(
+                "budget_enforcement_unsupported",
+                token_budget=self._token_budget,
+                reason="wrapped agent has no _query_llm method",
+            )
+            return
+
+        self._token_budget_hooked = True
+        original_query_llm = self._wrapped_agent._query_llm
+        if getattr(original_query_llm, "_go_explore_budget_wrapped", False):
+            return
+
+        async def wrapped_query_llm(chat: Any, prompt: Any, *args: Any, **kwargs: Any) -> Any:
+            consumed = tokens_consumed(chat)
+            if is_budget_exhausted(consumed, self._token_budget):
+                self._log_budget_event(
+                    "budget_exhausted",
+                    token_budget=self._token_budget,
+                    tokens_consumed=consumed,
+                )
+                raise AgentBudgetExhaustedError(
+                    token_budget=self._token_budget,
+                    tokens_consumed=consumed,
+                )
+            return await original_query_llm(chat, prompt, *args, **kwargs)
+
+        wrapped_query_llm._go_explore_budget_wrapped = True  # type: ignore[attr-defined]
+        self._wrapped_agent._query_llm = wrapped_query_llm
+
     def _hook_agent_loop(self) -> None:
         """Hook into the wrapped agent's loop to capture snapshots.
 
@@ -911,6 +991,7 @@ class SnapshotAwareAgent(BaseAgent):
 
         # Hook the agent's execution loop
         self._hook_agent_loop()
+        self._hook_token_budget()
         self._hook_tmux_session(session)
 
         instruction = asyncio.run(self._apply_context_mode(instruction))
