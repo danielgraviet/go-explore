@@ -1,0 +1,35 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "jobs/t005-verifygate-git-multibranch-promising-branch-seed-2-root/git-multibranch__7orfa7d",
+      "field": "total_tokens",
+      "message": "observed total_tokens (176283) exceeded the enforced token_budget (150000) by 26283; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t005-verifygate-git-multibranch-promising-branch-seed-2-snapshot-0/git-multibranch__i4yVHUP",
+      "field": "total_tokens",
+      "message": "observed total_tokens (466564) exceeded the enforced token_budget (425000) by 41564; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t005-verifygate-git-multibranch-promising-branch-seed-2-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t005-verifygate-git-multibranch-promising-branch-seed-2-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t005-verifygate-git-multibranch-promising-branch-seed-2-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

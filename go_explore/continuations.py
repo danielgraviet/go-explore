@@ -34,6 +34,39 @@ from go_explore.snapshots.replay import (
 )
 from go_explore.snapshots.transcript import build_transcript_summary, parent_outcome
 
+# Agent kwargs deliberately NOT carried from a root job into its branch
+# children when reconstructing config via harbor_config_from_job:
+# - token_budget, context_mode, parent_context, parent_context_path are
+#   re-injected explicitly downstream (plan_snapshot_continuations /
+#   build_snapshot_continuation_config) with child-specific values, so
+#   forwarding the root's own values here would just be overwritten anyway.
+# - diff_path/diff_apply_timeout_sec and replay_manifest_path/
+#   replay_command_timeout_sec/replay_total_budget_sec are one-time root
+#   setup actions against a *clean* start state. A child already restores
+#   from a later snapshot that (if the root progressed at all) likely
+#   already reflects that diff/replay, so re-running them against the
+#   child would at best no-op and at worst fail (e.g. `git apply` on an
+#   already-applied diff) or corrupt state.
+# - snapshot_policy is a root-only concept (what counts as an archive-worthy
+#   step during the root's own rollout); children don't build their own
+#   archive in this experiment design.
+# Every other agent kwarg (e.g. verify_before_complete, hooks_debug) is
+# forwarded as-is, since it's meant to apply uniformly across a run.
+_ROOT_ONLY_AGENT_KWARGS = frozenset(
+    {
+        "token_budget",
+        "context_mode",
+        "parent_context",
+        "parent_context_path",
+        "diff_path",
+        "diff_apply_timeout_sec",
+        "replay_manifest_path",
+        "replay_command_timeout_sec",
+        "replay_total_budget_sec",
+        "snapshot_policy",
+    }
+)
+
 
 class ContinuationError(ValueError):
     """Raised when a continuation run cannot be planned from job metadata."""
@@ -242,6 +275,14 @@ def harbor_config_from_job(
         raise ContinuationError("Root Harbor config has neither datasets nor tasks.")
 
     base_extra_args: list[str] = []
+    for key, value in (agent_config.get("kwargs") or {}).items():
+        if key in _ROOT_ONLY_AGENT_KWARGS:
+            continue
+        if isinstance(value, bool):
+            formatted = "true" if value else "false"
+        else:
+            formatted = str(value)
+        base_extra_args.extend(["--ak", f"{key}={formatted}"])
     import_path = agent_config.get("import_path")
     root_agent_name = agent_config.get("name")
     agent_import_path = None

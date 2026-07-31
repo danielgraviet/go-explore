@@ -247,6 +247,104 @@ def test_harbor_config_from_job_reconstructs_dataset_agent_and_model(tmp_path):
     assert config.model == "anthropic/claude-haiku-4-5-20251001"
 
 
+def test_harbor_config_from_job_forwards_custom_agent_kwargs_to_children(tmp_path):
+    """Regression test: a custom agent kwarg the root ran with (e.g.
+    verify_before_complete) must survive into the reconstructed config used
+    to plan branch children - previously `base_extra_args` was declared but
+    never populated, so every root kwarg except a few explicitly-named ones
+    (model, import_path) silently vanished for children."""
+    job_dir = tmp_path / "jobs" / "root"
+    job_dir.mkdir(parents=True)
+    (job_dir / "config.json").write_text(
+        json.dumps(
+            {
+                "jobs_dir": str(tmp_path / "jobs"),
+                "environment": {"type": "daytona"},
+                "agents": [
+                    {
+                        "name": None,
+                        "import_path": "go_explore.agents.factory:SnapshotAwareTerminus2",
+                        "model_name": "anthropic/claude-haiku-4-5-20251001",
+                        "kwargs": {
+                            "verify_before_complete": True,
+                            "hooks_debug": False,
+                            "token_budget": 150000,
+                            "context_mode": "preflight_verification",
+                        },
+                    }
+                ],
+                "datasets": [
+                    {
+                        "name": "terminal-bench",
+                        "version": "2.0",
+                        "task_names": ["git-multibranch"],
+                    }
+                ],
+                "tasks": [],
+            }
+        )
+    )
+
+    config = harbor_config_from_job(job_dir)
+
+    assert "--ak" in config.extra_args
+    kwargs_seen = {
+        config.extra_args[i + 1].split("=", 1)[0]
+        for i, value in enumerate(config.extra_args)
+        if value == "--ak"
+    }
+    assert "verify_before_complete=true" in config.extra_args
+    assert "hooks_debug=false" in config.extra_args
+    # token_budget/context_mode are re-injected downstream with child-specific
+    # values, not forwarded verbatim from the root here.
+    assert "token_budget" not in kwargs_seen
+    assert "context_mode" not in kwargs_seen
+
+
+def test_harbor_config_from_job_excludes_root_only_setup_kwargs(tmp_path):
+    """diff_path/replay_manifest_path/snapshot_policy are one-time root setup
+    actions against a clean start - must not be forwarded to a child that
+    restores from a later snapshot (re-applying a diff there can fail or
+    corrupt state)."""
+    job_dir = tmp_path / "jobs" / "root"
+    job_dir.mkdir(parents=True)
+    (job_dir / "config.json").write_text(
+        json.dumps(
+            {
+                "jobs_dir": str(tmp_path / "jobs"),
+                "environment": {"type": "daytona"},
+                "agents": [
+                    {
+                        "name": None,
+                        "import_path": "go_explore.agents.factory:SnapshotAwareTerminus2",
+                        "model_name": "anthropic/claude-haiku-4-5-20251001",
+                        "kwargs": {
+                            "diff_path": "/tmp/parent.diff",
+                            "replay_manifest_path": "/tmp/manifest.json",
+                            "snapshot_policy": "interesting_agent_step",
+                        },
+                    }
+                ],
+                "datasets": [
+                    {
+                        "name": "terminal-bench",
+                        "version": "2.0",
+                        "task_names": ["git-multibranch"],
+                    }
+                ],
+                "tasks": [],
+            }
+        )
+    )
+
+    config = harbor_config_from_job(job_dir)
+
+    joined = " ".join(config.extra_args)
+    assert "diff_path" not in joined
+    assert "replay_manifest_path" not in joined
+    assert "snapshot_policy" not in joined
+
+
 def test_summarize_job_includes_complete_budget_metrics(tmp_path):
     job_dir = tmp_path / "jobs" / "root"
     trial_dir = job_dir / "trial-a"
