@@ -1,0 +1,3 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t003-fixpilot-git-multibranch,git-multibranch,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,3,3,5,2,301347,0.05975815,221.056918,43.00010612500773,,true
+unknown,git-multibranch,,,unknown,anthropic/claude-haiku-4-5-20251001,true,12,12,57,9,3896901,1.8594866500000002,3953.151643,910.6209330389684,38.627673,

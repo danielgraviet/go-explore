@@ -1,0 +1,221 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-2-snapshot-1",
+      "field": "trial_result",
+      "message": "job has no trial result rows",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-root/git-multibranch__PQF7Q4X",
+      "field": "total_tokens",
+      "message": "observed total_tokens (301347) exceeded the enforced token_budget (300000) by 1347; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-snapshot-1",
+      "field": "trial_result",
+      "message": "job has no trial result rows",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-cont-0",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-cont-1",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-0-root",
+      "field": "method",
+      "message": "method is unknown; pass a fixed-budget manifest to join planned metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-0-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-0-snapshot-0",
+      "field": "method",
+      "message": "method is unknown; pass a fixed-budget manifest to join planned metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-0-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-0-snapshot-1",
+      "field": "method",
+      "message": "method is unknown; pass a fixed-budget manifest to join planned metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-0-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-1-root",
+      "field": "method",
+      "message": "method is unknown; pass a fixed-budget manifest to join planned metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-1-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-1-snapshot-0",
+      "field": "method",
+      "message": "method is unknown; pass a fixed-budget manifest to join planned metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-1-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-1-snapshot-1",
+      "field": "method",
+      "message": "method is unknown; pass a fixed-budget manifest to join planned metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-1-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-2-root",
+      "field": "method",
+      "message": "method is unknown; pass a fixed-budget manifest to join planned metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-2-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-2-snapshot-0",
+      "field": "method",
+      "message": "method is unknown; pass a fixed-budget manifest to join planned metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-2-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-3-root",
+      "field": "method",
+      "message": "method is unknown; pass a fixed-budget manifest to join planned metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-3-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-3-snapshot-0",
+      "field": "method",
+      "message": "method is unknown; pass a fixed-budget manifest to join planned metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-3-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-3-snapshot-1",
+      "field": "method",
+      "message": "method is unknown; pass a fixed-budget manifest to join planned metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-3-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-snapshot-0",
+      "field": "method",
+      "message": "method is unknown; pass a fixed-budget manifest to join planned metadata",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-cont-0",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-cont-0",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-cont-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-cont-1",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-cont-1",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t003-fixpilot-git-multibranch-promising-branch-seed-4-cont-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

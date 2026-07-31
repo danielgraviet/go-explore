@@ -4,7 +4,7 @@
   "task_id": "code-from-image",
   "model": "anthropic/claude-haiku-4-5-20251001",
   "budget": {
-    "total_token_budget": 500000,
+    "total_token_budget": 1000000,
     "enforcement": "hard_token_limit",
     "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
   },
@@ -50,10 +50,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-0-attempt-0",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333334"
       ],
       "budget": {
-        "token_budget": 166667,
+        "token_budget": 333334,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -95,10 +95,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-0-attempt-1",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333333"
       ],
       "budget": {
-        "token_budget": 166667,
+        "token_budget": 333333,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -140,10 +140,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-0-attempt-2",
         "--export-traces",
         "--ak",
-        "token_budget=166666"
+        "token_budget=333333"
       ],
       "budget": {
-        "token_budget": 166666,
+        "token_budget": 333333,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -185,10 +185,10 @@
         "t002-exp2-headline-code-from-image-promising-branch-seed-0-root",
         "--export-traces",
         "--ak",
-        "token_budget=150000"
+        "token_budget=300000"
       ],
       "budget": {
-        "token_budget": 150000,
+        "token_budget": 300000,
         "budget_fraction": 0.3,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -207,13 +207,13 @@
       "job_name": "t002-exp2-headline-code-from-image-promising-branch-seed-0-cont-0",
       "command": [],
       "budget": {
-        "token_budget": 175000,
+        "token_budget": 350000,
         "budget_fraction": 0.35,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
       },
       "start_state_type": "full_snapshot",
-      "context_mode": "none",
+      "context_mode": "preflight_verification",
       "selector_mode": "archive_priority",
       "parent_run_id": "t002-exp2-headline-code-from-image-promising-branch-seed-0-root",
       "parent_snapshot": null,
@@ -226,13 +226,13 @@
       "job_name": "t002-exp2-headline-code-from-image-promising-branch-seed-0-cont-1",
       "command": [],
       "budget": {
-        "token_budget": 175000,
+        "token_budget": 350000,
         "budget_fraction": 0.35,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
       },
       "start_state_type": "full_snapshot",
-      "context_mode": "none",
+      "context_mode": "preflight_verification",
       "selector_mode": "archive_priority",
       "parent_run_id": "t002-exp2-headline-code-from-image-promising-branch-seed-0-root",
       "parent_snapshot": null,
@@ -268,10 +268,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-1-attempt-0",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333334"
       ],
       "budget": {
-        "token_budget": 166667,
+        "token_budget": 333334,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -313,10 +313,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-1-attempt-1",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333333"
       ],
       "budget": {
-        "token_budget": 166667,
+        "token_budget": 333333,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -358,10 +358,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-1-attempt-2",
         "--export-traces",
         "--ak",
-        "token_budget=166666"
+        "token_budget=333333"
       ],
       "budget": {
-        "token_budget": 166666,
+        "token_budget": 333333,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -403,10 +403,10 @@
         "t002-exp2-headline-code-from-image-promising-branch-seed-1-root",
         "--export-traces",
         "--ak",
-        "token_budget=150000"
+        "token_budget=300000"
       ],
       "budget": {
-        "token_budget": 150000,
+        "token_budget": 300000,
         "budget_fraction": 0.3,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -425,13 +425,13 @@
       "job_name": "t002-exp2-headline-code-from-image-promising-branch-seed-1-cont-0",
       "command": [],
       "budget": {
-        "token_budget": 175000,
+        "token_budget": 350000,
         "budget_fraction": 0.35,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
       },
       "start_state_type": "full_snapshot",
-      "context_mode": "none",
+      "context_mode": "preflight_verification",
       "selector_mode": "archive_priority",
       "parent_run_id": "t002-exp2-headline-code-from-image-promising-branch-seed-1-root",
       "parent_snapshot": null,
@@ -444,13 +444,13 @@
       "job_name": "t002-exp2-headline-code-from-image-promising-branch-seed-1-cont-1",
       "command": [],
       "budget": {
-        "token_budget": 175000,
+        "token_budget": 350000,
         "budget_fraction": 0.35,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
       },
       "start_state_type": "full_snapshot",
-      "context_mode": "none",
+      "context_mode": "preflight_verification",
       "selector_mode": "archive_priority",
       "parent_run_id": "t002-exp2-headline-code-from-image-promising-branch-seed-1-root",
       "parent_snapshot": null,
@@ -486,10 +486,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-2-attempt-0",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333334"
       ],
       "budget": {
-        "token_budget": 166667,
+        "token_budget": 333334,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -531,10 +531,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-2-attempt-1",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333333"
       ],
       "budget": {
-        "token_budget": 166667,
+        "token_budget": 333333,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -576,10 +576,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-2-attempt-2",
         "--export-traces",
         "--ak",
-        "token_budget=166666"
+        "token_budget=333333"
       ],
       "budget": {
-        "token_budget": 166666,
+        "token_budget": 333333,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -621,10 +621,10 @@
         "t002-exp2-headline-code-from-image-promising-branch-seed-2-root",
         "--export-traces",
         "--ak",
-        "token_budget=150000"
+        "token_budget=300000"
       ],
       "budget": {
-        "token_budget": 150000,
+        "token_budget": 300000,
         "budget_fraction": 0.3,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -643,13 +643,13 @@
       "job_name": "t002-exp2-headline-code-from-image-promising-branch-seed-2-cont-0",
       "command": [],
       "budget": {
-        "token_budget": 175000,
+        "token_budget": 350000,
         "budget_fraction": 0.35,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
       },
       "start_state_type": "full_snapshot",
-      "context_mode": "none",
+      "context_mode": "preflight_verification",
       "selector_mode": "archive_priority",
       "parent_run_id": "t002-exp2-headline-code-from-image-promising-branch-seed-2-root",
       "parent_snapshot": null,
@@ -662,13 +662,13 @@
       "job_name": "t002-exp2-headline-code-from-image-promising-branch-seed-2-cont-1",
       "command": [],
       "budget": {
-        "token_budget": 175000,
+        "token_budget": 350000,
         "budget_fraction": 0.35,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
       },
       "start_state_type": "full_snapshot",
-      "context_mode": "none",
+      "context_mode": "preflight_verification",
       "selector_mode": "archive_priority",
       "parent_run_id": "t002-exp2-headline-code-from-image-promising-branch-seed-2-root",
       "parent_snapshot": null,
@@ -704,10 +704,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-3-attempt-0",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333334"
       ],
       "budget": {
-        "token_budget": 166667,
+        "token_budget": 333334,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -749,10 +749,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-3-attempt-1",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333333"
       ],
       "budget": {
-        "token_budget": 166667,
+        "token_budget": 333333,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -794,10 +794,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-3-attempt-2",
         "--export-traces",
         "--ak",
-        "token_budget=166666"
+        "token_budget=333333"
       ],
       "budget": {
-        "token_budget": 166666,
+        "token_budget": 333333,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -839,10 +839,10 @@
         "t002-exp2-headline-code-from-image-promising-branch-seed-3-root",
         "--export-traces",
         "--ak",
-        "token_budget=150000"
+        "token_budget=300000"
       ],
       "budget": {
-        "token_budget": 150000,
+        "token_budget": 300000,
         "budget_fraction": 0.3,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -861,13 +861,13 @@
       "job_name": "t002-exp2-headline-code-from-image-promising-branch-seed-3-cont-0",
       "command": [],
       "budget": {
-        "token_budget": 175000,
+        "token_budget": 350000,
         "budget_fraction": 0.35,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
       },
       "start_state_type": "full_snapshot",
-      "context_mode": "none",
+      "context_mode": "preflight_verification",
       "selector_mode": "archive_priority",
       "parent_run_id": "t002-exp2-headline-code-from-image-promising-branch-seed-3-root",
       "parent_snapshot": null,
@@ -880,13 +880,13 @@
       "job_name": "t002-exp2-headline-code-from-image-promising-branch-seed-3-cont-1",
       "command": [],
       "budget": {
-        "token_budget": 175000,
+        "token_budget": 350000,
         "budget_fraction": 0.35,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
       },
       "start_state_type": "full_snapshot",
-      "context_mode": "none",
+      "context_mode": "preflight_verification",
       "selector_mode": "archive_priority",
       "parent_run_id": "t002-exp2-headline-code-from-image-promising-branch-seed-3-root",
       "parent_snapshot": null,
@@ -922,10 +922,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-4-attempt-0",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333334"
       ],
       "budget": {
-        "token_budget": 166667,
+        "token_budget": 333334,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -967,10 +967,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-4-attempt-1",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333333"
       ],
       "budget": {
-        "token_budget": 166667,
+        "token_budget": 333333,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -1012,10 +1012,10 @@
         "t002-exp2-headline-code-from-image-retry-seed-4-attempt-2",
         "--export-traces",
         "--ak",
-        "token_budget=166666"
+        "token_budget=333333"
       ],
       "budget": {
-        "token_budget": 166666,
+        "token_budget": 333333,
         "budget_fraction": 0.3333333333333333,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -1057,10 +1057,10 @@
         "t002-exp2-headline-code-from-image-promising-branch-seed-4-root",
         "--export-traces",
         "--ak",
-        "token_budget=150000"
+        "token_budget=300000"
       ],
       "budget": {
-        "token_budget": 150000,
+        "token_budget": 300000,
         "budget_fraction": 0.3,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
@@ -1079,13 +1079,13 @@
       "job_name": "t002-exp2-headline-code-from-image-promising-branch-seed-4-cont-0",
       "command": [],
       "budget": {
-        "token_budget": 175000,
+        "token_budget": 350000,
         "budget_fraction": 0.35,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
       },
       "start_state_type": "full_snapshot",
-      "context_mode": "none",
+      "context_mode": "preflight_verification",
       "selector_mode": "archive_priority",
       "parent_run_id": "t002-exp2-headline-code-from-image-promising-branch-seed-4-root",
       "parent_snapshot": null,
@@ -1098,13 +1098,13 @@
       "job_name": "t002-exp2-headline-code-from-image-promising-branch-seed-4-cont-1",
       "command": [],
       "budget": {
-        "token_budget": 175000,
+        "token_budget": 350000,
         "budget_fraction": 0.35,
         "enforcement": "hard_token_limit",
         "enforcement_description": "The agent is passed this token_budget and stops issuing further model requests once its accumulated input+output+cache tokens reach it. This bounds the overshoot to at most one in-flight agent step's token usage and does not cover Terminus-2's rare context-length-exceeded fallback path, which can call the model directly. See go_explore/agents/token_budget.py."
       },
       "start_state_type": "full_snapshot",
-      "context_mode": "none",
+      "context_mode": "preflight_verification",
       "selector_mode": "archive_priority",
       "parent_run_id": "t002-exp2-headline-code-from-image-promising-branch-seed-4-root",
       "parent_snapshot": null,

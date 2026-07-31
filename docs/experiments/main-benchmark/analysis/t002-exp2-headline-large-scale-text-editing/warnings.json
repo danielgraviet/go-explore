@@ -1,0 +1,425 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-0-root/large-scale-text-editing__ijoRYSy",
+      "field": "total_tokens",
+      "message": "observed total_tokens (303965) exceeded the enforced token_budget (300000) by 3965; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-0-snapshot-0/large-scale-text-editing__dCMUrYo",
+      "field": "total_tokens",
+      "message": "observed total_tokens (359264) exceeded the enforced token_budget (350000) by 9264; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-1-root/large-scale-text-editing__QWJsgGv",
+      "field": "total_tokens",
+      "message": "observed total_tokens (311553) exceeded the enforced token_budget (300000) by 11553; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-1-snapshot-0/large-scale-text-editing__SbFsTjD",
+      "field": "total_tokens",
+      "message": "observed total_tokens (421892) exceeded the enforced token_budget (350000) by 71892; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-2-root/large-scale-text-editing__TQijqKi",
+      "field": "total_tokens",
+      "message": "observed total_tokens (315037) exceeded the enforced token_budget (300000) by 15037; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-2-snapshot-0/large-scale-text-editing__vciW9k4",
+      "field": "total_tokens",
+      "message": "observed total_tokens (352750) exceeded the enforced token_budget (350000) by 2750; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-3-root/large-scale-text-editing__PsrnqGS",
+      "field": "total_tokens",
+      "message": "observed total_tokens (302344) exceeded the enforced token_budget (300000) by 2344; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-3-snapshot-0/large-scale-text-editing__eMr3pFv",
+      "field": "total_tokens_status",
+      "message": "budget_enforcement is hard_token_limit but observed token accounting is incomplete; enforcement cannot be verified from this artifact, so do not treat this as a validated equal-budget comparison",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-4-root/large-scale-text-editing__KHaAAux",
+      "field": "total_tokens",
+      "message": "observed total_tokens (303060) exceeded the enforced token_budget (300000) by 3060; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-4-snapshot-0/large-scale-text-editing__iCmyMbo",
+      "field": "total_tokens",
+      "message": "observed total_tokens (351241) exceeded the enforced token_budget (350000) by 1241; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-0-attempt-0/large-scale-text-editing__PsVaR59",
+      "field": "total_tokens",
+      "message": "observed total_tokens (355628) exceeded the enforced token_budget (333334) by 22294; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-0-attempt-1/large-scale-text-editing__yPoDokB",
+      "field": "total_tokens",
+      "message": "observed total_tokens (333725) exceeded the enforced token_budget (333333) by 392; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-0-attempt-2/large-scale-text-editing__9CqXKrL",
+      "field": "total_tokens",
+      "message": "observed total_tokens (374828) exceeded the enforced token_budget (333333) by 41495; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-1-attempt-2/large-scale-text-editing__HprMccL",
+      "field": "total_tokens",
+      "message": "observed total_tokens (345164) exceeded the enforced token_budget (333333) by 11831; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-2-attempt-0/large-scale-text-editing__duDo4KT",
+      "field": "total_tokens",
+      "message": "observed total_tokens (344307) exceeded the enforced token_budget (333334) by 10973; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-2-attempt-1/large-scale-text-editing__r4iYiXU",
+      "field": "total_tokens",
+      "message": "observed total_tokens (339307) exceeded the enforced token_budget (333333) by 5974; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-2-attempt-2/large-scale-text-editing__DKJzH7t",
+      "field": "total_tokens",
+      "message": "observed total_tokens (338614) exceeded the enforced token_budget (333333) by 5281; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-3-attempt-0/large-scale-text-editing__xwq94fr",
+      "field": "total_tokens",
+      "message": "observed total_tokens (364295) exceeded the enforced token_budget (333334) by 30961; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-3-attempt-1/large-scale-text-editing__WQrasy4",
+      "field": "total_tokens",
+      "message": "observed total_tokens (333893) exceeded the enforced token_budget (333333) by 560; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-3-attempt-2/large-scale-text-editing__mxPoJRz",
+      "field": "total_tokens",
+      "message": "observed total_tokens (334033) exceeded the enforced token_budget (333333) by 700; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-4-attempt-0/large-scale-text-editing__yMdzPca",
+      "field": "total_tokens",
+      "message": "observed total_tokens (364195) exceeded the enforced token_budget (333334) by 30861; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-4-attempt-1/large-scale-text-editing__KWneHuL",
+      "field": "total_tokens",
+      "message": "observed total_tokens (388501) exceeded the enforced token_budget (333333) by 55168; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-4-attempt-2/large-scale-text-editing__Rnse9TN",
+      "field": "total_tokens",
+      "message": "observed total_tokens (351589) exceeded the enforced token_budget (333333) by 18256; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-0-cont-1",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-1-cont-1",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-2-cont-1",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-3-cont-1",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-4-cont-1",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-0-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-0-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-1-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-1-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-2-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-2-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-3-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-3-snapshot-0",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-3-snapshot-0",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-3-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-4-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-4-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-0-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-0-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-0-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-1-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-1-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-1-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-2-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-2-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-2-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-3-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-3-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-3-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-4-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-4-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-retry-seed-4-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-0-cont-1",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-0-cont-1",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-0-cont-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-1-cont-1",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-1-cont-1",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-1-cont-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-2-cont-1",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-2-cont-1",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-2-cont-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-3-cont-1",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-3-cont-1",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-3-cont-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-4-cont-1",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-4-cont-1",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-large-scale-text-editing-promising-branch-seed-4-cont-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

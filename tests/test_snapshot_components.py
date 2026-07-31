@@ -515,6 +515,25 @@ def test_interesting_policy_extracts_negative_assertion_probe_metadata():
     assert candidate.metadata["probe_error_signal"] == "true"
 
 
+def test_interesting_policy_does_not_score_bare_completion_claim_as_verifier():
+    policy = InterestingAgentStepPolicy()
+    context = context_from_atif_step(
+        {
+            "step_id": 13,
+            "source": "agent",
+            "tool_calls": [
+                {"function_name": "mark_task_complete", "arguments": {}},
+            ],
+            "observation": {"results": [{"content": ""}]},
+        },
+        trial_name="git-multibranch-r1__abc123",
+    )
+
+    candidates = policy.candidates_for_step(context)
+
+    assert candidates == []
+
+
 def test_interesting_policy_ignores_low_signal_agent_step():
     policy = InterestingAgentStepPolicy()
     context = context_from_atif_step(

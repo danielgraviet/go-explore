@@ -16,6 +16,45 @@ from go_explore.snapshots.policies import (
     EveryAgentStepPolicy,
     InterestingAgentStepPolicy,
 )
+from go_explore.snapshots.preflight import (
+    PREFLIGHT_TEST_SCRIPT,
+    PreflightVerificationResult,
+)
+
+
+def test_format_preflight_instruction_includes_verifier_command_on_failure():
+    result = PreflightVerificationResult(
+        status="failed",
+        tests_passed=0,
+        tests_failed=1,
+        tests_total=1,
+        failing_tests=("test_outputs.py::test_thing",),
+    )
+
+    message = SnapshotAwareAgent._format_preflight_instruction(
+        "original task", result, verifier_command=PREFLIGHT_TEST_SCRIPT
+    )
+
+    assert PREFLIGHT_TEST_SCRIPT in message
+    assert "no need to find or reconstruct it" in message
+
+
+def test_format_preflight_instruction_includes_verifier_command_when_unavailable():
+    result = PreflightVerificationResult(status="unavailable", error="no tests dir")
+
+    message = SnapshotAwareAgent._format_preflight_instruction(
+        "original task", result, verifier_command=PREFLIGHT_TEST_SCRIPT
+    )
+
+    assert PREFLIGHT_TEST_SCRIPT in message
+
+
+def test_format_preflight_instruction_omits_verifier_command_when_not_given():
+    result = PreflightVerificationResult(status="passed", tests_passed=1, tests_total=1)
+
+    message = SnapshotAwareAgent._format_preflight_instruction("original task", result)
+
+    assert PREFLIGHT_TEST_SCRIPT not in message
 
 
 def test_snapshot_aware_terminus2_advertises_atif_support():
@@ -122,6 +161,77 @@ def test_snapshot_aware_terminus2_accepts_diff_path_without_wrapped_leak(
     assert agent._diff_apply_timeout_sec == 30.0
     assert "diff_path" not in captured["kwargs"]
     assert "diff_apply_timeout_sec" not in captured["kwargs"]
+
+
+def test_snapshot_aware_terminus2_accepts_verify_before_complete_without_wrapped_leak(
+    tmp_path,
+    monkeypatch,
+):
+    """Regression test: verify_before_complete kwargs must reach
+    SnapshotAwareAgent, not leak through to the wrapped Terminus2 as an
+    unknown kwarg - matches the diff_path/replay_manifest_path regressions
+    this file already guards against."""
+    captured: dict[str, object] = {}
+
+    class FakeTerminus2:
+        def __init__(self, *, logs_dir, model_name, logger=None, **kwargs):
+            captured["kwargs"] = kwargs
+
+        def to_agent_info(self):
+            return {"name": "terminus-2"}
+
+    harbor_module = ModuleType("harbor")
+    agents_module = ModuleType("harbor.agents")
+    terminus_module = ModuleType("harbor.agents.terminus_2")
+    terminus_module.Terminus2 = FakeTerminus2
+    monkeypatch.setitem(sys.modules, "harbor", harbor_module)
+    monkeypatch.setitem(sys.modules, "harbor.agents", agents_module)
+    monkeypatch.setitem(sys.modules, "harbor.agents.terminus_2", terminus_module)
+
+    agent = SnapshotAwareTerminus2(
+        logs_dir=tmp_path,
+        model_name="model-a",
+        verify_before_complete=True,
+        verify_before_complete_max_attempts=5,
+    )
+
+    assert agent._verify_before_complete is True
+    assert agent._verify_before_complete_max_attempts == 5
+    assert "verify_before_complete" not in captured["kwargs"]
+    assert "verify_before_complete_max_attempts" not in captured["kwargs"]
+
+
+def test_snapshot_aware_oracle_accepts_verify_before_complete_without_wrapped_leak(
+    tmp_path,
+    monkeypatch,
+):
+    """Same regression as above, for SnapshotAwareOracle's wrapped OracleAgent."""
+    captured: dict[str, object] = {}
+
+    class FakeOracleAgent:
+        def __init__(self, *, logs_dir, model_name=None, logger=None, **kwargs):
+            captured["kwargs"] = kwargs
+
+        def to_agent_info(self):
+            return {"name": "oracle"}
+
+    harbor_module = ModuleType("harbor")
+    agents_module = ModuleType("harbor.agents")
+    oracle_module = ModuleType("harbor.agents.oracle")
+    oracle_module.OracleAgent = FakeOracleAgent
+    monkeypatch.setitem(sys.modules, "harbor", harbor_module)
+    monkeypatch.setitem(sys.modules, "harbor.agents", agents_module)
+    monkeypatch.setitem(sys.modules, "harbor.agents.oracle", oracle_module)
+
+    from go_explore.agents.factory import SnapshotAwareOracle
+
+    agent = SnapshotAwareOracle(
+        logs_dir=tmp_path,
+        verify_before_complete=True,
+    )
+
+    assert agent._verify_before_complete is True
+    assert "verify_before_complete" not in captured["kwargs"]
 
 
 def test_snapshot_aware_terminus2_accepts_replay_manifest_path_without_wrapped_leak(
@@ -449,6 +559,142 @@ def test_snapshot_agent_handles_missing_execute_commands():
         agent._hook_agent_loop()
     except AttributeError:
         pytest.fail("_hook_agent_loop should not raise AttributeError")
+
+
+def test_hook_completion_verification_noop_when_disabled():
+    class FakeWrapped:
+        async def _handle_llm_interaction(self, *args, **kwargs):
+            return ([], True, "", "analysis", "plan", "llm_response")
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, verify_before_complete=False)
+
+    agent._hook_completion_verification(environment=MagicMock())
+
+    assert agent._verify_before_complete_hooked is False
+
+
+@pytest.mark.asyncio
+async def test_hook_completion_verification_rejects_false_completion(monkeypatch):
+    from go_explore.snapshots.preflight import PreflightVerificationResult
+
+    class FakeWrapped:
+        async def _handle_llm_interaction(self, *args, **kwargs):
+            return (["cmd"], True, "", "analysis", "plan", "llm_response")
+
+    async def fake_run_preflight_verification(environment, *, timeout_sec):
+        return PreflightVerificationResult(
+            status="failed",
+            tests_passed=0,
+            tests_failed=1,
+            tests_total=1,
+            failing_tests=("test_outputs.py::test_thing",),
+        )
+
+    monkeypatch.setattr(
+        "go_explore.snapshots.preflight.run_preflight_verification",
+        fake_run_preflight_verification,
+    )
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, verify_before_complete=True)
+    agent._hook_completion_verification(environment=MagicMock())
+
+    commands, is_task_complete, feedback, _analysis, _plan, _llm_response = (
+        await wrapped._handle_llm_interaction()
+    )
+
+    assert is_task_complete is False
+    assert "WARNINGS:" in feedback
+    assert "test_outputs.py::test_thing" in feedback
+    assert commands == ["cmd"]
+    assert agent._verify_before_complete_attempts == 1
+
+
+@pytest.mark.asyncio
+async def test_hook_completion_verification_passes_through_on_real_pass(monkeypatch):
+    from go_explore.snapshots.preflight import PreflightVerificationResult
+
+    class FakeWrapped:
+        async def _handle_llm_interaction(self, *args, **kwargs):
+            return ([], True, "", "analysis", "plan", "llm_response")
+
+    async def fake_run_preflight_verification(environment, *, timeout_sec):
+        return PreflightVerificationResult(status="passed", tests_passed=1, tests_total=1)
+
+    monkeypatch.setattr(
+        "go_explore.snapshots.preflight.run_preflight_verification",
+        fake_run_preflight_verification,
+    )
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, verify_before_complete=True)
+    agent._hook_completion_verification(environment=MagicMock())
+
+    result = await wrapped._handle_llm_interaction()
+
+    assert result[1] is True
+    assert result[2] == ""
+
+
+@pytest.mark.asyncio
+async def test_hook_completion_verification_passes_through_when_unavailable(monkeypatch):
+    from go_explore.snapshots.preflight import PreflightVerificationResult
+
+    class FakeWrapped:
+        async def _handle_llm_interaction(self, *args, **kwargs):
+            return ([], True, "", "analysis", "plan", "llm_response")
+
+    async def fake_run_preflight_verification(environment, *, timeout_sec):
+        return PreflightVerificationResult(status="unavailable", error="no tests dir")
+
+    monkeypatch.setattr(
+        "go_explore.snapshots.preflight.run_preflight_verification",
+        fake_run_preflight_verification,
+    )
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(wrapped_agent=wrapped, verify_before_complete=True)
+    agent._hook_completion_verification(environment=MagicMock())
+
+    result = await wrapped._handle_llm_interaction()
+
+    assert result[1] is True
+    assert result[2] == ""
+
+
+@pytest.mark.asyncio
+async def test_hook_completion_verification_respects_attempt_cap(monkeypatch):
+    from go_explore.snapshots.preflight import PreflightVerificationResult
+
+    class FakeWrapped:
+        async def _handle_llm_interaction(self, *args, **kwargs):
+            return ([], True, "", "analysis", "plan", "llm_response")
+
+    async def fake_run_preflight_verification(environment, *, timeout_sec):
+        return PreflightVerificationResult(status="failed", tests_passed=0, tests_failed=1)
+
+    monkeypatch.setattr(
+        "go_explore.snapshots.preflight.run_preflight_verification",
+        fake_run_preflight_verification,
+    )
+
+    wrapped = FakeWrapped()
+    agent = SnapshotAwareAgent(
+        wrapped_agent=wrapped,
+        verify_before_complete=True,
+        verify_before_complete_max_attempts=2,
+    )
+    agent._hook_completion_verification(environment=MagicMock())
+
+    first = await wrapped._handle_llm_interaction()
+    second = await wrapped._handle_llm_interaction()
+    third = await wrapped._handle_llm_interaction()
+
+    assert first[1] is False
+    assert second[1] is False
+    assert third[1] is True  # cap reached, native double-confirm takes over
+    assert agent._verify_before_complete_attempts == 2
 
 
 def test_hook_token_budget_noop_without_token_budget():

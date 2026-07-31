@@ -11,7 +11,6 @@
     "jobs/t002-exp2-headline-extract-elf-retry-seed-0-attempt-2",
     "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-root",
     "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-0",
-    "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-1",
     "jobs/t002-exp2-headline-extract-elf-retry-seed-1-attempt-0",
     "jobs/t002-exp2-headline-extract-elf-retry-seed-1-attempt-1",
     "jobs/t002-exp2-headline-extract-elf-retry-seed-1-attempt-2",
@@ -71,7 +70,7 @@
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-0-attempt-0",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-0-attempt-0",
       "command": [
         "harbor",
@@ -98,16 +97,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-0-attempt-0",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333334"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-0-attempt-1",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-0-attempt-1",
       "command": [
         "harbor",
@@ -134,16 +133,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-0-attempt-1",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333333"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-0-attempt-2",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-0-attempt-2",
       "command": [
         "harbor",
@@ -170,16 +169,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-0-attempt-2",
         "--export-traces",
         "--ak",
-        "token_budget=166666"
+        "token_budget=333333"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-0-root",
       "method": "promising_branch",
       "role": "root",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-root",
       "command": [
         "harbor",
@@ -206,16 +205,16 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-0-root",
         "--export-traces",
         "--ak",
-        "token_budget=150000"
+        "token_budget=300000"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-0",
       "method": "promising_branch",
       "role": "continuation",
-      "status": "skipped_existing",
+      "status": "failed",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-0",
       "command": [
         "harbor",
@@ -242,64 +241,22 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-0",
         "--export-traces",
         "--ek",
-        "snapshot_template_name=go-explore-extract-elf__r3AKTfY-step-6",
+        "snapshot_template_name=go-explore-extract-elf__vGMKUby-step-5",
         "--ek",
         "assume_global_snapshot=true",
         "--ak",
-        "context_mode=none",
+        "context_mode=preflight_verification",
         "--ak",
-        "token_budget=175000"
+        "token_budget=350000"
       ],
       "returncode": null,
-      "details": null
-    },
-    {
-      "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-1",
-      "method": "promising_branch",
-      "role": "continuation",
-      "status": "skipped_existing",
-      "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-1",
-      "command": [
-        "harbor",
-        "run",
-        "--agent-import-path",
-        "go_explore.agents.factory:SnapshotAwareTerminus2",
-        "--env",
-        "daytona",
-        "--jobs-dir",
-        "jobs",
-        "--n-attempts",
-        "1",
-        "--n-concurrent",
-        "1",
-        "--dataset",
-        "terminal-bench@2.0",
-        "--model",
-        "anthropic/claude-haiku-4-5-20251001",
-        "--include-task-name",
-        "extract-elf",
-        "--n-tasks",
-        "1",
-        "--job-name",
-        "t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-1",
-        "--export-traces",
-        "--ek",
-        "snapshot_template_name=go-explore-extract-elf__r3AKTfY-step-5",
-        "--ek",
-        "assume_global_snapshot=true",
-        "--ak",
-        "context_mode=none",
-        "--ak",
-        "token_budget=175000"
-      ],
-      "returncode": null,
-      "details": null
+      "details": "AgentBudgetExhaustedError"
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-1-attempt-0",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-1-attempt-0",
       "command": [
         "harbor",
@@ -326,16 +283,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-1-attempt-0",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333334"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-1-attempt-1",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-1-attempt-1",
       "command": [
         "harbor",
@@ -362,16 +319,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-1-attempt-1",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333333"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-1-attempt-2",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-1-attempt-2",
       "command": [
         "harbor",
@@ -398,16 +355,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-1-attempt-2",
         "--export-traces",
         "--ak",
-        "token_budget=166666"
+        "token_budget=333333"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-1-root",
       "method": "promising_branch",
       "role": "root",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-1-root",
       "command": [
         "harbor",
@@ -434,16 +391,16 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-1-root",
         "--export-traces",
         "--ak",
-        "token_budget=150000"
+        "token_budget=300000"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-1-snapshot-0",
       "method": "promising_branch",
       "role": "continuation",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-1-snapshot-0",
       "command": [
         "harbor",
@@ -470,13 +427,13 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-1-snapshot-0",
         "--export-traces",
         "--ek",
-        "snapshot_template_name=go-explore-extract-elf__mexBtXe-step-4",
+        "snapshot_template_name=go-explore-extract-elf__7bqAxLn-step-8",
         "--ek",
         "assume_global_snapshot=true",
         "--ak",
-        "context_mode=none",
+        "context_mode=preflight_verification",
         "--ak",
-        "token_budget=175000"
+        "token_budget=350000"
       ],
       "returncode": null,
       "details": null
@@ -485,7 +442,7 @@
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-1-snapshot-1",
       "method": "promising_branch",
       "role": "continuation",
-      "status": "skipped_existing",
+      "status": "failed",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-1-snapshot-1",
       "command": [
         "harbor",
@@ -512,22 +469,22 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-1-snapshot-1",
         "--export-traces",
         "--ek",
-        "snapshot_template_name=go-explore-extract-elf__mexBtXe-step-1",
+        "snapshot_template_name=go-explore-extract-elf__7bqAxLn-step-0",
         "--ek",
         "assume_global_snapshot=true",
         "--ak",
-        "context_mode=none",
+        "context_mode=preflight_verification",
         "--ak",
-        "token_budget=175000"
+        "token_budget=350000"
       ],
       "returncode": null,
-      "details": null
+      "details": "AgentBudgetExhaustedError"
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-2-attempt-0",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-2-attempt-0",
       "command": [
         "harbor",
@@ -554,16 +511,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-2-attempt-0",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333334"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-2-attempt-1",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-2-attempt-1",
       "command": [
         "harbor",
@@ -590,16 +547,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-2-attempt-1",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333333"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-2-attempt-2",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-2-attempt-2",
       "command": [
         "harbor",
@@ -626,16 +583,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-2-attempt-2",
         "--export-traces",
         "--ak",
-        "token_budget=166666"
+        "token_budget=333333"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-2-root",
       "method": "promising_branch",
       "role": "root",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-2-root",
       "command": [
         "harbor",
@@ -662,16 +619,16 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-2-root",
         "--export-traces",
         "--ak",
-        "token_budget=150000"
+        "token_budget=300000"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-2-snapshot-0",
       "method": "promising_branch",
       "role": "continuation",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-2-snapshot-0",
       "command": [
         "harbor",
@@ -698,13 +655,13 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-2-snapshot-0",
         "--export-traces",
         "--ek",
-        "snapshot_template_name=go-explore-extract-elf__QHX62PP-step-3",
+        "snapshot_template_name=go-explore-extract-elf__zi3y65T-step-5",
         "--ek",
         "assume_global_snapshot=true",
         "--ak",
-        "context_mode=none",
+        "context_mode=preflight_verification",
         "--ak",
-        "token_budget=175000"
+        "token_budget=350000"
       ],
       "returncode": null,
       "details": null
@@ -713,7 +670,7 @@
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-2-snapshot-1",
       "method": "promising_branch",
       "role": "continuation",
-      "status": "skipped_existing",
+      "status": "failed",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-2-snapshot-1",
       "command": [
         "harbor",
@@ -740,22 +697,22 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-2-snapshot-1",
         "--export-traces",
         "--ek",
-        "snapshot_template_name=go-explore-extract-elf__QHX62PP-step-4",
+        "snapshot_template_name=go-explore-extract-elf__zi3y65T-step-3",
         "--ek",
         "assume_global_snapshot=true",
         "--ak",
-        "context_mode=none",
+        "context_mode=preflight_verification",
         "--ak",
-        "token_budget=175000"
+        "token_budget=350000"
       ],
       "returncode": null,
-      "details": null
+      "details": "AddTestsDirError"
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-3-attempt-0",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-3-attempt-0",
       "command": [
         "harbor",
@@ -782,16 +739,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-3-attempt-0",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333334"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-3-attempt-1",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-3-attempt-1",
       "command": [
         "harbor",
@@ -818,16 +775,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-3-attempt-1",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333333"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-3-attempt-2",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-3-attempt-2",
       "command": [
         "harbor",
@@ -854,16 +811,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-3-attempt-2",
         "--export-traces",
         "--ak",
-        "token_budget=166666"
+        "token_budget=333333"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-3-root",
       "method": "promising_branch",
       "role": "root",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-3-root",
       "command": [
         "harbor",
@@ -890,16 +847,16 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-3-root",
         "--export-traces",
         "--ak",
-        "token_budget=150000"
+        "token_budget=300000"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-3-snapshot-0",
       "method": "promising_branch",
       "role": "continuation",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-3-snapshot-0",
       "command": [
         "harbor",
@@ -926,13 +883,13 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-3-snapshot-0",
         "--export-traces",
         "--ek",
-        "snapshot_template_name=go-explore-extract-elf__LpyXgrA-step-5",
+        "snapshot_template_name=go-explore-extract-elf__eH4FajC-step-6",
         "--ek",
         "assume_global_snapshot=true",
         "--ak",
-        "context_mode=none",
+        "context_mode=preflight_verification",
         "--ak",
-        "token_budget=175000"
+        "token_budget=350000"
       ],
       "returncode": null,
       "details": null
@@ -941,7 +898,7 @@
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-3-snapshot-1",
       "method": "promising_branch",
       "role": "continuation",
-      "status": "skipped_existing",
+      "status": "failed",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-3-snapshot-1",
       "command": [
         "harbor",
@@ -968,22 +925,22 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-3-snapshot-1",
         "--export-traces",
         "--ek",
-        "snapshot_template_name=go-explore-extract-elf__LpyXgrA-step-0",
+        "snapshot_template_name=go-explore-extract-elf__eH4FajC-step-1",
         "--ek",
         "assume_global_snapshot=true",
         "--ak",
-        "context_mode=none",
+        "context_mode=preflight_verification",
         "--ak",
-        "token_budget=175000"
+        "token_budget=350000"
       ],
       "returncode": null,
-      "details": null
+      "details": "AgentBudgetExhaustedError"
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-4-attempt-0",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-4-attempt-0",
       "command": [
         "harbor",
@@ -1010,16 +967,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-4-attempt-0",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333334"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-4-attempt-1",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-4-attempt-1",
       "command": [
         "harbor",
@@ -1046,16 +1003,16 @@
         "t002-exp2-headline-extract-elf-retry-seed-4-attempt-1",
         "--export-traces",
         "--ak",
-        "token_budget=166667"
+        "token_budget=333333"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-retry-seed-4-attempt-2",
       "method": "retry",
       "role": "retry_attempt",
-      "status": "skipped_existing",
+      "status": "succeeded",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-retry-seed-4-attempt-2",
       "command": [
         "harbor",
@@ -1082,9 +1039,9 @@
         "t002-exp2-headline-extract-elf-retry-seed-4-attempt-2",
         "--export-traces",
         "--ak",
-        "token_budget=166666"
+        "token_budget=333333"
       ],
-      "returncode": null,
+      "returncode": 0,
       "details": null
     },
     {
@@ -1118,7 +1075,7 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-4-root",
         "--export-traces",
         "--ak",
-        "token_budget=150000"
+        "token_budget=300000"
       ],
       "returncode": 0,
       "details": null
@@ -1127,7 +1084,7 @@
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-4-snapshot-0",
       "method": "promising_branch",
       "role": "continuation",
-      "status": "succeeded",
+      "status": "failed",
       "job_dir": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-4-snapshot-0",
       "command": [
         "harbor",
@@ -1154,16 +1111,16 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-4-snapshot-0",
         "--export-traces",
         "--ek",
-        "snapshot_template_name=go-explore-extract-elf__y22yNFB-step-1",
+        "snapshot_template_name=go-explore-extract-elf__8cgURWS-step-11",
         "--ek",
         "assume_global_snapshot=true",
         "--ak",
-        "context_mode=none",
+        "context_mode=preflight_verification",
         "--ak",
-        "token_budget=175000"
+        "token_budget=350000"
       ],
       "returncode": null,
-      "details": null
+      "details": "AgentBudgetExhaustedError"
     },
     {
       "job_name": "t002-exp2-headline-extract-elf-promising-branch-seed-4-snapshot-1",
@@ -1196,13 +1153,13 @@
         "t002-exp2-headline-extract-elf-promising-branch-seed-4-snapshot-1",
         "--export-traces",
         "--ek",
-        "snapshot_template_name=go-explore-extract-elf__y22yNFB-step-3",
+        "snapshot_template_name=go-explore-extract-elf__8cgURWS-step-2",
         "--ek",
         "assume_global_snapshot=true",
         "--ak",
-        "context_mode=none",
+        "context_mode=preflight_verification",
         "--ak",
-        "token_budget=175000"
+        "token_budget=350000"
       ],
       "returncode": null,
       "details": "AgentBudgetExhaustedError"

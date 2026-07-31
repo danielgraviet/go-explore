@@ -1,0 +1,365 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-0-root/custom-memory-heap-crash__8qSifkw",
+      "field": "total_tokens",
+      "message": "observed total_tokens (370935) exceeded the enforced token_budget (300000) by 70935; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-0-snapshot-0/custom-memory-heap-crash__o56jSWK",
+      "field": "total_tokens",
+      "message": "observed total_tokens (380826) exceeded the enforced token_budget (350000) by 30826; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-1-root/custom-memory-heap-crash__YsSaDcM",
+      "field": "total_tokens",
+      "message": "observed total_tokens (305977) exceeded the enforced token_budget (300000) by 5977; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-1-snapshot-0/custom-memory-heap-crash__jqosEK5",
+      "field": "total_tokens",
+      "message": "observed total_tokens (365566) exceeded the enforced token_budget (350000) by 15566; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-1-snapshot-1/custom-memory-heap-crash__ctc3hdi",
+      "field": "total_tokens",
+      "message": "observed total_tokens (362049) exceeded the enforced token_budget (350000) by 12049; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-2-root/custom-memory-heap-crash__w7KcNir",
+      "field": "total_tokens",
+      "message": "observed total_tokens (310853) exceeded the enforced token_budget (300000) by 10853; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-2-snapshot-0/custom-memory-heap-crash__TS9zrWW",
+      "field": "total_tokens",
+      "message": "observed total_tokens (415297) exceeded the enforced token_budget (350000) by 65297; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-2-snapshot-1/custom-memory-heap-crash__7Yju5hJ",
+      "field": "total_tokens",
+      "message": "observed total_tokens (362500) exceeded the enforced token_budget (350000) by 12500; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-3-root/custom-memory-heap-crash__cAhus5A",
+      "field": "total_tokens",
+      "message": "observed total_tokens (380668) exceeded the enforced token_budget (300000) by 80668; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-4-root/custom-memory-heap-crash__qBhCwrk",
+      "field": "total_tokens",
+      "message": "observed total_tokens (302142) exceeded the enforced token_budget (300000) by 2142; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-4-snapshot-0/custom-memory-heap-crash__nzsBLXM",
+      "field": "total_tokens",
+      "message": "observed total_tokens (364658) exceeded the enforced token_budget (350000) by 14658; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-4-snapshot-1/custom-memory-heap-crash__RkaTQ3n",
+      "field": "total_tokens",
+      "message": "observed total_tokens (384805) exceeded the enforced token_budget (350000) by 34805; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-0-attempt-0/custom-memory-heap-crash__d99vKTu",
+      "field": "total_tokens",
+      "message": "observed total_tokens (349852) exceeded the enforced token_budget (333334) by 16518; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-0-attempt-1/custom-memory-heap-crash__biy6dCY",
+      "field": "total_tokens",
+      "message": "observed total_tokens (346664) exceeded the enforced token_budget (333333) by 13331; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-1-attempt-0/custom-memory-heap-crash__5RiBPDp",
+      "field": "total_tokens",
+      "message": "observed total_tokens (362388) exceeded the enforced token_budget (333334) by 29054; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-1-attempt-2/custom-memory-heap-crash__jwdKRhF",
+      "field": "total_tokens",
+      "message": "observed total_tokens (381513) exceeded the enforced token_budget (333333) by 48180; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-2-attempt-0/custom-memory-heap-crash__LDJ8Ccr",
+      "field": "total_tokens",
+      "message": "observed total_tokens (355997) exceeded the enforced token_budget (333334) by 22663; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-2-attempt-1/custom-memory-heap-crash__vQ7Ci8p",
+      "field": "total_tokens",
+      "message": "observed total_tokens (351519) exceeded the enforced token_budget (333333) by 18186; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-2-attempt-2/custom-memory-heap-crash__vtntEPJ",
+      "field": "total_tokens",
+      "message": "observed total_tokens (363931) exceeded the enforced token_budget (333333) by 30598; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-3-attempt-0/custom-memory-heap-crash__rB5EVhi",
+      "field": "total_tokens",
+      "message": "observed total_tokens (334820) exceeded the enforced token_budget (333334) by 1486; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-3-attempt-1/custom-memory-heap-crash__LGEwTit",
+      "field": "total_tokens",
+      "message": "observed total_tokens (353156) exceeded the enforced token_budget (333333) by 19823; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-4-attempt-0/custom-memory-heap-crash__XMAUE7B",
+      "field": "total_tokens",
+      "message": "observed total_tokens (430473) exceeded the enforced token_budget (333334) by 97139; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-4-attempt-1/custom-memory-heap-crash__dobwdvu",
+      "field": "total_tokens",
+      "message": "observed total_tokens (335530) exceeded the enforced token_budget (333333) by 2197; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-4-attempt-2/custom-memory-heap-crash__MPXQhci",
+      "field": "total_tokens",
+      "message": "observed total_tokens (406636) exceeded the enforced token_budget (333333) by 73303; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-0-cont-1",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-3-cont-1",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-0-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-0-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-1-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-1-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-1-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-2-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-2-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-2-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-3-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-3-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-4-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-4-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-4-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-0-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-0-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-0-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-1-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-1-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-1-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-2-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-2-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-2-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-3-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-3-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-3-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-4-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-4-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-retry-seed-4-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-0-cont-1",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-0-cont-1",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-0-cont-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-3-cont-1",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-3-cont-1",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-custom-memory-heap-crash-promising-branch-seed-3-cont-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

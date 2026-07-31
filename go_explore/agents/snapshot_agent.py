@@ -85,6 +85,8 @@ class SnapshotAwareAgent(BaseAgent):
         replay_command_timeout_sec: float = DEFAULT_COMMAND_TIMEOUT_SEC,
         replay_total_budget_sec: float = DEFAULT_TOTAL_BUDGET_SEC,
         token_budget: int | None = None,
+        verify_before_complete: bool = False,
+        verify_before_complete_max_attempts: int = 3,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -93,6 +95,10 @@ class SnapshotAwareAgent(BaseAgent):
         self._hooks_debug = hooks_debug
         self._token_budget = token_budget
         self._token_budget_hooked = False
+        self._verify_before_complete = verify_before_complete
+        self._verify_before_complete_max_attempts = verify_before_complete_max_attempts
+        self._verify_before_complete_attempts = 0
+        self._verify_before_complete_hooked = False
         self._snapshot_policy = snapshot_policy or InterestingAgentStepPolicy()
         self._context_mode = self._normalize_context_mode(context_mode)
         self._parent_context = parent_context
@@ -358,6 +364,7 @@ class SnapshotAwareAgent(BaseAgent):
         self._ensure_snapshot_session(getattr(environment, "_sandbox", None))
         self._hook_agent_loop()
         self._hook_token_budget()
+        self._hook_completion_verification(environment)
 
         instruction = await self._apply_context_mode(instruction, environment)
 
@@ -713,15 +720,22 @@ class SnapshotAwareAgent(BaseAgent):
         to go look, actually run the task's own verifier against the restored
         sandbox first and hand back the real pass/fail result. Never raises -
         run_preflight_verification always resolves to a usable result."""
-        from go_explore.snapshots.preflight import run_preflight_verification
+        from go_explore.snapshots.preflight import (
+            PREFLIGHT_TEST_SCRIPT,
+            run_preflight_verification,
+        )
 
         result = await run_preflight_verification(
             environment, timeout_sec=self._preflight_verification_timeout_sec
         )
-        return self._format_preflight_instruction(instruction, result)
+        return self._format_preflight_instruction(
+            instruction, result, verifier_command=PREFLIGHT_TEST_SCRIPT
+        )
 
     @staticmethod
-    def _format_preflight_instruction(instruction: str, result: Any) -> str:
+    def _format_preflight_instruction(
+        instruction: str, result: Any, *, verifier_command: str | None = None
+    ) -> str:
         if result.status == "unavailable":
             body = (
                 "You are resuming in a sandbox that already contains state "
@@ -733,6 +747,8 @@ class SnapshotAwareAgent(BaseAgent):
                 "complete - inspect it and run the tests yourself before "
                 "making changes."
             )
+            if verifier_command:
+                body += f" The task's own verifier script is at {verifier_command}."
             return f"{instruction}\n\n---\n{body}"
 
         if result.tests_total is not None:
@@ -767,6 +783,10 @@ class SnapshotAwareAgent(BaseAgent):
             lines.append(
                 "Focus on making the failing checks pass without breaking "
                 "the ones that already pass."
+            )
+        if verifier_command:
+            lines.append(
+                f"You can re-run this same check yourself at any time with {verifier_command} - no need to find or reconstruct it."
             )
         return f"{instruction}\n\n---\n" + "\n".join(lines)
 
@@ -887,6 +907,88 @@ class SnapshotAwareAgent(BaseAgent):
 
         wrapped_query_llm._go_explore_budget_wrapped = True  # type: ignore[attr-defined]
         self._wrapped_agent._query_llm = wrapped_query_llm
+
+    def _hook_completion_verification(self, environment: Any) -> None:
+        """Hook the wrapped agent's LLM-interaction path to reject a
+        self-declared task completion that the real verifier disagrees with.
+
+        Terminus-2 already asks the model to confirm completion once before
+        stopping (`_get_completion_confirmation_message`), but that
+        confirmation is a generic "are you sure?" text prompt with no
+        grounding in reality - a model that fooled itself once (e.g. by
+        running its own ad hoc check instead of the task's real verifier)
+        just reaffirms the same wrong belief a second time. This hook runs
+        the actual verifier (the same one `preflight_verification` uses)
+        the first time the model claims completion in a given trial, and if
+        it disagrees, overrides `is_task_complete` back to False and
+        surfaces the real failing-test detail as feedback before Terminus-2
+        ever sees the claim - so the trial never ends on a false positive.
+
+        Capped at `verify_before_complete_max_attempts` real checks per
+        trial: after that, further completion claims pass through
+        unmodified so a genuinely stuck agent can still end the trial via
+        Terminus-2's native double-confirmation instead of being blocked
+        forever.
+        """
+        if not self._verify_before_complete:
+            return
+
+        if not hasattr(self._wrapped_agent, "_handle_llm_interaction"):
+            return
+
+        self._verify_before_complete_hooked = True
+        original_handle = self._wrapped_agent._handle_llm_interaction
+        if getattr(original_handle, "_go_explore_verify_wrapped", False):
+            return
+
+        async def wrapped_handle_llm_interaction(*args: Any, **kwargs: Any) -> Any:
+            from go_explore.snapshots.preflight import run_preflight_verification
+
+            result = await original_handle(*args, **kwargs)
+            commands, is_task_complete, feedback, analysis, plan, llm_response = result
+
+            if not is_task_complete:
+                return result
+            if (
+                self._verify_before_complete_attempts
+                >= self._verify_before_complete_max_attempts
+            ):
+                return result
+
+            self._verify_before_complete_attempts += 1
+            verification = await run_preflight_verification(
+                environment, timeout_sec=self._preflight_verification_timeout_sec
+            )
+            if verification.status != "failed":
+                return result
+
+            if verification.tests_total is not None:
+                count_line = (
+                    f"{verification.tests_passed} of {verification.tests_total} "
+                    "tests passed."
+                )
+            else:
+                count_line = f"The verifier failed (exit code {verification.exit_code})."
+            failing = ""
+            if verification.failing_tests:
+                shown = verification.failing_tests[:10]
+                failing = " Failing: " + ", ".join(shown) + "."
+
+            rejection = (
+                "WARNINGS: Task completion was rejected - a ground-truth check "
+                "just ran the task's real test suite against your current "
+                f"sandbox and it did not pass. {count_line}{failing} Do not "
+                "assume your own manual checks match the real verifier; keep "
+                "working on the failing checks before claiming completion "
+                "again."
+            )
+            combined_feedback = (
+                f"{feedback}\n{rejection}" if feedback else rejection
+            )
+            return commands, False, combined_feedback, analysis, plan, llm_response
+
+        wrapped_handle_llm_interaction._go_explore_verify_wrapped = True  # type: ignore[attr-defined]
+        self._wrapped_agent._handle_llm_interaction = wrapped_handle_llm_interaction
 
     def _hook_agent_loop(self) -> None:
         """Hook into the wrapped agent's loop to capture snapshots.

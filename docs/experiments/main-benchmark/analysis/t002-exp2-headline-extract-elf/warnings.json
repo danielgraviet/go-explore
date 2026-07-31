@@ -2,165 +2,141 @@
   "schema_version": "go-explore-analysis-warnings-v1",
   "warnings": [
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-root/extract-elf__r3AKTfY",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-root/extract-elf__vGMKUby",
       "field": "total_tokens",
-      "message": "observed total_tokens (163480) exceeded the enforced token_budget (150000) by 13480; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (308885) exceeded the enforced token_budget (300000) by 8885; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-0/extract-elf__PPTgKRq",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-0/extract-elf__EKizVwy",
       "field": "total_tokens",
-      "message": "observed total_tokens (191179) exceeded the enforced token_budget (175000) by 16179; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (385236) exceeded the enforced token_budget (350000) by 35236; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-1/extract-elf__HRamdA6",
-      "field": "total_tokens_status",
-      "message": "budget_enforcement is hard_token_limit but observed token accounting is incomplete; enforcement cannot be verified from this artifact, so do not treat this as a validated equal-budget comparison",
-      "severity": "warning"
-    },
-    {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-1-root/extract-elf__mexBtXe",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-1-root/extract-elf__7bqAxLn",
       "field": "total_tokens",
-      "message": "observed total_tokens (176676) exceeded the enforced token_budget (150000) by 26676; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (315745) exceeded the enforced token_budget (300000) by 15745; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-1-snapshot-0/extract-elf__GzFBFUh",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-1-snapshot-1/extract-elf__MYYP9tr",
       "field": "total_tokens",
-      "message": "observed total_tokens (183449) exceeded the enforced token_budget (175000) by 8449; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (406784) exceeded the enforced token_budget (350000) by 56784; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-1-snapshot-1/extract-elf__sXsnW6j",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-2-root/extract-elf__zi3y65T",
       "field": "total_tokens",
-      "message": "observed total_tokens (178700) exceeded the enforced token_budget (175000) by 3700; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (345675) exceeded the enforced token_budget (300000) by 45675; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-2-root/extract-elf__QHX62PP",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-2-snapshot-1/extract-elf__ZCDARQe",
       "field": "total_tokens",
-      "message": "observed total_tokens (164351) exceeded the enforced token_budget (150000) by 14351; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (391325) exceeded the enforced token_budget (350000) by 41325; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-3-root/extract-elf__LpyXgrA",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-3-root/extract-elf__eH4FajC",
       "field": "total_tokens",
-      "message": "observed total_tokens (171062) exceeded the enforced token_budget (150000) by 21062; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (321061) exceeded the enforced token_budget (300000) by 21061; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-3-snapshot-0/extract-elf__TJpaqJ6",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-3-snapshot-1/extract-elf__Bx44rK4",
       "field": "total_tokens",
-      "message": "observed total_tokens (209578) exceeded the enforced token_budget (175000) by 34578; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (397747) exceeded the enforced token_budget (350000) by 47747; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-3-snapshot-1/extract-elf__8ZiFc7G",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-4-root/extract-elf__8cgURWS",
       "field": "total_tokens",
-      "message": "observed total_tokens (179745) exceeded the enforced token_budget (175000) by 4745; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (331185) exceeded the enforced token_budget (300000) by 31185; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-4-root/extract-elf__y22yNFB",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-4-snapshot-0/extract-elf__qkPafg4",
       "field": "total_tokens",
-      "message": "observed total_tokens (153300) exceeded the enforced token_budget (150000) by 3300; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (356606) exceeded the enforced token_budget (350000) by 6606; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-4-snapshot-1/extract-elf__trXfjAE",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-4-snapshot-1/extract-elf__onHnikJ",
       "field": "total_tokens",
-      "message": "observed total_tokens (184316) exceeded the enforced token_budget (175000) by 9316; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (393439) exceeded the enforced token_budget (350000) by 43439; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-0-attempt-0/extract-elf__HUpNyDs",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-0-attempt-1/extract-elf__XGcqKhf",
       "field": "total_tokens",
-      "message": "observed total_tokens (212394) exceeded the enforced token_budget (166667) by 45727; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (340597) exceeded the enforced token_budget (333333) by 7264; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-0-attempt-1/extract-elf__fHw5cER",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-0-attempt-2/extract-elf__VrqYN9S",
       "field": "total_tokens",
-      "message": "observed total_tokens (200065) exceeded the enforced token_budget (166667) by 33398; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (389478) exceeded the enforced token_budget (333333) by 56145; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-0-attempt-2/extract-elf__UCK85t5",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-1-attempt-2/extract-elf__2SaDcDk",
       "field": "total_tokens",
-      "message": "observed total_tokens (192977) exceeded the enforced token_budget (166666) by 26311; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (365745) exceeded the enforced token_budget (333333) by 32412; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-1-attempt-0/extract-elf__8pgmpuJ",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-2-attempt-0/extract-elf__HfjrYCz",
       "field": "total_tokens",
-      "message": "observed total_tokens (168084) exceeded the enforced token_budget (166667) by 1417; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (374519) exceeded the enforced token_budget (333334) by 41185; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-1-attempt-1/extract-elf__KYPqXuD",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-2-attempt-1/extract-elf__KMsTCBN",
       "field": "total_tokens",
-      "message": "observed total_tokens (170565) exceeded the enforced token_budget (166667) by 3898; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (361442) exceeded the enforced token_budget (333333) by 28109; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-1-attempt-2/extract-elf__MTt4P4K",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-2-attempt-2/extract-elf__4wt6i2q",
       "field": "total_tokens",
-      "message": "observed total_tokens (197171) exceeded the enforced token_budget (166666) by 30505; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (352153) exceeded the enforced token_budget (333333) by 18820; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-2-attempt-0/extract-elf__BsZ88mu",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-3-attempt-0/extract-elf__3AcLndp",
       "field": "total_tokens",
-      "message": "observed total_tokens (172112) exceeded the enforced token_budget (166667) by 5445; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (365673) exceeded the enforced token_budget (333334) by 32339; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-2-attempt-1/extract-elf__HZF6Xrw",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-3-attempt-1/extract-elf__wnfCPJp",
       "field": "total_tokens",
-      "message": "observed total_tokens (189409) exceeded the enforced token_budget (166667) by 22742; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (356533) exceeded the enforced token_budget (333333) by 23200; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-2-attempt-2/extract-elf__TaapaB5",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-3-attempt-2/extract-elf__eP4gQhh",
       "field": "total_tokens",
-      "message": "observed total_tokens (185212) exceeded the enforced token_budget (166666) by 18546; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (388338) exceeded the enforced token_budget (333333) by 55005; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-3-attempt-0/extract-elf__8UawEEu",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-4-attempt-0/extract-elf__TE3XrQC",
       "field": "total_tokens",
-      "message": "observed total_tokens (188483) exceeded the enforced token_budget (166667) by 21816; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (359610) exceeded the enforced token_budget (333334) by 26276; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-3-attempt-1/extract-elf__tUe5PGa",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-4-attempt-2/extract-elf__YvYC9j9",
       "field": "total_tokens",
-      "message": "observed total_tokens (167776) exceeded the enforced token_budget (166667) by 1109; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "message": "observed total_tokens (339091) exceeded the enforced token_budget (333333) by 5758; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
       "severity": "warning"
     },
     {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-3-attempt-2/extract-elf__J7KTFdw",
-      "field": "total_tokens",
-      "message": "observed total_tokens (177243) exceeded the enforced token_budget (166666) by 10577; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
-      "severity": "warning"
-    },
-    {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-4-attempt-0/extract-elf__8rvUUB5",
-      "field": "total_tokens",
-      "message": "observed total_tokens (180953) exceeded the enforced token_budget (166667) by 14286; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
-      "severity": "warning"
-    },
-    {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-4-attempt-1",
-      "field": "trial_result",
-      "message": "job has no trial result rows",
-      "severity": "warning"
-    },
-    {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-4-attempt-2",
-      "field": "trial_result",
-      "message": "job has no trial result rows",
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-cont-1",
+      "field": "job_dir",
+      "message": "planned job result is missing",
       "severity": "warning"
     },
     {
@@ -171,24 +147,6 @@
     },
     {
       "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-0",
-      "field": "repeated_setup_score",
-      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
-      "severity": "info"
-    },
-    {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-1",
-      "field": "total_tokens",
-      "message": "token accounting is unknown",
-      "severity": "warning"
-    },
-    {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-1",
-      "field": "cost_usd",
-      "message": "cost accounting is unknown",
-      "severity": "warning"
-    },
-    {
-      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-snapshot-1",
       "field": "repeated_setup_score",
       "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
       "severity": "info"
@@ -339,6 +297,36 @@
     },
     {
       "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-4-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-4-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-extract-elf-retry-seed-4-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-cont-1",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-cont-1",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-extract-elf-promising-branch-seed-0-cont-1",
       "field": "repeated_setup_score",
       "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
       "severity": "info"

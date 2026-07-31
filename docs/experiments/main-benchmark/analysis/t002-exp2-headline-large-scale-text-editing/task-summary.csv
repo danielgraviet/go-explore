@@ -1,0 +1,3 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+t002-exp2-headline-large-scale-text-editing,large-scale-text-editing,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,15,15,19,5,3021106,1.3116181,3003.976295,235.79729395700997,618.5408369999999,false
+t002-exp2-headline-large-scale-text-editing,large-scale-text-editing,,,retry,anthropic/claude-haiku-4-5-20251001,true,15,15,56,0,4861528,1.73384015,4421.365108,781.2873726659818,,false

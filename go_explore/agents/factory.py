@@ -131,6 +131,10 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
             kwargs.pop("replay_total_budget_sec", DEFAULT_TOTAL_BUDGET_SEC)
         )
         token_budget = _as_optional_int(kwargs.pop("token_budget", None))
+        verify_before_complete = _as_bool(kwargs.pop("verify_before_complete", False))
+        verify_before_complete_max_attempts = int(
+            kwargs.pop("verify_before_complete_max_attempts", 3)
+        )
         kwargs.setdefault("record_terminal_session", False)
         wrapped = Terminus2(
             logs_dir=logs_dir,
@@ -155,6 +159,8 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
             replay_command_timeout_sec=replay_command_timeout_sec,
             replay_total_budget_sec=replay_total_budget_sec,
             token_budget=token_budget,
+            verify_before_complete=verify_before_complete,
+            verify_before_complete_max_attempts=verify_before_complete_max_attempts,
             logs_dir=logs_dir,
             model_name=model_name,
             logger=logger,
@@ -192,6 +198,10 @@ class SnapshotAwareOracle(SnapshotAwareAgent):
             kwargs.pop("replay_total_budget_sec", DEFAULT_TOTAL_BUDGET_SEC)
         )
         token_budget = _as_optional_int(kwargs.pop("token_budget", None))
+        verify_before_complete = _as_bool(kwargs.pop("verify_before_complete", False))
+        verify_before_complete_max_attempts = int(
+            kwargs.pop("verify_before_complete_max_attempts", 3)
+        )
         wrapped = OracleAgent(
             logs_dir=logs_dir,
             model_name=model_name,
@@ -213,6 +223,8 @@ class SnapshotAwareOracle(SnapshotAwareAgent):
             replay_command_timeout_sec=replay_command_timeout_sec,
             replay_total_budget_sec=replay_total_budget_sec,
             token_budget=token_budget,
+            verify_before_complete=verify_before_complete,
+            verify_before_complete_max_attempts=verify_before_complete_max_attempts,
             logs_dir=logs_dir,
             model_name=model_name,
             logger=logger,

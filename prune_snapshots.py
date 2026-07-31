@@ -46,17 +46,23 @@ def _job_dir_for_trial(trial_name: str) -> Path | None:
     return None
 
 
-def _children_exist(root_job_dir: Path) -> bool:
-    """Whether a branch root's continuation children already have job dirs."""
+def _n_children_launched(root_job_dir: Path) -> int:
+    """How many of a branch root's continuation children already have job dirs."""
     prefix = root_job_dir.name.removesuffix("-root")
     parent = root_job_dir.parent
-    return any(
-        entry.is_dir() and entry.name.startswith(f"{prefix}-snapshot-")
+    return sum(
+        1
         for entry in parent.iterdir()
+        if entry.is_dir() and entry.name.startswith(f"{prefix}-snapshot-")
     )
 
 
-def is_safe_to_delete(trial_name: str) -> tuple[bool, str]:
+def is_safe_to_delete(
+    trial_name: str, *, n_branch_continuations: int
+) -> tuple[bool, str]:
+    # A root is only safe once ALL expected children have launched - checking
+    # for just one (the old behavior) deleted snapshots a not-yet-launched
+    # second child still needed, failing it with DaytonaValidationError.
     job_dir = _job_dir_for_trial(trial_name)
     if job_dir is None:
         return True, "no local job directory references this trial"
@@ -65,9 +71,16 @@ def is_safe_to_delete(trial_name: str) -> tuple[bool, str]:
         return False, f"owning job {job_dir.name} has not finished yet"
 
     if job_dir.name.endswith("-root"):
-        if _children_exist(job_dir):
-            return True, f"root {job_dir.name} finished and children already launched"
-        return False, f"root {job_dir.name} finished but children not launched yet"
+        launched = _n_children_launched(job_dir)
+        if launched >= n_branch_continuations:
+            return True, (
+                f"root {job_dir.name} finished and all "
+                f"{n_branch_continuations} children already launched"
+            )
+        return False, (
+            f"root {job_dir.name} finished but only {launched}/"
+            f"{n_branch_continuations} children launched"
+        )
 
     return True, f"non-root job {job_dir.name} finished"
 
@@ -78,6 +91,17 @@ async def main() -> None:
         "--dry-run",
         action="store_true",
         help="Print what would be deleted without deleting anything.",
+    )
+    parser.add_argument(
+        "--n-branch-continuations",
+        type=int,
+        default=2,
+        help=(
+            "Expected children per branch root (must match the "
+            "--n-branch-continuations value used to launch the run). A root "
+            "is only safe to prune once this many children have local job "
+            "dirs, not just one."
+        ),
     )
     args = parser.parse_args()
 
@@ -94,7 +118,9 @@ async def main() -> None:
             if trial_name is None:
                 kept.append((snapshot.name, "name did not match expected pattern"))
                 continue
-            safe, reason = is_safe_to_delete(trial_name)
+            safe, reason = is_safe_to_delete(
+                trial_name, n_branch_continuations=args.n_branch_continuations
+            )
             if safe:
                 to_delete.append((snapshot, reason))
             else:

@@ -1,0 +1,281 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-0-snapshot-0/git-multibranch__w2PFk3U",
+      "field": "total_tokens",
+      "message": "observed total_tokens (357248) exceeded the enforced token_budget (350000) by 7248; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-0-snapshot-1/git-multibranch__BmH4Zwd",
+      "field": "total_tokens",
+      "message": "observed total_tokens (395006) exceeded the enforced token_budget (350000) by 45006; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-1-snapshot-0/git-multibranch__yb79KgH",
+      "field": "total_tokens",
+      "message": "observed total_tokens (388969) exceeded the enforced token_budget (350000) by 38969; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-1-snapshot-1/git-multibranch__nvv9hZL",
+      "field": "total_tokens",
+      "message": "observed total_tokens (373143) exceeded the enforced token_budget (350000) by 23143; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-2-root/git-multibranch__jo8wtTs",
+      "field": "total_tokens",
+      "message": "observed total_tokens (320996) exceeded the enforced token_budget (300000) by 20996; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-2-snapshot-1/git-multibranch__FWai9Ye",
+      "field": "total_tokens",
+      "message": "observed total_tokens (357134) exceeded the enforced token_budget (350000) by 7134; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-3-root/git-multibranch__2oV9uaU",
+      "field": "total_tokens",
+      "message": "observed total_tokens (328815) exceeded the enforced token_budget (300000) by 28815; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-3-snapshot-1/git-multibranch__zFMBwYU",
+      "field": "total_tokens",
+      "message": "observed total_tokens (362867) exceeded the enforced token_budget (350000) by 12867; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-4-snapshot-0/git-multibranch__aJ5LqPL",
+      "field": "total_tokens",
+      "message": "observed total_tokens (364201) exceeded the enforced token_budget (350000) by 14201; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-4-snapshot-1/git-multibranch__NtPt9o7",
+      "field": "total_tokens",
+      "message": "observed total_tokens (403048) exceeded the enforced token_budget (350000) by 53048; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-0-attempt-1/git-multibranch__ZWoc8vb",
+      "field": "total_tokens",
+      "message": "observed total_tokens (372456) exceeded the enforced token_budget (333333) by 39123; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-1-attempt-1/git-multibranch__vhRiKSm",
+      "field": "total_tokens",
+      "message": "observed total_tokens (364963) exceeded the enforced token_budget (333333) by 31630; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-2-attempt-0/git-multibranch__tys9RiS",
+      "field": "total_tokens",
+      "message": "observed total_tokens (365409) exceeded the enforced token_budget (333334) by 32075; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-2-attempt-2/git-multibranch__zQPsGqy",
+      "field": "total_tokens",
+      "message": "observed total_tokens (362453) exceeded the enforced token_budget (333333) by 29120; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-4-attempt-1/git-multibranch__xjmfEDM",
+      "field": "total_tokens",
+      "message": "observed total_tokens (336684) exceeded the enforced token_budget (333333) by 3351; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-4-attempt-2/git-multibranch__bqV5HnX",
+      "field": "total_tokens",
+      "message": "observed total_tokens (351040) exceeded the enforced token_budget (333333) by 17707; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-0-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-0-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-0-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-1-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-1-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-1-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-2-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-2-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-2-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-3-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-3-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-3-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-4-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-4-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-promising-branch-seed-4-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-0-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-0-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-0-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-1-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-1-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-1-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-2-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-2-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-2-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-3-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-3-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-3-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-4-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-4-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/t002-exp2-headline-git-multibranch-retry-seed-4-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

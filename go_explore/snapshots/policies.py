@@ -78,8 +78,9 @@ class InterestingAgentStepPolicy:
             notes.append("git state transition")
 
         if "mark_task_complete" in command_lower:
-            event = event or SnapshotEvent.VERIFIER
-            notes.append("task completion signal")
+            # Not a verifier run - do not score it like one (previously let
+            # falsely "complete" trajectories rank as promising snapshots).
+            notes.append("task completion claim (unverified)")
 
         if event is None:
             return []
