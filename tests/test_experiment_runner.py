@@ -17,6 +17,7 @@ from go_explore.experiment_runner import (
     format_run_experiment_report,
     run_fixed_budget_experiment,
 )
+from go_explore.fixed_budget import FixedBudgetPlanConfig, plan_fixed_budget_runs
 from go_explore.harbor import HarborRunConfig
 from go_explore.results import BudgetSummary, JobSummary, TrialSummary
 from go_explore.snapshots.archive import SnapshotArchive
@@ -154,8 +155,8 @@ def test_run_fixed_budget_experiment_executes_branch_and_builds_analysis(tmp_pat
             experiment_id="exp-1",
             base_config=HarborRunConfig(
                 jobs_dir=tmp_path / "jobs",
-                agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
                 agent=None,
+                agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
                 env="daytona",
                 dataset="terminal-bench@2.0",
                 model="model-a",
@@ -200,6 +201,66 @@ def test_run_fixed_budget_experiment_executes_branch_and_builds_analysis(tmp_pat
     assert child["outcome"] == "success"
 
 
+def test_skip_children_if_root_solved_does_not_launch_continuations(tmp_path):
+    def _solved_root_run(cmd, **kwargs):
+        del kwargs
+        jobs_dir = Path(cmd[cmd.index("--jobs-dir") + 1])
+        job_name = cmd[cmd.index("--job-name") + 1]
+        task_name = cmd[cmd.index("--include-task-name") + 1]
+        job_dir = jobs_dir / job_name
+        _write_harbor_job(job_dir, job_name=job_name, task_name=task_name, reward=1.0)
+        if job_name.endswith("-root"):
+            archive = SnapshotArchive(path=job_dir / "archive.json")
+            archive.add(
+                SnapshotCandidate(
+                    id=f"{task_name}__{job_name}:step-0",
+                    event=SnapshotEvent.TEST_RUN,
+                    restore_ref=f"go-explore-{task_name}__{job_name}-step-0",
+                    metadata={
+                        "trial_name": f"{task_name}__{job_name}",
+                        "step_id": "0",
+                    },
+                )
+            )
+            archive.save()
+        return subprocess.CompletedProcess(cmd, 0)
+
+    def _must_not_continue(*args, **kwargs):
+        raise AssertionError("children must not launch when the root already solved")
+
+    report = run_fixed_budget_experiment(
+        RunExperimentConfig(
+            experiment_id="exp-skip",
+            base_config=HarborRunConfig(
+                jobs_dir=tmp_path / "jobs",
+                agent=None,
+                agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
+                env="daytona",
+                dataset="terminal-bench@2.0",
+                model="model-a",
+                task_name="fix-git",
+            ),
+            total_token_budget=100_000,
+            methods=("promising_branch",),
+            seeds=(0,),
+            job_prefix="exp-skip",
+            manifest_path=tmp_path / "manifest.json",
+            analysis_dir=tmp_path / "analysis",
+            n_branch_continuations=2,
+            execute=True,
+            skip_if_root_solved=True,
+        ),
+        command_runner=_solved_root_run,
+        continuation_runner=_must_not_continue,
+    )
+
+    skipped = [
+        record for record in report.records if record.status == "skipped_root_solved"
+    ]
+    assert len(skipped) == 2
+    assert all(record.role == "continuation" for record in skipped)
+
+
 def test_run_fixed_budget_experiment_threads_child_token_budget_into_continuation_plans(
     tmp_path,
 ):
@@ -217,8 +278,8 @@ def test_run_fixed_budget_experiment_threads_child_token_budget_into_continuatio
             experiment_id="exp-2",
             base_config=HarborRunConfig(
                 jobs_dir=tmp_path / "jobs",
-                agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
                 agent=None,
+                agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
                 env="daytona",
                 dataset="terminal-bench@2.0",
                 model="model-a",
@@ -243,3 +304,31 @@ def test_run_fixed_budget_experiment_threads_child_token_budget_into_continuatio
     assert plan.budget.token_budget == 70_000
     assert plan.budget.enforcement == "hard_token_limit"
     assert "token_budget=70000" in " ".join(plan.command)
+
+
+def test_grounded_selector_enables_bounded_root_preflight_probes(tmp_path):
+    manifest = plan_fixed_budget_runs(
+        FixedBudgetPlanConfig(
+            experiment_id="grounded",
+            base_config=HarborRunConfig(
+                jobs_dir=tmp_path / "jobs",
+                agent=None,
+                agent_import_path="go_explore.agents.factory:SnapshotAwareTerminus2",
+                env="daytona",
+                dataset="terminal-bench@2.0",
+                model="model-a",
+                task_name="fix-git",
+            ),
+            job_prefix="grounded",
+            total_token_budget=100_000,
+            methods=("promising_branch",),
+            n_branch_continuations=1,
+            promising_selector_mode="grounded_partial_progress",
+            grounded_preflight_max_probes=2,
+        )
+    )
+
+    root = next(job for job in manifest.jobs if job.role == "root")
+
+    assert root.selector_mode == "grounded_partial_progress"
+    assert "grounded_preflight_max_probes=2" in " ".join(root.command)

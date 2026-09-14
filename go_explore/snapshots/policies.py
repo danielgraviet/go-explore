@@ -20,6 +20,15 @@ class SnapshotPolicy(Protocol):
         ...
 
 
+class NeverSnapshotPolicy:
+    """Disable remote snapshots. Use on retries and children so the Daytona
+    account cap is spent only on root archives that continuations restore."""
+
+    def candidates_for_step(self, context: SnapshotContext) -> list[SnapshotCandidate]:
+        del context
+        return []
+
+
 class EveryAgentStepPolicy:
     """Naive baseline: snapshot after every agent step that can mutate state."""
 

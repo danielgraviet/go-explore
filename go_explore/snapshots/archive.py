@@ -17,7 +17,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from go_explore.events import EVENT_LOG_FILENAME, append_event, base_event
-from go_explore.snapshots.models import ScoredSnapshot, SnapshotCandidate, SnapshotRecord
+from go_explore.snapshots.models import (
+    GroundedVerification,
+    ScoredSnapshot,
+    SnapshotCandidate,
+    SnapshotRecord,
+)
 from go_explore.snapshots.policies import HeuristicSnapshotSelector
 
 ARCHIVE_FILENAME = "archive.json"
@@ -60,6 +65,9 @@ class ArchiveEntry:
     times_selected: int = 0
     created_at: str = ""
     remote_retained: bool = True
+    grounded_verification: GroundedVerification | None = None
+    checkpoint_tokens: int | None = None
+    checkpoint_elapsed_seconds: float | None = None
 
     @property
     def priority(self) -> float:
@@ -166,6 +174,11 @@ class SnapshotArchive:
             depth=depth,
             times_selected=incumbent.times_selected if incumbent else 0,
             created_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            grounded_verification=candidate.grounded_verification,
+            checkpoint_tokens=_optional_int(candidate.metadata.get("checkpoint_tokens")),
+            checkpoint_elapsed_seconds=_optional_float(
+                candidate.metadata.get("checkpoint_elapsed_seconds")
+            ),
         )
         self._entries[key] = entry
         return ArchiveAddResult(
@@ -261,6 +274,11 @@ class SnapshotArchive:
             raw = dict(raw)
             raw["changed_files"] = tuple(raw.get("changed_files") or ())
             raw.setdefault("remote_retained", True)
+            grounded = raw.get("grounded_verification")
+            if grounded is not None:
+                grounded = dict(grounded)
+                grounded["failing_tests"] = tuple(grounded.get("failing_tests") or ())
+                raw["grounded_verification"] = GroundedVerification(**grounded)
             entry = ArchiveEntry(**raw)
             archive._entries[entry.cell_key] = entry
         return archive
@@ -379,6 +397,11 @@ class ArchiveStore:
                 "overhead_seconds": snapshot_backend_seconds,
                 "snapshot_backend_seconds": snapshot_backend_seconds,
                 "archive_accepted": archive_accepted,
+                "grounded_verification": (
+                    asdict(candidate.grounded_verification)
+                    if candidate.grounded_verification is not None
+                    else None
+                ),
             }
         )
         append_event(event_log_path, event)
@@ -390,6 +413,21 @@ def _optional_float(value: object) -> float | None:
     if isinstance(value, str):
         try:
             return float(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _optional_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
         except ValueError:
             return None
     return None

@@ -65,9 +65,11 @@ class RunExperimentConfig:
     branch_root_fraction: float = 0.3
     branch_context_mode: str = DEFAULT_BRANCH_CONTEXT_MODE
     promising_selector_mode: str = "archive_priority"
+    grounded_preflight_max_probes: int = 3
     execute: bool = False
     rerun_existing: bool = False
     build_analysis: bool = True
+    skip_if_root_solved: bool = False
 
 
 @dataclass(frozen=True)
@@ -134,6 +136,7 @@ def run_fixed_budget_experiment(
             branch_root_fraction=config.branch_root_fraction,
             branch_context_mode=config.branch_context_mode,
             promising_selector_mode=config.promising_selector_mode,
+            grounded_preflight_max_probes=config.grounded_preflight_max_probes,
         )
     )
     write_fixed_budget_manifest(manifest, manifest_path)
@@ -146,6 +149,7 @@ def run_fixed_budget_experiment(
         execute=config.execute,
         rerun_existing=config.rerun_existing,
         build_analysis=config.build_analysis,
+        skip_if_root_solved=config.skip_if_root_solved,
         command_runner=command_runner,
         continuation_runner=continuation_runner,
     )
@@ -160,6 +164,7 @@ def run_fixed_budget_manifest(
     execute: bool = False,
     rerun_existing: bool = False,
     build_analysis: bool = True,
+    skip_if_root_solved: bool = False,
     command_runner: CommandRunner = subprocess.run,
     continuation_runner: ContinuationRunner = run_continuation_plans,
 ) -> RunExperimentReport:
@@ -202,6 +207,7 @@ def run_fixed_budget_manifest(
                             rerun_existing=rerun_existing,
                             experiment_id=manifest.experiment_id,
                             continuation_runner=continuation_runner,
+                            skip_if_root_solved=skip_if_root_solved,
                         )
                     )
                     records.extend(branch_records)
@@ -323,6 +329,7 @@ def _run_branch_continuations(
     rerun_existing: bool,
     experiment_id: str,
     continuation_runner: ContinuationRunner,
+    skip_if_root_solved: bool = False,
 ) -> tuple[
     tuple[ExperimentExecutionRecord, ...],
     tuple[Path, ...],
@@ -380,6 +387,23 @@ def _run_branch_continuations(
             (),
             (),
         )
+    if skip_if_root_solved:
+        root_trial = select_trial(summarize_job(root_job_dir))
+        if root_trial.succeeded:
+            return (
+                tuple(
+                    _record(
+                        job,
+                        "skipped_root_solved",
+                        job_dir=jobs_dir / job.job_name,
+                        details="root already scored reward 1.0; children not launched",
+                    )
+                    for job in planned_children
+                ),
+                (),
+                (),
+                (),
+            )
     archive_path = root_job_dir / ARCHIVE_FILENAME
     archive = SnapshotArchive.load(archive_path)
     if not archive_path.exists():
@@ -417,6 +441,21 @@ def _run_branch_continuations(
         k=continuation_count,
         seed=root_job.seed if selector_mode == "random" else None,
     )
+    if not chosen and selector_mode == "grounded_partial_progress":
+        return (
+            tuple(
+                _record(
+                    job,
+                    "skipped_no_grounded_candidate",
+                    job_dir=jobs_dir / job.job_name,
+                    details="no archive entry had eligible official partial-verifier evidence",
+                )
+                for job in planned_children
+            ),
+            (),
+            (),
+            (),
+        )
     for selection in chosen:
         archive.mark_selected(selection.entry.cell_key)
     archive.save()

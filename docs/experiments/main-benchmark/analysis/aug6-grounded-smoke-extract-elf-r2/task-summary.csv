@@ -1,0 +1,2 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+aug6-grounded-smoke-extract-elf-r2,extract-elf,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,2,2,3,0,314675,0.14925644999999998,229.938041,62.23396304200287,,false

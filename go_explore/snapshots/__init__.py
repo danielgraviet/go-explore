@@ -16,6 +16,7 @@ from go_explore.snapshots.live import AsyncLiveSnapshotSession
 from go_explore.snapshots.metrics import SnapshotProcessingResult, SnapshotTiming
 from go_explore.snapshots.models import (
     ScoredSnapshot,
+    GroundedVerification,
     SnapshotCandidate,
     SnapshotContext,
     SnapshotEvent,
@@ -33,6 +34,7 @@ from go_explore.snapshots.policies import (
     EveryAgentStepPolicy,
     HeuristicSnapshotSelector,
     InterestingAgentStepPolicy,
+    NeverSnapshotPolicy,
     SnapshotPolicy,
 )
 from go_explore.snapshots.stores import InMemorySnapshotStore, SnapshotStore
@@ -49,7 +51,9 @@ __all__ = [
     "HeuristicSnapshotSelector",
     "InMemorySnapshotStore",
     "InterestingAgentStepPolicy",
+    "NeverSnapshotPolicy",
     "SnapshotProcessingResult",
+    "GroundedVerification",
     "ScoredSnapshot",
     "SnapshotCandidate",
     "SnapshotContext",

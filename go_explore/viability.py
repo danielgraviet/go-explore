@@ -50,6 +50,7 @@ class ViabilityPlanConfig:
     n_branch_continuations: int = 3
     branch_root_fraction: float = 0.3
     promising_selector_mode: str = "archive_priority"
+    grounded_preflight_max_probes: int = 3
     include_random_control: bool = False
     include_parent_summary_diagnostic: bool = False
 
@@ -408,6 +409,7 @@ def _plan_task_manifests(
                 n_branch_continuations=config.n_branch_continuations,
                 branch_root_fraction=config.branch_root_fraction,
                 promising_selector_mode=config.promising_selector_mode,
+                grounded_preflight_max_probes=config.grounded_preflight_max_probes,
                 branch_context_mode=(
                     "none" if context_mode == "original_task_only" else context_mode
                 ),

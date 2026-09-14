@@ -9,6 +9,14 @@ from go_explore.analysis_tables import (
     build_analysis_tables,
     write_analysis_tables,
 )
+from go_explore.checkpoint_diagnostic import (
+    CheckpointDiagnosticConfig,
+    run_checkpoint_diagnostic,
+)
+from go_explore.representation_ablation import (
+    RepresentationAblationConfig,
+    run_representation_ablation,
+)
 from go_explore.continuations import (
     SnapshotSelectionMetadata,
     harbor_config_from_job,
@@ -324,6 +332,9 @@ def plan_fixed_budget(args: argparse.Namespace) -> int:
             promising_selector_mode=getattr(
                 args, "promising_selector_mode", "archive_priority"
             ),
+            grounded_preflight_max_probes=getattr(
+                args, "grounded_preflight_max_probes", 3
+            ),
         )
     )
 
@@ -378,6 +389,9 @@ def plan_viability(args: argparse.Namespace) -> int:
             branch_root_fraction=args.branch_root_fraction,
             promising_selector_mode=getattr(
                 args, "promising_selector_mode", "archive_priority"
+            ),
+            grounded_preflight_max_probes=getattr(
+                args, "grounded_preflight_max_probes", 3
             ),
             include_random_control=args.include_random_control,
             include_parent_summary_diagnostic=args.include_parent_summary_diagnostic,
@@ -497,10 +511,73 @@ def run_experiment_cmd(args: argparse.Namespace) -> int:
             execute=args.execute,
             rerun_existing=args.rerun_existing,
             build_analysis=not args.no_analysis,
+            skip_if_root_solved=getattr(args, "skip_children_if_root_solved", False),
         )
     )
     print(format_run_experiment_report(report))
     return 1 if args.execute and report.has_infrastructure_failures else 0
+
+
+def checkpoint_diagnostic_cmd(args: argparse.Namespace) -> int:
+    report = run_checkpoint_diagnostic(
+        CheckpointDiagnosticConfig(
+            root_job_dir=args.root_job_dir,
+            snapshot_name=args.snapshot_name,
+            remaining_token_budget=args.remaining_token_budget,
+            child_job_name=args.child_job_name,
+            clean_job_name=args.clean_job_name,
+            context_mode=args.context_mode,
+            output_path=args.output_path,
+            execute=args.execute,
+        )
+    )
+    print(f"diagnostic_report: {args.output_path or args.root_job_dir / 'checkpoint-diagnostic.json'}")
+    print(f"outcome: {report.outcome}")
+    print(f"root_status: {report.root.status}")
+    return 0
+
+
+def representation_ablation_cmd(args: argparse.Namespace) -> int:
+    report = run_representation_ablation(
+        RepresentationAblationConfig(
+            root_job_dir=args.root_job_dir,
+            snapshot_name=args.snapshot_name,
+            remaining_token_budget=args.remaining_token_budget,
+            job_prefix=args.job_prefix,
+            diff_path=args.diff_path,
+            output_path=args.output_path,
+            execute=args.execute,
+        )
+    )
+    print(
+        f"ablation_report: {args.output_path or args.root_job_dir / 'representation-ablation.json'}"
+    )
+    print(f"arms: {len(report.arms)}")
+    for arm in report.arms:
+        print(
+            f"{arm.name}\t{arm.start_state_type}\t{arm.status}\t"
+            f"cap={arm.planned_token_cap}"
+        )
+    return 0
+
+
+def capture_parent_diff_cmd(args: argparse.Namespace) -> int:
+    import asyncio
+
+    from go_explore.snapshots.capture_diff import capture_parent_diff
+
+    output = args.output_path or args.root_job_dir / "parent.diff"
+    asyncio.run(
+        capture_parent_diff(
+            args.snapshot_name,
+            output,
+            workdir=args.workdir,
+            baseline_image=args.baseline_image,
+        )
+    )
+    print(f"parent_diff: {output}")
+    print(f"bytes: {output.stat().st_size}")
+    return 0
 
 
 def main() -> int:
@@ -716,10 +793,11 @@ def main() -> int:
     )
     fixed_budget_parser.add_argument(
         "--promising-selector-mode",
-        choices=("archive_priority", "validated_progress", "partial_progress"),
+        choices=("archive_priority", "validated_progress", "partial_progress", "grounded_partial_progress"),
         default="archive_priority",
         help="Selector used for promising_branch continuations.",
     )
+    fixed_budget_parser.add_argument("--grounded-preflight-max-probes", type=int, default=3)
     fixed_budget_parser.add_argument(
         "--snapshot",
         action="append",
@@ -783,10 +861,11 @@ def main() -> int:
     viability_parser.add_argument("--branch-root-fraction", type=float, default=0.3)
     viability_parser.add_argument(
         "--promising-selector-mode",
-        choices=("archive_priority", "validated_progress", "partial_progress"),
+        choices=("archive_priority", "validated_progress", "partial_progress", "grounded_partial_progress"),
         default="archive_priority",
         help="Selector used for promising_branch continuations.",
     )
+    viability_parser.add_argument("--grounded-preflight-max-probes", type=int, default=3)
     viability_parser.add_argument(
         "--include-random-control",
         action="store_true",
@@ -985,10 +1064,11 @@ def main() -> int:
     )
     run_parser.add_argument(
         "--promising-selector-mode",
-        choices=("archive_priority", "validated_progress", "partial_progress"),
+        choices=("archive_priority", "validated_progress", "partial_progress", "grounded_partial_progress"),
         default="archive_priority",
         help="Selector used for promising_branch continuations.",
     )
+    run_parser.add_argument("--grounded-preflight-max-probes", type=int, default=3)
     run_parser.add_argument(
         "--execute",
         action="store_true",
@@ -1000,11 +1080,67 @@ def main() -> int:
         help="Run jobs even when <jobs-dir>/<job-name>/result.json already exists.",
     )
     run_parser.add_argument(
+        "--skip-children-if-root-solved",
+        action="store_true",
+        help=(
+            "Do not launch branch children when the root already scored reward "
+            "1.0. Required for Experiment B paired-rescue reporting."
+        ),
+    )
+    run_parser.add_argument(
         "--no-analysis",
         action="store_true",
         help="Skip analysis table generation after execution.",
     )
     run_parser.set_defaults(func=run_experiment_cmd)
+
+    diagnostic_parser = subparsers.add_parser(
+        "checkpoint-diagnostic",
+        help="Run a diagnostic-only restored-child versus clean-retry comparison.",
+    )
+    diagnostic_parser.add_argument("root_job_dir", type=Path)
+    diagnostic_parser.add_argument("--snapshot-name", required=True)
+    diagnostic_parser.add_argument("--remaining-token-budget", type=int, required=True)
+    diagnostic_parser.add_argument("--child-job-name", required=True)
+    diagnostic_parser.add_argument("--clean-job-name", required=True)
+    diagnostic_parser.add_argument(
+        "--context-mode",
+        choices=("preflight_verification", "none", "resume_notice"),
+        default="preflight_verification",
+    )
+    diagnostic_parser.add_argument("--output-path", type=Path)
+    diagnostic_parser.add_argument("--execute", action="store_true")
+    diagnostic_parser.set_defaults(func=checkpoint_diagnostic_cmd)
+
+    ablation_parser = subparsers.add_parser(
+        "representation-ablation",
+        help=(
+            "Claim 1: same checkpoint and remaining token cap across clean, "
+            "diff, diff+transcript, command-replay, and full-snapshot arms."
+        ),
+    )
+    ablation_parser.add_argument("root_job_dir", type=Path)
+    ablation_parser.add_argument("--snapshot-name", required=True)
+    ablation_parser.add_argument("--remaining-token-budget", type=int, required=True)
+    ablation_parser.add_argument("--job-prefix", required=True)
+    ablation_parser.add_argument("--diff-path", type=Path)
+    ablation_parser.add_argument("--output-path", type=Path)
+    ablation_parser.add_argument("--execute", action="store_true")
+    ablation_parser.set_defaults(func=representation_ablation_cmd)
+
+    capture_parser = subparsers.add_parser(
+        "capture-parent-diff",
+        help="Write a host-side git diff from a Daytona snapshot for Claim 1.",
+    )
+    capture_parser.add_argument("root_job_dir", type=Path)
+    capture_parser.add_argument("--snapshot-name", required=True)
+    capture_parser.add_argument("--output-path", type=Path)
+    capture_parser.add_argument("--workdir", default="/app")
+    capture_parser.add_argument(
+        "--baseline-image",
+        help="Prebuilt task image used to diff non-git workspaces.",
+    )
+    capture_parser.set_defaults(func=capture_parent_diff_cmd)
 
     args = parser.parse_args()
     return args.func(args)

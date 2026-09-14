@@ -15,6 +15,7 @@ ArchiveSelectorMode = Literal[
     "archive_priority",
     "validated_progress",
     "partial_progress",
+    "grounded_partial_progress",
     "oracle",
 ]
 
@@ -121,6 +122,18 @@ def select_archive_entries(
             for entry in eligible[:k]
         ]
 
+    if mode == "grounded_partial_progress":
+        eligible = [entry for entry in entries if _is_grounded_partial_progress(entry)]
+        eligible.sort(key=_grounded_sort_key, reverse=True)
+        return [
+            ArchiveSelection(
+                entry=entry,
+                selector_mode=mode,
+                selector_reasons=_grounded_reasons(entry, entries),
+            )
+            for entry in eligible[:k]
+        ]
+
     if mode == "list_order":
         return [
             ArchiveSelection(
@@ -198,3 +211,60 @@ def _partial_progress_reasons(entry: ArchiveEntry) -> tuple[str, ...]:
         reasons.append(f"{entry.tests_failed} tests failed")
     reasons.append("partial validation progress")
     return tuple(reasons)
+
+
+def _is_grounded_partial_progress(entry: ArchiveEntry) -> bool:
+    verification = entry.grounded_verification
+    return bool(
+        verification
+        and verification.status == "failed"
+        and verification.tests_total
+        and verification.tests_passed
+        and verification.tests_failed is not None
+    )
+
+
+def _grounded_sort_key(entry: ArchiveEntry) -> tuple[float, int, float, float]:
+    verification = entry.grounded_verification
+    assert verification is not None and verification.tests_total is not None
+    return (
+        verification.tests_passed / verification.tests_total,
+        -verification.tests_failed if verification.tests_failed is not None else 0,
+        entry.priority,
+        entry.score,
+    )
+
+
+def _grounded_reasons(
+    entry: ArchiveEntry,
+    entries: list[ArchiveEntry],
+) -> tuple[str, ...]:
+    verification = entry.grounded_verification
+    assert verification is not None
+    reasons = [
+        "official preflight verification",
+        f"{verification.tests_passed}/{verification.tests_total} tests passed",
+        f"{verification.tests_failed} tests failed",
+    ]
+    baseline = _grounded_baseline(entry, entries)
+    if baseline is not None:
+        delta = (verification.tests_passed or 0) - (baseline.tests_passed or 0)
+        reasons.append(f"delta_vs_root_baseline={delta:+d} passed")
+    return tuple(reasons)
+
+
+def _grounded_baseline(
+    entry: ArchiveEntry,
+    entries: list[ArchiveEntry],
+):
+    verification = entry.grounded_verification
+    assert verification is not None
+    comparable = [
+        candidate.grounded_verification
+        for candidate in entries
+        if candidate.trial_name == entry.trial_name
+        and candidate.step_id <= entry.step_id
+        and candidate.grounded_verification is not None
+        and candidate.grounded_verification.tests_total == verification.tests_total
+    ]
+    return comparable[0] if comparable else None

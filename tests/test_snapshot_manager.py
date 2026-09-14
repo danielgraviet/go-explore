@@ -13,6 +13,7 @@ from go_explore.snapshots import (
     context_from_atif_step,
 )
 from go_explore.snapshots.models import CONTEXT_FILE_PATH
+from go_explore.snapshots.models import GroundedVerification
 
 
 def test_snapshot_manager_processes_policy_candidates_into_records():
@@ -139,6 +140,93 @@ def test_snapshot_manager_accepts_replaceable_backend():
         assert records[0].candidate.metadata["backend_note"] == "captured"
 
     asyncio.run(run_test())
+
+
+def test_snapshot_manager_probes_test_candidates_before_snapshotting():
+    calls: list[str] = []
+
+    class RecordingBackend:
+        async def create_snapshot(self, candidate, context):
+            calls.append(f"snapshot:{candidate.grounded_verification.status}")
+            from go_explore.snapshots import SnapshotHandle
+
+            return SnapshotHandle(backend="recording", restore_ref="snap")
+
+    async def verify(candidate, context):
+        calls.append("verify")
+        return GroundedVerification(
+            status="failed", tests_passed=2, tests_failed=1, tests_total=3
+        )
+
+    async def run_test():
+        manager = AsyncSnapshotManager(
+            policy=InterestingAgentStepPolicy(),
+            backend=RecordingBackend(),
+            grounded_verifier=verify,
+            grounded_probe_limit=1,
+        )
+        context = context_from_atif_step(
+            {
+                "step_id": 1,
+                "source": "agent",
+                "tool_calls": [
+                    {
+                        "function_name": "bash_command",
+                        "arguments": {"keystrokes": "pytest -q"},
+                    }
+                ],
+                "observation": {"results": [{"content": "2 passed, 1 failed"}]},
+            },
+            trial_name="trial",
+        )
+        records = await manager.process_step(context)
+        assert records[0].candidate.grounded_verification.tests_passed == 2
+
+    asyncio.run(run_test())
+    assert calls == ["verify", "snapshot:failed"]
+
+
+def test_snapshot_manager_probes_file_edits_before_snapshotting():
+    calls: list[str] = []
+
+    class FileEditPolicy:
+        def candidates_for_step(self, context):
+            return [
+                SnapshotCandidate(
+                    id="trial:step-1",
+                    event=SnapshotEvent.FILE_EDIT,
+                    changed_files=("main.py",),
+                )
+            ]
+
+    class RecordingBackend:
+        async def create_snapshot(self, candidate, context):
+            calls.append(f"snapshot:{candidate.grounded_verification.status}")
+            from go_explore.snapshots import SnapshotHandle
+
+            return SnapshotHandle(backend="recording", restore_ref="snap")
+
+    async def verify(candidate, context):
+        calls.append("verify")
+        return GroundedVerification(
+            status="failed", tests_passed=1, tests_failed=1, tests_total=2
+        )
+
+    async def run_test():
+        manager = AsyncSnapshotManager(
+            policy=FileEditPolicy(),
+            backend=RecordingBackend(),
+            grounded_verifier=verify,
+            grounded_probe_limit=1,
+        )
+        context = context_from_atif_step(
+            {"step_id": 1, "source": "agent"}, trial_name="trial"
+        )
+        records = await manager.process_step(context)
+        assert records[0].candidate.grounded_verification.tests_total == 2
+
+    asyncio.run(run_test())
+    assert calls == ["verify", "snapshot:failed"]
 
 
 def test_snapshot_manager_deletes_pruned_remote_snapshots(tmp_path):

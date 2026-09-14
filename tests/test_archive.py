@@ -12,6 +12,7 @@ from go_explore.snapshots.archive import (
     cell_key_for,
 )
 from go_explore.snapshots.models import (
+    GroundedVerification,
     SnapshotCandidate,
     SnapshotEvent,
     SnapshotRecord,
@@ -110,6 +111,39 @@ def test_add_ignores_candidates_without_a_restore_ref():
     archive = SnapshotArchive()
     assert archive.add(_candidate(restore_ref="")) is None
     assert len(archive) == 0
+
+
+def test_archive_round_trips_grounded_verification(tmp_path):
+    path = tmp_path / "archive.json"
+    archive = SnapshotArchive(path)
+    candidate = _candidate(restore_ref="snap-grounded")
+    archive.add(
+        SnapshotCandidate(
+            **{
+                **candidate.__dict__,
+                "grounded_verification": GroundedVerification(
+                    status="failed",
+                    tests_passed=3,
+                    tests_failed=1,
+                    tests_total=4,
+                    failing_tests=("test_edge_case",),
+                    duration_seconds=2.5,
+                ),
+            }
+        )
+    )
+    archive.save()
+
+    loaded = SnapshotArchive.load(path)
+
+    assert loaded.get(cell_key_for(candidate)).grounded_verification == GroundedVerification(
+        status="failed",
+        tests_passed=3,
+        tests_failed=1,
+        tests_total=4,
+        failing_tests=("test_edge_case",),
+        duration_seconds=2.5,
+    )
 
 
 def test_select_returns_best_cells_first():

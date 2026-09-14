@@ -405,6 +405,18 @@ def test_plan_fixed_budget_command_writes_manifest(tmp_path, capsys):
     assert data["jobs"][-1]["budget"]["token_budget"] == 75_000
     assert data["jobs"][-1]["context_mode"] == "critical_parent_summary"
     assert "context_mode=critical_parent_summary" in data["jobs"][-1]["command"]
+    retry_cmd = " ".join(
+        " ".join(job["command"])
+        for job in data["jobs"]
+        if job["role"] == "retry_attempt"
+    )
+    child_cmd = " ".join(data["jobs"][-1]["command"])
+    assert "snapshot_policy=none" in retry_cmd
+    assert "snapshot_policy=none" in child_cmd
+    root_cmd = " ".join(
+        " ".join(job["command"]) for job in data["jobs"] if job["role"] == "root"
+    )
+    assert "snapshot_policy=none" not in root_cmd
 
 
 def test_run_experiment_command_dry_run_writes_manifest(tmp_path, capsys):

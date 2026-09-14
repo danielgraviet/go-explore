@@ -1,0 +1,3 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+recovery-extract-elf-seed-6,extract-elf,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,3,3,25,2,1070868,0.32850985,607.217413,173.0004089980066,9.067908,true
+recovery-extract-elf-seed-6,extract-elf,,,retry,anthropic/claude-haiku-4-5-20251001,false,3,3,0,0,1145269,0.41753,466.303169,0.0,,false

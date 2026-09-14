@@ -1,0 +1,59 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-regex-log-promising-branch-seed-6-snapshot-0/regex-log__yE4L2i5",
+      "field": "total_tokens",
+      "message": "observed total_tokens (368528) exceeded the enforced token_budget (350000) by 18528; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-regex-log-promising-branch-seed-6-snapshot-1/regex-log__4qGcZtq",
+      "field": "total_tokens",
+      "message": "observed total_tokens (358195) exceeded the enforced token_budget (350000) by 8195; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-regex-log-retry-seed-6-attempt-2/regex-log__uXPDhsq",
+      "field": "total_tokens",
+      "message": "observed total_tokens (360472) exceeded the enforced token_budget (333333) by 27139; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-regex-log-promising-branch-seed-6-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-regex-log-promising-branch-seed-6-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-regex-log-promising-branch-seed-6-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-regex-log-retry-seed-6-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-regex-log-retry-seed-6-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-regex-log-retry-seed-6-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

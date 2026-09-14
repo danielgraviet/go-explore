@@ -554,6 +554,27 @@ def test_interesting_policy_ignores_low_signal_agent_step():
     assert policy.candidates_for_step(context) == []
 
 
+def test_never_snapshot_policy_emits_no_candidates():
+    from go_explore.snapshots.policies import NeverSnapshotPolicy
+
+    policy = NeverSnapshotPolicy()
+    context = context_from_atif_step(
+        {
+            "step_id": 1,
+            "source": "agent",
+            "tool_calls": [
+                {
+                    "function_name": "bash_command",
+                    "arguments": {"keystrokes": "echo hi > /app/out.txt\n"},
+                }
+            ],
+            "observation": {"results": [{"content": "ok"}]},
+        },
+        trial_name="trial",
+    )
+    assert policy.candidates_for_step(context) == []
+
+
 def test_in_memory_snapshot_store_put_get_list_and_replace():
     first = SnapshotRecord(
         candidate=SnapshotCandidate(id="snapshot-1", event=SnapshotEvent.AGENT_STEP),

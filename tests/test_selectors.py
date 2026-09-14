@@ -5,7 +5,11 @@ import json
 import pytest
 
 from go_explore.snapshots.archive import SnapshotArchive
-from go_explore.snapshots.models import SnapshotCandidate, SnapshotEvent
+from go_explore.snapshots.models import (
+    GroundedVerification,
+    SnapshotCandidate,
+    SnapshotEvent,
+)
 from go_explore.snapshots.selectors import (
     load_oracle_labels,
     select_archive_entries,
@@ -212,6 +216,46 @@ def test_partial_progress_selector_accepts_file_edits_without_validation_signal(
         "2 changed files",
         "file edit without validation signal",
         "partial progress candidate",
+    )
+
+
+def test_grounded_partial_progress_prefers_official_partial_progress():
+    archive = SnapshotArchive()
+    for name, passed, failed in (
+        ("snap-low", 4, 6),
+        ("snap-high", 8, 2),
+        ("snap-passing", 10, 0),
+        ("snap-unavailable", None, None),
+    ):
+        candidate = _candidate(
+            changed_files=(f"{name}.py",),
+            event=SnapshotEvent.TEST_RUN,
+            restore_ref=name,
+        )
+        verification = GroundedVerification(
+            status="failed" if failed else "passed",
+            tests_passed=passed,
+            tests_failed=failed,
+            tests_total=10 if passed is not None else None,
+        )
+        if name == "snap-unavailable":
+            verification = GroundedVerification(status="unavailable", error="timeout")
+        archive.add(
+            SnapshotCandidate(
+                **{
+                    **candidate.__dict__,
+                    "grounded_verification": verification,
+                }
+            )
+        )
+
+    selected = select_archive_entries(archive, mode="grounded_partial_progress", k=3)
+
+    assert [item.entry.snapshot_name for item in selected] == ["snap-high", "snap-low"]
+    assert selected[0].selector_reasons[:3] == (
+        "official preflight verification",
+        "8/10 tests passed",
+        "2 tests failed",
     )
 
 

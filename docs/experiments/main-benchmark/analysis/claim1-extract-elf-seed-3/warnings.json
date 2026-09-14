@@ -1,0 +1,17 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/claim1-extract-elf-single-seed-3/extract-elf__PyWqsDL",
+      "field": "total_tokens",
+      "message": "observed total_tokens (340127) exceeded the enforced token_budget (300000) by 40127; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/claim1-extract-elf-single-seed-3",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-extract-elf-promising-branch-seed-7-snapshot-0/extract-elf__b6PQmT6",
+      "field": "total_tokens",
+      "message": "observed total_tokens (407068) exceeded the enforced token_budget (350000) by 57068; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-extract-elf-promising-branch-seed-7-snapshot-1/extract-elf__jvNaYca",
+      "field": "total_tokens",
+      "message": "observed total_tokens (355382) exceeded the enforced token_budget (350000) by 5382; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-extract-elf-retry-seed-7-attempt-0/extract-elf__R5wfAAD",
+      "field": "total_tokens",
+      "message": "observed total_tokens (338532) exceeded the enforced token_budget (333334) by 5198; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-extract-elf-promising-branch-seed-7-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-extract-elf-promising-branch-seed-7-snapshot-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-extract-elf-promising-branch-seed-7-snapshot-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-extract-elf-retry-seed-7-attempt-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-extract-elf-retry-seed-7-attempt-1",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "/Users/danielgraviet/Desktop/projects/go-explore/jobs/recovery-extract-elf-retry-seed-7-attempt-2",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

@@ -12,12 +12,16 @@ from go_explore.snapshots.command_replay import (
 from go_explore.snapshots.policies import (
     EveryAgentStepPolicy,
     InterestingAgentStepPolicy,
+    NeverSnapshotPolicy,
     SnapshotPolicy,
 )
 
 _SNAPSHOT_POLICIES: dict[str, type[SnapshotPolicy]] = {
     "every_step": EveryAgentStepPolicy,
     "interesting": InterestingAgentStepPolicy,
+    "none": NeverSnapshotPolicy,
+    "off": NeverSnapshotPolicy,
+    "never": NeverSnapshotPolicy,
 }
 
 
@@ -121,6 +125,9 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
         preflight_verification_timeout_sec = float(
             kwargs.pop("preflight_verification_timeout_sec", 180.0)
         )
+        grounded_preflight_max_probes = int(
+            kwargs.pop("grounded_preflight_max_probes", 0)
+        )
         diff_path = kwargs.pop("diff_path", None)
         diff_apply_timeout_sec = float(kwargs.pop("diff_apply_timeout_sec", 60.0))
         replay_manifest_path = kwargs.pop("replay_manifest_path", None)
@@ -131,6 +138,7 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
             kwargs.pop("replay_total_budget_sec", DEFAULT_TOTAL_BUDGET_SEC)
         )
         token_budget = _as_optional_int(kwargs.pop("token_budget", None))
+        snapshot_retention_limit = kwargs.pop("snapshot_retention_limit", None)
         verify_before_complete = _as_bool(kwargs.pop("verify_before_complete", False))
         verify_before_complete_max_attempts = int(
             kwargs.pop("verify_before_complete_max_attempts", 3)
@@ -153,12 +161,14 @@ class SnapshotAwareTerminus2(SnapshotAwareAgent):
             preinstall_tmux=preinstall_tmux,
             tmux_install_timeout_sec=tmux_install_timeout_sec,
             preflight_verification_timeout_sec=preflight_verification_timeout_sec,
+            grounded_preflight_max_probes=grounded_preflight_max_probes,
             diff_path=diff_path,
             diff_apply_timeout_sec=diff_apply_timeout_sec,
             replay_manifest_path=replay_manifest_path,
             replay_command_timeout_sec=replay_command_timeout_sec,
             replay_total_budget_sec=replay_total_budget_sec,
             token_budget=token_budget,
+            snapshot_retention_limit=snapshot_retention_limit,
             verify_before_complete=verify_before_complete,
             verify_before_complete_max_attempts=verify_before_complete_max_attempts,
             logs_dir=logs_dir,

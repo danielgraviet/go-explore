@@ -1,0 +1,4 @@
+experiment_id,task_id,difficulty,category,method,model_class,solved,n_runs,n_attempts,n_snapshots_created,n_snapshots_forked,total_tokens,total_cost_usd,wall_clock_seconds,snapshot_overhead_seconds,restore_overhead_seconds,unique_success_beyond_baselines
+env-search-seed-0,staged-service-repair,,,promising_branch,anthropic/claude-haiku-4-5-20251001,true,1,1,1,0,22615,0.023885550000000005,55.658358,7.507631500000571,2.147349,false
+env-search-seed-0,staged-service-repair,,,retry,anthropic/claude-haiku-4-5-20251001,true,3,3,0,0,355084,0.13044590000000003,249.07358399999998,0.0,6.481006,false
+env-search-seed-0,unknown,,,promising_branch,anthropic/claude-haiku-4-5-20251001,false,2,2,0,0,,,,,,false

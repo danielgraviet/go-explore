@@ -8,6 +8,7 @@ import inspect
 import json
 import os
 from pathlib import Path
+from time import monotonic
 from typing import Any
 
 # TODO: clean up messy imports. terminal bench is not optional, so users will always have. 
@@ -52,7 +53,12 @@ from go_explore.snapshots.command_replay import (
 from go_explore.snapshots.diff_only import DiffApplyFailed, apply_parent_diff
 from go_explore.snapshots.live import AsyncLiveSnapshotSession
 from go_explore.snapshots.manager import AsyncSnapshotManager
-from go_explore.snapshots.models import CONTEXT_FILE_PATH, SnapshotContext
+from go_explore.snapshots.models import (
+    CONTEXT_FILE_PATH,
+    GroundedVerification,
+    SnapshotCandidate,
+    SnapshotContext,
+)
 from go_explore.snapshots.policies import InterestingAgentStepPolicy, SnapshotPolicy
 from go_explore.snapshots.replay import load_atif_trajectory_steps, process_atif_trajectory
 
@@ -78,6 +84,7 @@ class SnapshotAwareAgent(BaseAgent):
         preinstall_tmux: bool = False,
         tmux_install_timeout_sec: float = 360.0,
         preflight_verification_timeout_sec: float = 180.0,
+        grounded_preflight_max_probes: int = 0,
         snapshot_retention_limit: int | str | None = None,
         diff_path: str | Path | None = None,
         diff_apply_timeout_sec: float = 60.0,
@@ -108,6 +115,7 @@ class SnapshotAwareAgent(BaseAgent):
         self._preinstall_tmux = preinstall_tmux
         self._tmux_install_timeout_sec = tmux_install_timeout_sec
         self._preflight_verification_timeout_sec = preflight_verification_timeout_sec
+        self._grounded_preflight_max_probes = grounded_preflight_max_probes
         self._diff_path = Path(diff_path) if diff_path else None
         self._diff_apply_timeout_sec = diff_apply_timeout_sec
         self._replay_manifest_path = (
@@ -138,6 +146,8 @@ class SnapshotAwareAgent(BaseAgent):
         # Store state for step tracking
         self._step_counter = 0
         self._trial_name: str | None = None
+        self._trial_started_at: float | None = None
+        self._latest_tokens_consumed: int | None = None
         self._commands_in_step: list[str] = []
         self._trajectory_log: list[str] = []
 
@@ -356,12 +366,14 @@ class SnapshotAwareAgent(BaseAgent):
             (trial_dir.name if trial_dir else None) or session_id or "trial"
         )
         self._step_counter = 0
+        self._trial_started_at = monotonic()
         self._debug_log_path = (
             Path("jobs") / f"{self._trial_name}-hook_debug.log"
             if self._debug_enabled()
             else None
         )
         self._ensure_snapshot_session(getattr(environment, "_sandbox", None))
+        self._configure_grounded_snapshot_probing(environment)
         self._hook_agent_loop()
         self._hook_token_budget()
         self._hook_completion_verification(environment)
@@ -369,6 +381,41 @@ class SnapshotAwareAgent(BaseAgent):
         instruction = await self._apply_context_mode(instruction, environment)
 
         await self._wrapped_agent.run(instruction, environment, context)
+
+    def _configure_grounded_snapshot_probing(self, environment: Any) -> None:
+        if self._snapshot_session is None or self._grounded_preflight_max_probes <= 0:
+            return
+
+        async def verify(
+            _candidate: SnapshotCandidate,
+            _context: SnapshotContext,
+        ) -> GroundedVerification:
+            from go_explore.snapshots.preflight import (
+                PREFLIGHT_TEST_SCRIPT,
+                run_preflight_verification,
+            )
+
+            started_at = monotonic()
+            result = await run_preflight_verification(
+                environment,
+                timeout_sec=self._preflight_verification_timeout_sec,
+            )
+            return GroundedVerification(
+                status=result.status,
+                tests_passed=result.tests_passed,
+                tests_failed=result.tests_failed,
+                tests_total=result.tests_total,
+                failing_tests=result.failing_tests[:10],
+                verifier_command=PREFLIGHT_TEST_SCRIPT,
+                timeout_sec=self._preflight_verification_timeout_sec,
+                duration_seconds=monotonic() - started_at,
+                error=result.error,
+            )
+
+        self._snapshot_session.manager.configure_grounded_verifier(
+            verify,
+            probe_limit=self._grounded_preflight_max_probes,
+        )
 
     async def _process_step_snapshot(
         self,
@@ -406,6 +453,14 @@ class SnapshotAwareAgent(BaseAgent):
             observation_text=terminal_output,
             environment_id=getattr(self._sandbox, "id", None),
             trajectory_summary=self._build_trajectory_summary(commands, terminal_output),
+            metadata={
+                "checkpoint_tokens": self._latest_tokens_consumed,
+                "checkpoint_elapsed_seconds": (
+                    monotonic() - self._trial_started_at
+                    if self._trial_started_at is not None
+                    else None
+                ),
+            },
         )
 
         # Process through snapshot manager
@@ -893,6 +948,7 @@ class SnapshotAwareAgent(BaseAgent):
 
         async def wrapped_query_llm(chat: Any, prompt: Any, *args: Any, **kwargs: Any) -> Any:
             consumed = tokens_consumed(chat)
+            self._latest_tokens_consumed = consumed
             if is_budget_exhausted(consumed, self._token_budget):
                 self._log_budget_event(
                     "budget_exhausted",
@@ -903,7 +959,9 @@ class SnapshotAwareAgent(BaseAgent):
                     token_budget=self._token_budget,
                     tokens_consumed=consumed,
                 )
-            return await original_query_llm(chat, prompt, *args, **kwargs)
+            result = await original_query_llm(chat, prompt, *args, **kwargs)
+            self._latest_tokens_consumed = tokens_consumed(chat)
+            return result
 
         wrapped_query_llm._go_explore_budget_wrapped = True  # type: ignore[attr-defined]
         self._wrapped_agent._query_llm = wrapped_query_llm

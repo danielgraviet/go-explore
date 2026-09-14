@@ -110,6 +110,7 @@ class FixedBudgetPlanConfig:
     snapshots: tuple[str, ...] = ()
     branch_context_mode: str = DEFAULT_BRANCH_CONTEXT_MODE
     promising_selector_mode: str = "archive_priority"
+    grounded_preflight_max_probes: int = 3
 
 
 @dataclass(frozen=True)
@@ -266,11 +267,18 @@ def _validate_config(config: FixedBudgetPlanConfig) -> None:
         "archive_priority",
         "validated_progress",
         "partial_progress",
+        "grounded_partial_progress",
     }:
         raise ValueError(
             "promising_selector_mode must be 'archive_priority', "
-            "'validated_progress', or 'partial_progress'."
+            "'validated_progress', 'partial_progress', or "
+            "'grounded_partial_progress'."
         )
+    if (
+        config.promising_selector_mode == "grounded_partial_progress"
+        and config.grounded_preflight_max_probes < 1
+    ):
+        raise ValueError("grounded_preflight_max_probes must be >= 1.")
 
 
 def _plan_single(
@@ -312,9 +320,13 @@ def _plan_retry(
     jobs: list[PlannedExperimentJob] = []
     for index, token_budget in enumerate(token_budgets):
         job_name = f"{config.job_prefix}-retry-seed-{seed}-attempt-{index}"
-        run_config = _with_token_budget(
-            _with_job_name(config.base_config, job_name),
-            token_budget,
+        run_config = _with_agent_kwarg(
+            _with_token_budget(
+                _with_job_name(config.base_config, job_name),
+                token_budget,
+            ),
+            "snapshot_policy",
+            "none",
         )
         jobs.append(
             PlannedExperimentJob(
@@ -365,6 +377,16 @@ def _plan_branch(
     )
     method_slug = method.replace("_", "-")
     root_job_name = f"{config.job_prefix}-{method_slug}-seed-{seed}-root"
+    root_config = _with_token_budget(
+        _with_job_name(config.base_config, root_job_name),
+        root_budget,
+    )
+    if selector_mode == "grounded_partial_progress":
+        root_config = _with_agent_kwarg(
+            root_config,
+            "grounded_preflight_max_probes",
+            str(config.grounded_preflight_max_probes),
+        )
     jobs: list[PlannedExperimentJob] = [
         PlannedExperimentJob(
             method=method,
@@ -372,12 +394,7 @@ def _plan_branch(
             seed=seed,
             job_name=root_job_name,
             command=tuple(
-                build_harbor_command(
-                    _with_token_budget(
-                        _with_job_name(config.base_config, root_job_name),
-                        root_budget,
-                    )
-                )
+                build_harbor_command(root_config)
             ),
             budget=BudgetAllocation(
                 token_budget=root_budget,
@@ -522,7 +539,10 @@ def _snapshot_child_config(
         job_name=job_name,
         export_traces=config.export_traces,
         environment_kwargs=(f"snapshot_template_name={snapshot_name}",),
-        extra_args=_with_context_mode_extra_args(config.extra_args, context_mode),
+        extra_args=_with_context_mode_extra_args(
+            with_agent_kwarg(config.extra_args, "snapshot_policy", "none"),
+            context_mode,
+        ),
     )
 
 
@@ -548,3 +568,11 @@ def _with_context_mode_extra_args(
         index += 1
     cleaned.extend(["--ak", f"context_mode={context_mode}"])
     return tuple(cleaned)
+
+
+def _with_agent_kwarg(
+    config: HarborRunConfig,
+    key: str,
+    value: str,
+) -> HarborRunConfig:
+    return replace(config, extra_args=with_agent_kwarg(config.extra_args, key, value))

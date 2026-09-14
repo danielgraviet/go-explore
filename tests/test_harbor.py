@@ -83,3 +83,20 @@ def test_environment_with_repo_path_precedes_existing_pythonpath():
 
     assert environment["PYTHONPATH"].split(":")[0].endswith("/go-explore")
     assert environment["PYTHONPATH"].endswith("/tmp/other")
+
+
+def test_build_harbor_command_accepts_local_task_path():
+    from go_explore.env_progress import TASK_DIR
+
+    cmd = build_harbor_command(
+        HarborRunConfig(
+            agent="oracle",
+            env="daytona",
+            jobs_dir=Path("jobs"),
+            path=TASK_DIR,
+            job_name="env-progress-oracle-bake",
+        )
+    )
+    assert "--path" in cmd
+    assert str(TASK_DIR) in cmd
+    assert "--dataset" not in cmd

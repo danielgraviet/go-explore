@@ -1,0 +1,41 @@
+{
+  "schema_version": "go-explore-analysis-warnings-v1",
+  "warnings": [
+    {
+      "artifact": "jobs/aug6-grounded-smoke-extract-elf-promising-branch-seed-1-root/extract-elf__k8DgG4P",
+      "field": "total_tokens",
+      "message": "observed total_tokens (347624) exceeded the enforced token_budget (300000) by 47624; this is the expected bounded overshoot from the in-flight request that crossed the limit, not an enforcement failure, but should be reported alongside solve-rate claims",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/aug6-grounded-smoke-extract-elf-promising-branch-seed-1-cont-0",
+      "field": "job_dir",
+      "message": "planned job result is missing",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/aug6-grounded-smoke-extract-elf-promising-branch-seed-1-root",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    },
+    {
+      "artifact": "jobs/aug6-grounded-smoke-extract-elf-promising-branch-seed-1-cont-0",
+      "field": "total_tokens",
+      "message": "token accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/aug6-grounded-smoke-extract-elf-promising-branch-seed-1-cont-0",
+      "field": "cost_usd",
+      "message": "cost accounting is unknown",
+      "severity": "warning"
+    },
+    {
+      "artifact": "jobs/aug6-grounded-smoke-extract-elf-promising-branch-seed-1-cont-0",
+      "field": "repeated_setup_score",
+      "message": "repeated-work metric is unsupported for this analysis run because no repeated-work report was provided",
+      "severity": "info"
+    }
+  ]
+}

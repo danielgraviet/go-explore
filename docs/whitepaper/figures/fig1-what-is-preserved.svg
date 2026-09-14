@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 268" role="img" aria-labelledby="t1 d1">
+  <title id="t1">What the next attempt starts from</title>
+  <desc id="d1">Four methods of carrying state between coding-agent attempts: retry from scratch, text and git patch, filesystem, and full sandbox snapshot.</desc>
+  <rect width="840" height="268" fill="#ffffff"/>
+  <defs>
+    <marker id="fig1arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#222222"/>
+    </marker>
+  </defs>
+  <rect x="28" y="18" width="186" height="168" fill="#ffffff" stroke="#222222" stroke-width="1.0"/>
+  <rect x="85.0" y="62" width="72" height="56" fill="none" stroke="#888888" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="38" y="36" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="13" font-style="italic" fill="#222222">(a)</text><text x="121.0" y="208" text-anchor="middle" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="13" fill="#222222">Retry from scratch</text><text x="121.0" y="226" text-anchor="middle" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="11" fill="#888888">original repository</text><rect x="230" y="18" width="186" height="168" fill="#ffffff" stroke="#222222" stroke-width="1.0"/>
+  <rect x="283.0" y="58" width="38" height="50" fill="#ffffff" stroke="#222222" stroke-width="1.1"/>
+  <line x1="291.0" y1="70" x2="313.0" y2="70" stroke="#222222" stroke-width="1"/>
+  <line x1="291.0" y1="78" x2="309.0" y2="78" stroke="#222222" stroke-width="1"/>
+  <line x1="291.0" y1="86" x2="313.0" y2="86" stroke="#222222" stroke-width="1"/>
+  <rect x="329.0" y="66" width="36" height="36" fill="#ffffff" stroke="#222222" stroke-width="1.1"/>
+  <text x="347.0" y="88" text-anchor="middle" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="11" fill="#222222">±</text>
+<text x="240" y="36" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="13" font-style="italic" fill="#222222">(b)</text><text x="323.0" y="208" text-anchor="middle" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="13" fill="#222222">Text and git patch</text><text x="323.0" y="226" text-anchor="middle" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="11" fill="#888888">notes, source diffs</text><rect x="432" y="18" width="186" height="168" fill="#ffffff" stroke="#222222" stroke-width="1.0"/>
+  <rect x="497.0" y="82" width="48" height="32" fill="#ffffff" stroke="#222222" stroke-width="1.1"/>
+  <rect x="503.0" y="72" width="48" height="32" fill="#ffffff" stroke="#222222" stroke-width="1.1"/>
+  <rect x="509.0" y="62" width="48" height="32" fill="#ffffff" stroke="#222222" stroke-width="1.1"/>
+  <line x1="519.0" y1="76" x2="547.0" y2="76" stroke="#222222" stroke-width="1"/>
+  <line x1="519.0" y1="84" x2="541.0" y2="84" stroke="#222222" stroke-width="1"/>
+<text x="442" y="36" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="13" font-style="italic" fill="#222222">(c)</text><text x="525.0" y="208" text-anchor="middle" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="13" fill="#222222">Filesystem</text><text x="525.0" y="226" text-anchor="middle" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="11" fill="#888888">files on disk</text><rect x="634" y="18" width="186" height="168" fill="#f3f7fb" stroke="#0072b2" stroke-width="1.5"/>
+  <rect x="681.0" y="54" width="92" height="72" fill="#ffffff" stroke="#0072b2" stroke-width="1.6"/>
+  <rect x="691.0" y="66" width="28" height="20" fill="#ffffff" stroke="#0072b2" stroke-width="1"/>
+  <rect x="695.0" y="62" width="28" height="20" fill="#ffffff" stroke="#0072b2" stroke-width="1"/>
+  <ellipse cx="745.0" cy="76" rx="12" ry="6" fill="none" stroke="#0072b2" stroke-width="1.1"/>
+  <rect x="733.0" y="76" width="24" height="14" fill="none" stroke="#0072b2" stroke-width="1.1"/>
+  <ellipse cx="745.0" cy="90" rx="12" ry="6" fill="none" stroke="#0072b2" stroke-width="1.1"/>
+  <circle cx="703.0" cy="106" r="5" fill="none" stroke="#0072b2" stroke-width="1.1"/>
+  <circle cx="721.0" cy="106" r="5" fill="#0072b2" fill-opacity="0.15" stroke="#0072b2" stroke-width="1.1"/>
+<text x="644" y="36" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="13" font-style="italic" fill="#222222">(d)</text><text x="727.0" y="208" text-anchor="middle" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="13" fill="#222222">Full sandbox snapshot</text><text x="727.0" y="226" text-anchor="middle" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="11" fill="#888888">live machine</text>
+  <line x1="28" y1="246" x2="820" y2="246" stroke="#222222" stroke-width="1" marker-end="url(#fig1arrow)"/>
+  <text x="424.0" y="262" text-anchor="middle" font-family="Times New Roman, Times, Liberation Serif, serif" font-size="11" fill="#888888">more inherited state</text>
+</svg>

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from time import monotonic
 
 from go_explore.snapshots.backends import (
@@ -11,6 +11,7 @@ from go_explore.snapshots.metrics import SnapshotProcessingResult, SnapshotTimin
 from go_explore.snapshots.models import (
     SnapshotCandidate,
     SnapshotContext,
+    GroundedVerification,
     SnapshotHandle,
     SnapshotRecord,
 )
@@ -26,10 +27,18 @@ class AsyncSnapshotManager:
         policy: SnapshotPolicy,
         store: SnapshotStore | None = None,
         backend: AsyncSnapshotBackend | None = None,
+        grounded_verifier: Callable[
+            [SnapshotCandidate, SnapshotContext], Awaitable[GroundedVerification]
+        ]
+        | None = None,
+        grounded_probe_limit: int = 0,
     ):
         self._policy = policy
         self._store = store or InMemorySnapshotStore()
         self._backend = backend or AsyncNoopSnapshotBackend()
+        self._grounded_verifier = grounded_verifier
+        self._grounded_probe_limit = grounded_probe_limit
+        self._grounded_probe_count = 0
 
     @property
     def store(self) -> SnapshotStore:
@@ -38,6 +47,19 @@ class AsyncSnapshotManager:
     @property
     def backend(self) -> AsyncSnapshotBackend:
         return self._backend
+
+    def configure_grounded_verifier(
+        self,
+        verifier: Callable[
+            [SnapshotCandidate, SnapshotContext], Awaitable[GroundedVerification]
+        ]
+        | None,
+        *,
+        probe_limit: int,
+    ) -> None:
+        self._grounded_verifier = verifier
+        self._grounded_probe_limit = probe_limit
+        self._grounded_probe_count = 0
 
     async def process_step(self, context: SnapshotContext) -> list[SnapshotRecord]:
         return list((await self.process_step_with_metrics(context)).records)
@@ -58,6 +80,7 @@ class AsyncSnapshotManager:
         store_seconds = 0.0
 
         for candidate in candidates:
+            candidate = await self._with_grounded_verification(candidate, context)
             backend_started_at = clock()
             handle = await self._backend.create_snapshot(candidate, context)
             backend_finished_at = clock()
@@ -99,6 +122,35 @@ class AsyncSnapshotManager:
     def list(self) -> list[SnapshotRecord]:
         return self._store.list()
 
+    async def _with_grounded_verification(
+        self,
+        candidate: SnapshotCandidate,
+        context: SnapshotContext,
+    ) -> SnapshotCandidate:
+        if (
+            self._grounded_verifier is None
+            or self._grounded_probe_count >= self._grounded_probe_limit
+            or not _is_grounded_probe_candidate(candidate)
+        ):
+            return candidate
+
+        self._grounded_probe_count += 1
+        verification = await self._grounded_verifier(candidate, context)
+        return SnapshotCandidate(
+            id=candidate.id,
+            event=candidate.event,
+            environment_id=candidate.environment_id,
+            restore_ref=candidate.restore_ref,
+            trace_path=candidate.trace_path,
+            tests_passed=candidate.tests_passed,
+            tests_failed=candidate.tests_failed,
+            changed_files=candidate.changed_files,
+            command=candidate.command,
+            notes=candidate.notes,
+            metadata=candidate.metadata,
+            grounded_verification=verification,
+        )
+
 
 def _candidate_with_handle(
     candidate: SnapshotCandidate,
@@ -123,6 +175,7 @@ def _candidate_with_handle(
             "snapshot_backend": handle.backend,
             "snapshot_backend_seconds": backend_seconds,
         },
+        grounded_verification=candidate.grounded_verification,
     )
 
 
@@ -151,3 +204,17 @@ async def _delete_pruned_remote_snapshots(store, backend: AsyncSnapshotBackend) 
             await delete_snapshot(snapshot_name)
         except Exception as error:
             print(f"Warning: failed to delete pruned snapshot {snapshot_name}: {error}")
+
+
+def _is_grounded_probe_candidate(candidate: SnapshotCandidate) -> bool:
+    """Use edits as bounded probe opportunities, never as selection evidence.
+
+    The live hook commonly observes a file edit before it sees a recognized
+    test command. Probing that checkpoint lets the official verifier decide
+    whether the edit represents real partial progress; the grounded selector
+    still rejects it when the verifier has no eligible evidence.
+    """
+    return bool(candidate.changed_files) or candidate.event.value == "test_run" or bool(
+        candidate.metadata.get("setup_complete")
+        or candidate.metadata.get("persistent_progress")
+    )

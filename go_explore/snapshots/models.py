@@ -27,6 +27,22 @@ class SnapshotEvent(StrEnum):
 
 
 @dataclass(frozen=True)
+class GroundedVerification:
+    """Official verifier evidence observed immediately before snapshot capture."""
+
+    status: str
+    tests_passed: int | None = None
+    tests_failed: int | None = None
+    tests_total: int | None = None
+    failing_tests: tuple[str, ...] = ()
+    verifier_command: str = "/tests/test.sh"
+    timeout_sec: float | None = None
+    duration_seconds: float | None = None
+    error: str | None = None
+    source: str = "official_preflight"
+
+
+@dataclass(frozen=True)
 class SnapshotCandidate:
     id: str
     event: SnapshotEvent
@@ -39,6 +55,7 @@ class SnapshotCandidate:
     command: str | None = None
     notes: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
+    grounded_verification: GroundedVerification | None = None
 
 
 @dataclass(frozen=True)
