@@ -1,0 +1,15 @@
+%%%%%%%% Internal GTM / sales build -> gtm-main.pdf %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Do NOT upload the output of this file to a submission site. It shows author
+% names and affiliations, which would break MLSys double-blind review.
+%
+% This is a thin wrapper with no content of its own. All text, figures, and
+% tables live in main.tex, so the two PDFs can never drift apart. Defining
+% \preprintbuild makes the MLSys style reveal the author block and swaps the
+% first-page notice to an honest "Preprint" line.
+%
+% Build:  latexmk -pdf gtm-main.tex
+% Overleaf: set this file as the main document to compile the GTM version.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\preprintbuild{}
+\input{main.tex}

@@ -477,11 +477,11 @@ def fig5_tokens(path: Path) -> None:
         zorder=1,
     )
     ax.text(
-        budget_cap,
-        4.55,
+        budget_cap + 3500,
+        2.0,
         "200k cap",
-        ha="right",
-        va="bottom",
+        ha="left",
+        va="center",
         fontsize=7.5,
         color="#555555",
         rotation=90,
@@ -555,15 +555,18 @@ def fig5_tokens(path: Path) -> None:
     ax.legend(
         handles=legend_handles,
         frameon=False,
-        loc="lower center",
-        bbox_to_anchor=(0.5, 1.02),
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.18),
         ncol=len(legend_handles),
-        handletextpad=0.35,
-        columnspacing=0.9,
+        handletextpad=0.3,
+        columnspacing=1.0,
         borderaxespad=0.0,
     )
 
-    _save_mpl(fig, path)
+    fig.subplots_adjust(top=0.82)
+    fig.savefig(path, format="svg", bbox_inches="tight", pad_inches=0.08)
+    plt.close(fig)
+    print(f"wrote {path}")
 
 def _glyph_budget(cx: float, cy: float) -> str:
     y = cy - 18

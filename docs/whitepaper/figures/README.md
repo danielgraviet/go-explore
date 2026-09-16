@@ -1,12 +1,19 @@
 # Whitepaper figures
 
-Regenerate:
+Regenerate SVG sources:
 
 ```bash
 uv run python scripts/render_whitepaper_figures.py
 ```
 
 `fig3`–`fig5` are rendered with matplotlib (NeurIPS-style charts, Daytona palette). Conceptual figures (`fig1`, `fig2`, `fig6`) remain hand-authored SVG.
+
+For the MLSys LaTeX build (`main.tex`), each figure also has a matching **PDF** companion used by `\includegraphics`:
+
+```text
+figures/figN-....svg   # source
+figures/figN-....pdf   # used by LaTeX / Overleaf
+```
 
 | File | Paper slot | Ledger |
 | --- | --- | --- |
@@ -17,4 +24,4 @@ uv run python scripts/render_whitepaper_figures.py
 | `fig5-warehouse-tokens.svg` | §7 | S21 tokens |
 | `fig6-failure-modes.svg` | §8 | S9–S14 qualitative |
 
-Do not edit the SVGs by hand; change the renderer and re-run.
+Do not edit the SVGs by hand; change the renderer and re-run. After regenerating chart SVGs, also refresh the corresponding PDFs before compiling LaTeX.
