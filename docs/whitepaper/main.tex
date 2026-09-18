@@ -65,7 +65,7 @@
 % MLSys asks for Company, City, Region, Country (industry) and
 % Department, University, City, Region, Country (academic).
 \newcommand{\affDaytona}{Daytona, San Francisco, California, USA}
-\newcommand{\affWaterloo}{Software Engineering, University of Waterloo, Waterloo, Ontario, Canada}
+\newcommand{\affWaterloo}{University of Waterloo, Ontario, Canada}
 \newcommand{\authorEmail}{dgraviet@daytona.io}
 
 \mlsystitlerunning{Returning to development states}
@@ -107,7 +107,7 @@
 \vskip 0.3in
 
 \begin{abstract}
-Coding agents often make useful progress before they fail, but retry-from-scratch discards the machine state created along the way. This makes failure recovery an interesting search problem: if intermediate environment states preserve meaningful progress, restoring and branching from them could outperform repeatedly restarting from the initial state. We implement Go-Explore-style search over Daytona snapshots, finding that benefits depend critically on task complexity and the reconstructibility of progress. Our results suggest that environment-level search is most valuable when useful progress lives outside easily reconstructed source state, motivating snapshot-aware agents that preserve and revisit high-value execution states during long-horizon coding tasks.
+Coding agents often make useful progress before they fail, but retry-from-scratch discards the machine state created along the way. This makes failure recovery an interesting search problem: if intermediate environment states preserve meaningful progress, restoring and branching from them could outperform repeatedly restarting from the initial state. We implement Go-Explore-style search over full Daytona snapshots and find that higher and more efficient solve rates depend mainly on progress that sits outside the repository, such as databases, services, and other runtime state. Our results suggest that full-snapshot search is most effective when long-horizon coding work spans multiple services whose state cannot be reconstructed from a single diff.
 \end{abstract}
 ]
 
@@ -123,11 +123,10 @@ Most test-time scaling methods operate above this machine state. Independent ret
 
 Go-Explore~\citep{ecoffet2021goexplore} offers a natural alternative. It remembers promising states, returns to them, and explores again. We apply this idea to coding agents by treating a full Daytona sandbox snapshot as the searchable state. A snapshot freezes the live machine so that a new agent can resume from an intermediate point rather than reconstructing it from the repository or a textual summary.
 
-We initially hypothesized that branching from promising snapshots would solve more tasks than independent retry under a fixed token budget. Our experiments refute that broad hypothesis on the Terminal-Bench~\citep{tbench2025} tasks we tested, but they also reveal when environment-level state matters and what prevents snapshot search from being effective today.
+We initially hypothesized that branching from promising snapshots would solve more tasks than independent retry under a fixed token budget. Our experiments refute that broad hypothesis on the Terminal-Bench~\citep{merrill2026terminalbench} tasks we tested, but they also reveal when environment-level state matters and what prevents snapshot search from being effective today.
 
-This paper makes four contributions:
+This paper makes three contributions:
 \begin{itemize}
-    \item We show that full sandbox snapshots are a reliable restore primitive for coding-agent search. Across four Terminal-Bench anchor tasks, 24/24 restored continuations reproduced a valid live state, enabling agents to resume computation from intermediate trajectories (Section~\ref{sec:restore}).
     \item We provide a matched-budget comparison between snapshot branching and independent retry. On our pre-registered harder Terminal-Bench subset, retry solves 17/25 tasks while snapshot-based search solves 6/25, establishing that reliable restoration alone is not sufficient to improve test-time scaling (Section~\ref{sec:retry}).
     \item We identify concrete failure modes of environment-level search. Snapshot branching loses through budget fragmentation, selection of misleading intermediate states, agent handoff cost, and weak signals for deciding which states deserve further exploration (Section~\ref{sec:failure}).
     \item We show that the value of snapshots depends on what information the environment contains. On \texttt{extract-elf}, compressed source-level state can outperform a full snapshot, while on a custom task whose progress lives in a SQLite database outside git, full snapshots solve 4/5 attempts and source-only restoration solves 0/5 (Section~\ref{sec:state}). These results suggest that environment-level search is most useful when progress cannot be reconstructed from repository state alone.
@@ -156,14 +155,14 @@ The core idea is simple. Instead of treating a failed coding-agent run as one in
 \section{System and Evaluation}
 \label{sec:system}
 
-We evaluate two questions. First, can a coding agent reliably resume from an intermediate machine state? Second, does returning to such states improve task success compared with spending the same inference budget on independent retries?
+We evaluate whether returning to intermediate machine states improves task success compared with spending the same inference budget on independent retries.
 
 \subsection{Snapshot-based Search}
 \label{sec:search}
 
 Our system periodically saves promising points during a coding-agent run. For example, it may save a snapshot after the agent edits files, runs tests, or makes other useful progress.
 
-Each snapshot captures the full Daytona sandbox at that moment. We store these snapshots in an archive and rank them based on simple signals such as file edits and test activity. This simple ranking provides a foundation that future work could extend with more sophisticated signals, learned models, or domain-specific heuristics.
+Each snapshot captures the full Daytona sandbox at that moment. We store these snapshots in an archive and rank them based on simple signals such as file edits and test activity. Future selectors could adopt ideas from Intelligent Go-Explore, which uses a foundation model to pick which archived state to restore from~\citep{lu2025ige}.
 
 In practice, when an agent fails on a hard task, restarting from the beginning loses all intermediate progress. Instead, our system identifies a promising saved state from the failed run, restores the sandbox to that point, and launches a new child trajectory. The child inherits the restored machine state but receives a fresh agent context, allowing a different approach from a promising midpoint.
 
@@ -181,36 +180,24 @@ We compare this against independent retry, where the same total token budget is 
 \subsection{Experimental Setup}
 \label{sec:setup}
 
-Unless otherwise noted, all experiments use Claude Haiku 4.5 on Terminal-Bench 2.0~\citep{tbench2025} through Harbor~\citep{harbor2026} and Daytona.\footnote{\url{https://www.daytona.io/}} We intentionally use a lower-cost model because this work focuses on token-efficient agent search under fixed budgets. Models in this cost range are also practical for large numbers of rollouts in agent harnesses, where repeated attempts can quickly become expensive.
+Unless otherwise noted, all experiments use Claude Haiku 4.5 on Terminal-Bench 2.0~\citep{merrill2026terminalbench} through Harbor~\citep{harbor2026} and Daytona.\footnote{\url{https://www.daytona.io/}} We intentionally use a lower-cost model because this work focuses on token-efficient agent search under fixed budgets. Models in this cost range are also practical for large numbers of rollouts in agent harnesses, where repeated attempts can quickly become expensive.
 
 Our headline comparison uses five tasks selected for intermediate single-attempt difficulty. For each task, we run five seeds with a total budget of one million tokens per seed. Independent retry spends that budget across three fresh attempts, while snapshot search uses one root trajectory followed by up to two restored children. The task set and protocol were fixed before examining the final comparison.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Restore Reliability}
-\label{sec:restore}
-
-Before evaluating search, we first test whether restoration itself works.
-
-We select four Terminal-Bench tasks with high baseline solve rates and run three root trajectories per task. From these roots we launch 24 restored continuations.
-
-All 24/24 continuations successfully restored their intended machine state. The fidelity extends beyond ordinary source files. In one fix-git example, restoring the sandbox reproduced an unresolved merge together with the corresponding Git index state.
-
-Restored continuations therefore remain capable of solving the task after resuming from an intermediate environment. The experiment establishes restoration as a usable primitive but it does not establish an advantage over retry.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Snapshot Search vs Retry}
 \label{sec:retry}
 
-We next test whether branching from promising intermediate states can outperform repeated fresh attempts under the same total token budget.
-
-On this Terminal-Bench subset, independent retry performs better overall than snapshot branching. Retry wins on every task and solves nearly three times as many task-seed pairs overall.
+We test whether branching from promising intermediate states can outperform repeated fresh attempts under the same total token budget.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\columnwidth]{figures/fig3-headline-solve-rates.pdf}
-    \caption{Pre-registered headline comparison. Five file-centric Terminal-Bench tasks $\times$ five seeds, 1{,}000{,}000 tokens. Independent retry from scratch outperforms snapshot branching (17/25 versus 6/25). When useful progress is mostly in the filesystem, starting over is often enough. This total is frozen; later warehouse rows are not pooled into it.}
+    \includegraphics[width=\columnwidth,height=1.2in,keepaspectratio]{figures/fig3-headline-solve-rates.pdf}
+    \caption{Retry 17/25 vs.\ snapshot branching 6/25 on the pre-registered set (five tasks $\times$ five seeds, 1M tokens).}
     \label{fig:headline}
 \end{figure}
+
+On this Terminal-Bench subset, independent retry outperforms snapshot branching on the selected tasks and solves more task-seed pairs overall.
 
 \begin{table}[H]
     \centering
@@ -233,9 +220,7 @@ On this Terminal-Bench subset, independent retry performs better overall than sn
     \end{tabular}
 \end{table}
 
-However, snapshot search is not simply failing to restore useful computation. We observe four cases where the root trajectory fails but a child restored from that root later succeeds. Three occur on \texttt{extract-elf} and one on \texttt{custom-memory-heap-crash}. In a separate follow-up experiment, we specifically tested whether snapshot branching could recover from failed roots. On \texttt{extract-elf}, snapshot branching successfully recovered \textbf{67\%} of failed roots, substantially higher than independent retry's overall success rate of \textbf{38\%} on that task. On \texttt{regex-log}, the recovery rate was more modest at \textbf{13\%}. This shows that snapshot branching is effective at salvaging failed trajectories when given the opportunity, but in the main experiment, such recoveries were too infrequent to offset the total cost of searching, restoring, and continuing from snapshots.
-
-The mechanism therefore works in the narrow sense we intended. A failed trajectory can contain a state from which another agent succeeds. The problem is that, on the Terminal-Bench tasks we tested, these recoveries are not frequent enough to offset the cost of finding and exploiting those states.
+However, snapshot search is not simply failing to restore useful computation. We observe four cases where the root trajectory fails but a child restored from that root later succeeds. Three occur on \texttt{extract-elf} and one on \texttt{custom-memory-heap-crash}. In a separate follow-up experiment, we specifically tested whether snapshot branching could recover from failed roots. On \texttt{extract-elf}, snapshot branching successfully recovered \textbf{67\%} of failed roots, substantially higher than independent retry's overall success rate of \textbf{38\%} on that task. On \texttt{regex-log}, the recovery rate was more modest at \textbf{13\%}. This shows that branching can salvage a failed root when a useful intermediate state exists. On the Terminal-Bench tasks we tested, those midpoints were not frequent enough for branching to win.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{What State Is Worth Preserving?}
@@ -245,7 +230,7 @@ The headline experiment asks whether full snapshots improve search. A separate q
 
 We test this by comparing different ways of saving the same intermediate progress.
 
-On \texttt{extract-elf}, saving the changed files is often enough. From the same checkpoint and with the same remaining token budget, a child started from a Git diff or from replayed commands can succeed even when the child started from the full snapshot runs out of budget. For this kind of task, most useful progress is already captured in the repository, so restoring the entire machine adds little.
+On tasks that can be easily reconstructed through git, saving only the changed files is often enough. On one of our tasks, \texttt{extract-elf}, children restored from a Git diff or from replayed commands succeeded on 4/4 seeds. This contrasts with children restored from full snapshots, which frequently ran out of budget for the reasons discussed in Section~\ref{sec:failure}. For this kind of task, most useful progress is already captured in the repository, so restoring the entire machine adds little.
 
 We then construct \texttt{staged-service-repair}, where the agent's progress depends on a SQLite database at \texttt{/var/lib/inventory/store.db} that must exist for the verifier to pass. This reflects a common production scenario: agents modify system state such as databases, caches, and services that version control systems never track. A Git diff captures only code changes, not this underlying execution state, making full snapshots essential.
 
@@ -256,10 +241,6 @@ We freeze a Daytona snapshot partway through the task and compare three ways of 
 \item \textbf{Git diff applied}: Restart with the saved Git diff restored, but without the database state.
 \item \textbf{Full snapshot restore}: Restore the complete Daytona snapshot, including both code changes and database state.
 \end{itemize}
-
-At this checkpoint, the Git diff is empty because the code change has already been committed, while the state required by the verifier exists only in the database.
-
-Starting from that same point, we compare the following conditions.
 
 \begin{figure}[H]
     \centering
@@ -290,7 +271,7 @@ The negative headline result is highly structured. We observe four recurring fai
 \begin{figure}[H]
     \centering
     \includegraphics[width=\columnwidth]{figures/fig6-failure-modes.pdf}
-    \caption{Why snapshot search still loses on file-centric tasks. (a)~A fixed split starves the root or the children. (b)~Restore is faithful to incorrect files. (c)~The child inherits the machine, not the parent's understanding. (d)~Easy signals of activity are not the verifier.}
+    \caption{Why snapshot search still loses on file-centric tasks. (a)~Root and children share one token budget, so either can be underfunded. (b)~Restore is faithful to incorrect files. (c)~The child inherits the machine, not the parent's understanding. (d)~Easy signals of activity are not the verifier.}
     \label{fig:failure-modes}
 \end{figure}
 
@@ -298,7 +279,7 @@ The negative headline result is highly structured. We observe four recurring fai
 A retry receives a complete independent attempt. Snapshot search instead spends part of its budget producing the root and divides the remainder among children. A weak root creates a weak archive, while short-lived children often run out of budget before completing a repair. Our current approach uses uniform budget allocation, but this is a natural target for improvement. Adaptive budgeting strategies, learned allocation policies, or task-specific heuristics could likely balance root exploration against child continuation more effectively. We expect future work to substantially improve upon this naive distribution.
 
 \paragraph{Wrong-state attractors.}
-Restoration faithfully preserves mistakes as well as progress. If the selected checkpoint contains a plausible but incorrect implementation, the child often continues editing around that decision rather than reconsidering it. Faithful restoration can therefore make an incorrect state unusually sticky. Our current approach treats all checkpoints equally, but this is an opportunity for refinement. State quality assessment, diversity mechanisms that encourage exploration of alternative solutions, or methods to detect and escape incorrect attractors could help children break out of bad local decisions.
+Restoration faithfully preserves mistakes as well as progress. If the selected checkpoint contains a plausible but incorrect implementation, the child often continues editing around that decision rather than reconsidering it. Faithful restoration can therefore make an incorrect state unusually sticky. As described in Section~\ref{sec:search}, we rank snapshots with simple progress proxies rather than treating them uniformly. Those proxies are still weak, and better selection remains open. Related work such as Intelligent Go-Explore uses foundation models for this choice~\citep{lu2025ige}. State quality assessment, diversity mechanisms that encourage exploration of alternative solutions, or methods to detect and escape incorrect attractors could help children break out of bad local decisions.
 
 \paragraph{Handoff cost.}
 A fresh agent does not inherit the parent's understanding of the environment. It may receive the parent's filesystem but still need to rediscover how the repository works, how tests should be run, and what the previous agent was attempting. In one inspected trajectory, a child consumed roughly 190{,}000 tokens over 26 steps, while a successful fresh retry required about 90{,}000 tokens over 11 steps. This suggests an opportunity for better context transfer. State summaries, environmental documentation, or explicit handoff protocols could help new agents reuse the parent's implicit knowledge. Such mechanisms could substantially reduce the overhead of agent transitions.
@@ -337,11 +318,11 @@ These systems show that failed attempts can contain useful information that shou
 Agentless provides a valuable counterpoint. Xia et al.\ show that a relatively simple localization, repair, and validation pipeline can compete with more elaborate autonomous agents~\citep{xia2024agentless}. We view this as an important lesson for our own work. More machinery is only worthwhile when it preserves something that matters. On the file-centric Terminal-Bench tasks we tested, independent retries remain stronger under the matched budget. On tasks with important state outside the repository, full snapshots become much more valuable.
 
 \paragraph{Returning to promising states.}
-Our search procedure is most directly inspired by Go-Explore. In this influential line of work, Ecoffet et al.\ show that exploration becomes easier when an agent can remember promising states, return to them reliably, and continue exploring from there~\citep{ecoffet2019goexplore,ecoffet2021goexplore}.
+Our search procedure is most directly inspired by Go-Explore. In this influential line of work, Ecoffet et al.\ show that exploration becomes easier when an agent can remember promising states, return to them reliably, and continue exploring from there~\citep{ecoffet2021goexplore}. Intelligent Go-Explore extends the same archive-and-return idea by using a foundation model to choose which archived state to restore from~\citep{lu2025ige}.
 
 We bring that intuition into coding-agent environments by changing what a saved state means. In Atari, a cell represents a compact environment state. In our setting, the equivalent object is a live software sandbox containing files, installed dependencies, process state, databases, and other artifacts created during execution.
 
-This setting introduces a new challenge. A perfectly restored state can still be a poor place to continue from. It may contain a wrong partial solution. The next agent may not understand how that state was reached. Revisiting it also consumes tokens that could have been spent on a fresh attempt. Our experiments therefore separate two questions. Can we restore the state faithfully? Is that state actually worth returning to?
+This setting introduces a new challenge. A perfectly restored state can still be a poor place to continue from. It may contain a wrong partial solution. The next agent may not understand how that state was reached. Revisiting it also consumes tokens that could have been spent on a fresh attempt. Our experiments therefore focus on whether a restored state is actually worth returning to.
 
 \paragraph{Positioning.}
 Prior work has shown strong results from preserving generated candidates, textual experience, and source-level progress. Our work adds full machine state to that design space. We do not argue that full snapshots are always better. Instead, we study when they preserve useful information that source files and textual memory miss. Our results suggest that this distinction becomes most important when progress extends beyond the repository.
@@ -350,11 +331,11 @@ Prior work has shown strong results from preserving generated candidates, textua
 \section{Conclusion}
 \label{sec:conclusion}
 
-Full sandbox snapshots let coding agents return to intermediate execution states that cannot always be represented by a patch or textual summary. Our experiments show that this capability is real, but its value depends on what the environment contains and whether the system can identify states that are actually worth revisiting.
+Full sandbox snapshots let coding agents return to intermediate execution states that cannot always be represented by a patch or textual summary. The value of that capability depends on what the environment contains and whether the system can identify states that are actually worth revisiting.
 
 For file-centric tasks, simpler representations and fresh retries are often enough. When progress lives in databases, services, installed dependencies, or other machine state outside the repository, full snapshots become more compelling.
 
-The main open problem is therefore not restoration, but selection: how can we tell when a machine state represents reusable progress rather than a dead end? Better progress signals, cheaper handoffs between agents, and tasks with richer environment state are promising directions for making environment-level search useful in practice.
+The main open problem is selection: how can we tell when a machine state represents reusable progress rather than a dead end? Better progress signals, cheaper handoffs between agents, and tasks with richer environment state are promising directions for making environment-level search useful in practice.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliography{references}

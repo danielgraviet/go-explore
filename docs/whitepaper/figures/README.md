@@ -1,27 +1,51 @@
 # Whitepaper figures
 
-Regenerate SVG sources:
+| File | Paper slot | Source |
+| --- | --- | --- |
+| `fig1-what-is-preserved` | §3 | Designer SVG (Daytona palette) |
+| `fig2-search-pipeline` | §4.1 | Designer SVG (Daytona palette) |
+| `fig3-headline-solve-rates` | §6 | Matplotlib, S5 (17/25 vs 6/25) |
+| `fig4-warehouse-arms` | §7 | Matplotlib, S21 |
+| `fig5-warehouse-tokens` | §7 | Matplotlib, S21 tokens |
+| `fig6-failure-modes` | §8 | Designer SVG (Daytona palette) |
+
+Formats:
+
+```text
+figures/figN-....svg   # source of truth (designer or matplotlib)
+figures/figN-....pdf   # used by LaTeX / Overleaf (vector)
+figures/figN-....png   # blog / slides
+```
+
+`pdflatex` cannot include SVG directly, so LaTeX loads the PDF companions.
+Those PDFs are vector conversions of the SVGs — not raster PNGs — so figures
+stay sharp at any zoom.
+
+## Regenerating PDF companions from designer SVGs
+
+Requires Homebrew `cairo`. Do **not** use `svglib` — it mangles Figma exports
+(e.g. solid-fills panel glyphs).
+
+```bash
+cd docs/whitepaper/figures
+export DYLD_FALLBACK_LIBRARY_PATH="$(brew --prefix cairo)/lib:$(brew --prefix)/lib"
+uv run --with cairosvg python - <<'PY'
+import cairosvg
+for name in [
+    "fig1-what-is-preserved",
+    "fig2-search-pipeline",
+    "fig6-failure-modes",
+]:
+    cairosvg.svg2pdf(url=f"{name}.svg", write_to=f"{name}.pdf")
+    print("wrote", name + ".pdf")
+PY
+```
+
+## Regenerating chart figures
 
 ```bash
 uv run python scripts/render_whitepaper_figures.py
 ```
 
-`fig3`–`fig5` are rendered with matplotlib (NeurIPS-style charts, Daytona palette). Conceptual figures (`fig1`, `fig2`, `fig6`) remain hand-authored SVG.
-
-For the MLSys LaTeX build (`main.tex`), each figure also has a matching **PDF** companion used by `\includegraphics`:
-
-```text
-figures/figN-....svg   # source
-figures/figN-....pdf   # used by LaTeX / Overleaf
-```
-
-| File | Paper slot | Ledger |
-| --- | --- | --- |
-| `fig1-what-is-preserved.svg` | §3 | conceptual |
-| `fig2-search-pipeline.svg` | §4.1 | conceptual |
-| `fig3-headline-solve-rates.svg` | §6 | S5 (17/25 vs 6/25) |
-| `fig4-warehouse-arms.svg` | §7 | S21 |
-| `fig5-warehouse-tokens.svg` | §7 | S21 tokens |
-| `fig6-failure-modes.svg` | §8 | S9–S14 qualitative |
-
-Do not edit the SVGs by hand; change the renderer and re-run. After regenerating chart SVGs, also refresh the corresponding PDFs before compiling LaTeX.
+That writes SVG for `fig3`–`fig5`. Also emit PDF (and optional PNG) from
+matplotlib before compiling LaTeX; do not overwrite designer `fig1`/`fig2`/`fig6`.
